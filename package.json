@@ -1,0 +1,31 @@
+{
+  "name": "tradespere",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "prisma": "prisma"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.0.0",
+    "bcryptjs": "^2.4.3",
+    "groq-sdk": "^1.1.2",
+    "next": "^14.2.3",
+    "next-auth": "^4.24.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "recharts": "^3.8.1"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.1",
+    "@types/react": "^18.2.48",
+    "@types/react-dom": "^18.2.18",
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.35",
+    "prisma": "^5.0.0",
+    "tailwindcss": "^3.4.3",
+    "typescript": "^5.5.2"
+  }
+}
