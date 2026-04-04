@@ -18,6 +18,8 @@ model User {
   password     String
   traderType   String?
   tradingStyle String?
+  showOnLeaderboard Boolean @default(false)
+  displayName   String?
   createdAt    DateTime   @default(now())
   portfolio    Portfolio?
   trades       Trade[]

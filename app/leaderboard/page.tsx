@@ -1,0 +1,132 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+
+interface LeaderboardEntry {
+  rank: number;
+  displayName: string;
+  gainPercent: number;
+  totalTrades: number;
+}
+
+interface LeaderboardResponse {
+  entries: LeaderboardEntry[];
+  yourRank: number | null;
+  weeklyResetInDays: number;
+}
+
+function rankStyle(rank: number): string {
+  if (rank === 1) return "border-[#f59e0b] bg-[#2a1c05]";
+  if (rank === 2) return "border-[#94a3b8] bg-[#1b2230]";
+  if (rank === 3) return "border-[#b45309] bg-[#2a1b12]";
+  return "border-[#1a2744] bg-[#0d1421]";
+}
+
+export default function LeaderboardPage() {
+  const [data, setData] = useState<LeaderboardResponse | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadLeaderboard() {
+      try {
+        setError("");
+        const response = await fetch("/api/leaderboard", { cache: "no-store" });
+        if (!response.ok) {
+          throw new Error("Failed to load leaderboard");
+        }
+
+        const json = (await response.json()) as LeaderboardResponse;
+        if (mounted) {
+          setData(json);
+        }
+      } catch {
+        if (mounted) {
+          setError("Could not load leaderboard");
+        }
+      } finally {
+        if (mounted) {
+          setLoading(false);
+        }
+      }
+    }
+
+    loadLeaderboard();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const topThree = useMemo(() => data?.entries.slice(0, 3) ?? [], [data]);
+
+  if (loading) {
+    return <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 text-[#9ca3af]">Loading leaderboard...</section>;
+  }
+
+  if (error) {
+    return <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 text-[#ef4444]">{error}</section>;
+  }
+
+  if (!data || data.entries.length === 0) {
+    return (
+      <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
+        <h2 className="text-lg font-semibold text-white">Leaderboard</h2>
+        <p className="mt-3 text-sm text-[#9ca3af]">No users opted in yet.</p>
+      </section>
+    );
+  }
+
+  return (
+    <section className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
+        <h2 className="text-lg font-semibold text-white">Global Leaderboard</h2>
+        <span className="rounded-md border border-[#1a2744] bg-[#0f1929] px-3 py-1 text-xs font-semibold text-[#3b82f6]">
+          Weekly reset in {data.weeklyResetInDays} day{data.weeklyResetInDays === 1 ? "" : "s"}
+        </span>
+      </div>
+
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+        {topThree.map((entry) => (
+          <div key={entry.rank} className={`rounded-xl border p-4 ${rankStyle(entry.rank)}`}>
+            <p className="text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">Rank #{entry.rank}</p>
+            <p className="mt-2 text-lg font-bold text-white">{entry.displayName}</p>
+            <p className={`mt-2 text-xl font-bold ${entry.gainPercent >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+              {entry.gainPercent.toFixed(2)}%
+            </p>
+            <p className="mt-1 text-xs text-[#9ca3af]">{entry.totalTrades} trades</p>
+          </div>
+        ))}
+      </div>
+
+      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
+        <table className="min-w-full text-sm">
+          <thead>
+            <tr className="border-b border-[#1a2744] text-left text-[#9ca3af]">
+              <th className="py-2">Rank</th>
+              <th className="py-2">Name</th>
+              <th className="py-2 text-right">Gain %</th>
+              <th className="py-2 text-right">Trades</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.entries.map((entry) => (
+              <tr
+                key={`${entry.rank}-${entry.displayName}`}
+                className={`border-b border-[#1a2744] ${data.yourRank === entry.rank ? "bg-[#0f1929]" : "bg-transparent"}`}
+              >
+                <td className="py-2 text-white">#{entry.rank}</td>
+                <td className="py-2 font-semibold text-white">{entry.displayName}</td>
+                <td className={`py-2 text-right font-semibold ${entry.gainPercent >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                  {entry.gainPercent.toFixed(2)}%
+                </td>
+                <td className="py-2 text-right text-[#d1d5db]">{entry.totalTrades}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  );
+}

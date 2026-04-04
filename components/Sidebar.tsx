@@ -11,7 +11,9 @@ import {
   Globe,
   LayoutDashboard,
   LogOut,
+  Settings as SettingsIcon,
   Sparkles,
+  Trophy,
   TrendingUp,
 } from "lucide-react";
 
@@ -23,6 +25,7 @@ const navItems = [
   { label: "Mistakes", href: "/mistakes", icon: AlertTriangle },
   { label: "Analytics", href: "/analytics", icon: BarChart2 },
   { label: "AI Coach", href: "/ai-coach", icon: Sparkles },
+  { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
 ];
 
 export default function Sidebar() {
@@ -65,6 +68,13 @@ export default function Sidebar() {
 
       <div className="border-t border-[#1a2744] p-3">
         <p className="truncate text-xs text-[#9ca3af]">{session?.user?.email ?? "Guest"}</p>
+        <Link
+          href="/settings"
+          className="mt-2 flex w-full items-center gap-2 rounded-lg bg-[#0d1421] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#1a2744]"
+        >
+          <SettingsIcon size={16} />
+          Settings
+        </Link>
         {session ? (
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}

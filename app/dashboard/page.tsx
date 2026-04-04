@@ -77,18 +77,28 @@ const cardClass = "rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 shadow-[i
 
 const MOOD_COLORS: Record<string, string> = {
   Confident: "#22c55e",
-  confident: "#22c55e",
   Anxious: "#ef4444",
-  anxious: "#ef4444",
   Neutral: "#6b7280",
-  neutral: "#6b7280",
   FOMO: "#f59e0b",
-  fomo: "#f59e0b",
   Greedy: "#8b5cf6",
-  greedy: "#8b5cf6",
   Fearful: "#f97316",
-  fearful: "#f97316",
 };
+
+const ALL_MOODS = ["Confident", "Anxious", "Neutral", "FOMO", "Greedy", "Fearful"] as const;
+
+function normalizeMoodLabel(mood: string | null): (typeof ALL_MOODS)[number] {
+  const normalized = (mood || "").trim().toLowerCase();
+  const moodMap: Record<string, (typeof ALL_MOODS)[number]> = {
+    confident: "Confident",
+    anxious: "Anxious",
+    neutral: "Neutral",
+    fomo: "FOMO",
+    greedy: "Greedy",
+    fearful: "Fearful",
+  };
+
+  return moodMap[normalized] || "Neutral";
+}
 
 function timeAgo(isoDate: string) {
   const now = Date.now();
@@ -178,7 +188,7 @@ export default function DashboardPage() {
         continue;
       }
 
-      const mood = (trade.mood || "Neutral").trim();
+      const mood = normalizeMoodLabel(trade.mood);
       if (!moodMap[mood]) {
         moodMap[mood] = { total: 0, count: 0 };
       }
@@ -187,10 +197,15 @@ export default function DashboardPage() {
       moodMap[mood].count += 1;
     }
 
-    return Object.entries(moodMap).map(([mood, data]) => ({
+    return ALL_MOODS.map((mood) => {
+      const data = moodMap[mood];
+      const avgPnl = data && data.count > 0 ? data.total / data.count : 0;
+
+      return {
       mood,
-      pnl: data.total / data.count,
-    }));
+      pnl: avgPnl,
+      };
+    });
   }, [trades]);
 
   const recentTrades = useMemo(() => trades.slice(0, 5), [trades]);
@@ -336,9 +351,16 @@ export default function DashboardPage() {
                     return [`₹${numericValue.toFixed(2)}`, "Avg P&L"];
                   }}
                 />
-                <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="pnl" radius={[4, 4, 0, 0]} minPointSize={2}>
                   {moodVsPnlData.map((entry) => (
-                    <Cell key={entry.mood} fill={MOOD_COLORS[entry.mood] || "#6b7280"} />
+                    <Cell
+                      key={entry.mood}
+                      fill={MOOD_COLORS[entry.mood] || "#6b7280"}
+                      fillOpacity={entry.pnl === 0 ? 0.3 : 1}
+                      stroke={MOOD_COLORS[entry.mood] || "#6b7280"}
+                      strokeOpacity={entry.pnl === 0 ? 0.4 : 0}
+                      strokeWidth={entry.pnl === 0 ? 1 : 0}
+                    />
                   ))}
                 </Bar>
               </BarChart>
@@ -382,7 +404,11 @@ export default function DashboardPage() {
                         key={holding.stock}
                         className={`border-b border-[#1a2744] transition hover:bg-[#0f1929] ${index % 2 === 0 ? "bg-[#0d1421]" : "bg-[#0f1727]"}`}
                       >
-                        <td className={`py-1.5 text-left font-bold ${holding.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{holding.stock}</td>
+                        <td className={`py-1.5 text-left font-bold ${holding.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                          <Link href={`/stock/${encodeURIComponent(holding.stock.toUpperCase())}`} className="hover:underline">
+                            {holding.stock}
+                          </Link>
+                        </td>
                         <td className="py-1.5 text-right text-[#d1d5db]">{holding.quantity}</td>
                         <td className="py-1.5 text-right text-[#d1d5db]">₹{holding.avgBuyPrice.toFixed(2)}</td>
                         <td className="py-1.5 text-right font-semibold text-[#3b82f6]">₹{holding.currentPrice.toFixed(2)}</td>
@@ -461,7 +487,7 @@ export default function DashboardPage() {
         </div>
 
         {news.length === 0 ? (
-          <p className="text-sm text-[#9ca3af]">No recent news for your holdings</p>
+          <p className="text-sm text-[#9ca3af]">No recent market news</p>
         ) : (
           <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
             {news.map((item) => (

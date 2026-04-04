@@ -18,6 +18,25 @@ interface NewsResponseItem {
   image: string | null;
 }
 
+const FINANCE_KEYWORDS = [
+  "market",
+  "stock",
+  "trade",
+  "economy",
+  "nse",
+  "bse",
+  "sensex",
+  "nifty",
+  "rupee",
+  "rbi",
+  "gdp",
+  "inflation",
+  "shares",
+  "equity",
+  "fund",
+  "invest",
+];
+
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -44,6 +63,10 @@ export async function GET() {
 
     const latest = data
       .filter((item) => item.headline && item.url && item.datetime)
+      .filter((item) => {
+        const headline = (item.headline || "").toLowerCase();
+        return FINANCE_KEYWORDS.some((keyword) => headline.includes(keyword));
+      })
       .sort((a, b) => (b.datetime ?? 0) - (a.datetime ?? 0))
       .slice(0, 6)
       .map((item) => ({

@@ -9,6 +9,10 @@ interface PortfolioSummary {
   pnl: number;
 }
 
+interface LeaderboardSummary {
+  yourRank: number | null;
+}
+
 function getTitle(pathname: string): string {
   const titleMap: Record<string, string> = {
     "/": "Dashboard",
@@ -19,6 +23,8 @@ function getTitle(pathname: string): string {
     "/mistakes": "Mistakes",
     "/analytics": "Analytics",
     "/ai-coach": "AI Coach",
+    "/leaderboard": "Leaderboard",
+    "/settings": "Settings",
     "/login": "Login",
     "/signup": "Sign Up",
     "/onboarding": "Onboarding",
@@ -30,20 +36,30 @@ function getTitle(pathname: string): string {
 export default function TopBar() {
   const pathname = usePathname();
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
+  const [yourRank, setYourRank] = useState<number | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadSummary() {
       try {
-        const response = await fetch("/api/portfolio", { cache: "no-store" });
-        if (!response.ok) {
+        const [portfolioResponse, leaderboardResponse] = await Promise.all([
+          fetch("/api/portfolio", { cache: "no-store" }),
+          fetch("/api/leaderboard", { cache: "no-store" }),
+        ]);
+
+        if (!portfolioResponse.ok) {
           return;
         }
 
-        const data = (await response.json()) as PortfolioSummary;
+        const data = (await portfolioResponse.json()) as PortfolioSummary;
         if (isMounted) {
           setSummary(data);
+        }
+
+        if (leaderboardResponse.ok && isMounted) {
+          const leaderboardData = (await leaderboardResponse.json()) as LeaderboardSummary;
+          setYourRank(leaderboardData.yourRank);
         }
       } catch {
         // Ignore top bar polling errors and keep last known values.
@@ -66,6 +82,12 @@ export default function TopBar() {
     <header className="fixed left-[220px] right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[#1a2744] bg-[#0a0f1a] px-6">
       <h1 className="text-sm font-semibold tracking-wide text-white">{title}</h1>
       <div className="flex items-center gap-6 text-sm">
+        {pathname === "/dashboard" && yourRank !== null ? (
+          <div className="rounded-md border border-[#1a2744] bg-[#0d1421] px-2 py-1">
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">Your Rank</p>
+            <p className="text-sm font-bold text-[#3b82f6]">#{yourRank}</p>
+          </div>
+        ) : null}
         <div>
           <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">Portfolio Value</p>
           <p className="text-lg font-bold text-white">
