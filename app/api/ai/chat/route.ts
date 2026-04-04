@@ -1,9 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
-import { type Trade } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Groq from "groq-sdk";
+
+type TradeRecord = {
+  createdAt: Date;
+  stock: string;
+  type: string;
+  price: number;
+  quantity: number;
+  pnl: number | null;
+  mood: string | null;
+};
 
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
@@ -34,7 +43,7 @@ export async function POST(request: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  const history = trades.map((trade: Trade) => ({
+  const history = trades.map((trade: TradeRecord) => ({
     date: trade.createdAt.toISOString(),
     stock: trade.stock,
     type: trade.type,
