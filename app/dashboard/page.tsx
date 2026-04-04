@@ -3,12 +3,23 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import {
+  Activity,
+  ArrowDown,
+  ArrowDownRight,
+  ArrowUp,
+  ArrowUpRight,
+  Newspaper,
+  Target,
+  TrendingUp,
+  Wallet,
+} from "lucide-react";
+import {
+  Area,
+  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
-  Line,
-  LineChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -54,15 +65,24 @@ interface AnalyticsSummary {
   winRate: number;
 }
 
-const cardClass = "rounded-xl border border-[#1f2937] bg-[#111827] p-5";
+interface NewsItem {
+  headline: string;
+  source: string;
+  url: string;
+  datetime: string;
+  symbol: string;
+  image: string | null;
+}
+
+const cardClass = "rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 shadow-[inset_0_1px_0_#1a2744] transition duration-200 hover:brightness-110";
 
 const moodColors: Record<string, string> = {
   Confident: "#22c55e",
   Anxious: "#ef4444",
-  Neutral: "#3b82f6",
+  Neutral: "#6b7280",
   FOMO: "#f59e0b",
-  Greedy: "#14b8a6",
-  Fearful: "#8b5cf6",
+  Greedy: "#8b5cf6",
+  Fearful: "#f97316",
   Unknown: "#9ca3af",
 };
 
@@ -72,14 +92,28 @@ function timeAgo(isoDate: string) {
   const diffMs = Math.max(0, now - then);
   const minutes = Math.floor(diffMs / (1000 * 60));
 
-  if (minutes < 1) return "Just now";
-  if (minutes < 60) return `${minutes} min ago`;
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes}m ago`;
 
   const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  if (hours < 24) return `${hours}h ago`;
 
   const days = Math.floor(hours / 24);
-  return `${days} day${days > 1 ? "s" : ""} ago`;
+  return `${days}d ago`;
+}
+
+function normalizeMood(mood: string | null): keyof typeof moodColors {
+  const normalized = (mood || "").trim().toLowerCase();
+  const map: Record<string, keyof typeof moodColors> = {
+    confident: "Confident",
+    anxious: "Anxious",
+    neutral: "Neutral",
+    fomo: "FOMO",
+    greedy: "Greedy",
+    fearful: "Fearful",
+  };
+
+  return map[normalized] || "Unknown";
 }
 
 export default function DashboardPage() {
@@ -87,6 +121,7 @@ export default function DashboardPage() {
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([]);
   const [trades, setTrades] = useState<TradeItem[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
+  const [news, setNews] = useState<NewsItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -96,23 +131,25 @@ export default function DashboardPage() {
     async function loadDashboardData() {
       try {
         setError("");
-        const [summaryRes, historyRes, tradesRes, analyticsRes] = await Promise.all([
+        const [summaryRes, historyRes, tradesRes, analyticsRes, newsRes] = await Promise.all([
           fetch("/api/portfolio", { cache: "no-store" }),
           fetch("/api/portfolio/history", { cache: "no-store" }),
           fetch("/api/trades", { cache: "no-store" }),
           fetch("/api/analytics/summary", { cache: "no-store" }),
+          fetch("/api/news", { cache: "no-store" }),
         ]);
 
-        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok) {
+        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !newsRes.ok) {
           throw new Error("Failed to load dashboard data");
         }
 
-        const [summaryData, historyData, tradesData, analyticsData] = (await Promise.all([
+        const [summaryData, historyData, tradesData, analyticsData, newsData] = (await Promise.all([
           summaryRes.json(),
           historyRes.json(),
           tradesRes.json(),
           analyticsRes.json(),
-        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary];
+          newsRes.json(),
+        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, NewsItem[]];
 
         if (!isMounted) {
           return;
@@ -122,6 +159,7 @@ export default function DashboardPage() {
         setHistory(historyData);
         setTrades(tradesData);
         setAnalytics(analyticsData);
+        setNews(newsData);
       } catch {
         if (isMounted) {
           setError("Unable to load dashboard data right now.");
@@ -150,7 +188,7 @@ export default function DashboardPage() {
         continue;
       }
 
-      const mood = trade.mood || "Unknown";
+      const mood = normalizeMood(trade.mood);
       moodMap[mood] = (moodMap[mood] ?? 0) + trade.pnl;
     }
 
@@ -166,7 +204,7 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <section className="space-y-4">
-        <div className="rounded-xl border border-[#1f2937] bg-[#111827] p-5 text-[#9ca3af]">Loading trading terminal...</div>
+        <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-5 text-[#9ca3af]">Loading trading terminal...</div>
       </section>
     );
   }
@@ -174,7 +212,7 @@ export default function DashboardPage() {
   if (error || !summary) {
     return (
       <section className="space-y-4">
-        <div className="rounded-xl border border-[#1f2937] bg-[#111827] p-5 text-[#ef4444]">{error || "Dashboard unavailable."}</div>
+        <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-5 text-[#ef4444]">{error || "Dashboard unavailable."}</div>
       </section>
     );
   }
@@ -182,34 +220,46 @@ export default function DashboardPage() {
   return (
     <section className="space-y-4 text-white">
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
-        <div className={cardClass}>
+        <div className={`${cardClass} border-t-2 border-t-[#3b82f6]`}>
+          <div className="mb-3 inline-flex rounded-lg bg-[#14213a] p-2 text-[#3b82f6]">
+            <Wallet size={18} />
+          </div>
           <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Balance</p>
-          <p className="mt-2 text-2xl font-semibold text-white">
+          <p className="mt-2 text-4xl font-bold text-white">
             ₹{summary.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
-        <div className={cardClass}>
+        <div className={`${cardClass} border-t-2 border-t-[#8b5cf6]`}>
+          <div className="mb-3 inline-flex rounded-lg bg-[#24193a] p-2 text-[#8b5cf6]">
+            <TrendingUp size={18} />
+          </div>
           <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Invested</p>
-          <p className="mt-2 text-2xl font-semibold text-[#9ca3af]">
+          <p className="mt-2 text-4xl font-bold text-[#c7cfe0]">
             ₹{summary.invested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
 
-        <div className={cardClass}>
+        <div className={`${cardClass} border-t-2 ${summary.pnl >= 0 ? "border-t-[#22c55e]" : "border-t-[#ef4444]"}`}>
+          <div className={`mb-3 inline-flex rounded-lg p-2 ${summary.pnl >= 0 ? "bg-[#123427] text-[#22c55e]" : "bg-[#391a1f] text-[#ef4444]"}`}>
+            <Activity size={18} />
+          </div>
           <p className="text-xs uppercase tracking-wide text-[#9ca3af]">P&amp;L</p>
-          <p className={`mt-2 text-2xl font-semibold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+          <p className={`mt-2 text-4xl font-bold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
             ₹{summary.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
-          <p className={`mt-1 text-sm ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{summary.pnlPercentage.toFixed(2)}%</p>
+          <p className={`mt-1 text-sm font-semibold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{summary.pnlPercentage.toFixed(2)}%</p>
         </div>
 
-        <div className={cardClass}>
+        <div className={`${cardClass} border-t-2 border-t-[#3b82f6]`}>
+          <div className="mb-3 inline-flex rounded-lg bg-[#14213a] p-2 text-[#3b82f6]">
+            <Target size={18} />
+          </div>
           <div className="flex items-center justify-between">
             <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Win Rate</p>
-            <p className="text-sm font-semibold text-white">{(analytics?.winRate ?? 0).toFixed(1)}%</p>
+            <p className="text-lg font-bold text-white">{(analytics?.winRate ?? 0).toFixed(1)}%</p>
           </div>
-          <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-[#1f2937]">
+          <div className="mt-4 h-2 w-full overflow-hidden rounded-full bg-[#1a2744]">
             <div
               className="h-full rounded-full bg-[#3b82f6] transition-all"
               style={{ width: `${Math.min(100, Math.max(0, analytics?.winRate ?? 0))}%` }}
@@ -222,39 +272,48 @@ export default function DashboardPage() {
         <div className={`${cardClass} xl:col-span-3`}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">Portfolio Value Over Time</h2>
-            <p className="text-xs text-[#9ca3af]">Source: /api/portfolio/history</p>
+            <p className="text-xs text-[#9ca3af]">Net curve</p>
           </div>
-          <div className="h-[260px] w-full">
+          <div className="h-[220px] w-full">
             <ResponsiveContainer>
-              <LineChart data={history}>
-                <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
+              <AreaChart data={history}>
+                <defs>
+                  <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
+                    <stop offset="100%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid stroke="#1a2744" strokeDasharray="3 3" />
                 <XAxis dataKey="date" stroke="#9ca3af" tick={{ fontSize: 11 }} />
                 <YAxis
                   stroke="#9ca3af"
                   tick={{ fontSize: 11 }}
+                  domain={["auto", "auto"]}
                   tickFormatter={(value: number) => `₹${Math.round(value / 1000)}k`}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "#0d1117",
-                    border: "1px solid #1f2937",
+                    border: "1px solid #1a2744",
                     color: "#ffffff",
                   }}
+                  labelFormatter={(label) => `Date: ${label}`}
                   formatter={(value) => {
                     const rawValue = Array.isArray(value) ? value[0] : value;
                     const numericValue = Number(rawValue) || 0;
                     return [`₹${numericValue.toLocaleString()}`, "Value"];
                   }}
                 />
-                <Line
+                <Area
                   type="monotone"
                   dataKey="portfolioValue"
                   stroke="#3b82f6"
                   strokeWidth={2.5}
+                  fill="url(#portfolioGradient)"
                   dot={false}
                   activeDot={false}
                 />
-              </LineChart>
+              </AreaChart>
             </ResponsiveContainer>
           </div>
         </div>
@@ -262,12 +321,12 @@ export default function DashboardPage() {
         <div className={`${cardClass} xl:col-span-2`}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">Mood vs P&amp;L</h2>
-            <p className="text-xs text-[#9ca3af]">Realized trades</p>
+            <p className="text-xs text-[#9ca3af]">Behavior impact</p>
           </div>
-          <div className="h-[260px] w-full">
+          <div className="h-[220px] w-full">
             <ResponsiveContainer>
               <BarChart data={moodVsPnlData}>
-                <CartesianGrid stroke="#1f2937" strokeDasharray="3 3" />
+                <CartesianGrid stroke="#1a2744" strokeDasharray="3 3" />
                 <XAxis dataKey="mood" stroke="#9ca3af" tick={{ fontSize: 11 }} />
                 <YAxis stroke="#9ca3af" tick={{ fontSize: 11 }} />
                 <Tooltip
@@ -304,7 +363,7 @@ export default function DashboardPage() {
           <div className="max-h-[260px] overflow-y-auto">
             <table className="min-w-full text-xs">
               <thead>
-                <tr className="border-b border-[#1f2937] text-[#9ca3af]">
+                <tr className="border-b border-[#1a2744] text-[#9ca3af]">
                   <th className="py-2 text-left font-medium">Stock</th>
                   <th className="py-2 text-right font-medium">Qty</th>
                   <th className="py-2 text-right font-medium">Avg Buy</th>
@@ -321,19 +380,31 @@ export default function DashboardPage() {
                     </td>
                   </tr>
                 ) : (
-                  summary.holdings.map((holding) => {
+                  summary.holdings.map((holding, index) => {
                     const pnlPercent = holding.invested > 0 ? (holding.pnl / holding.invested) * 100 : 0;
                     return (
-                      <tr key={holding.stock} className="border-b border-[#1f2937] transition hover:bg-[#0d1117]">
-                        <td className="py-2 text-left text-white">{holding.stock}</td>
-                        <td className="py-2 text-right text-[#d1d5db]">{holding.quantity}</td>
-                        <td className="py-2 text-right text-[#d1d5db]">₹{holding.avgBuyPrice.toFixed(2)}</td>
-                        <td className="py-2 text-right text-[#d1d5db]">₹{holding.currentPrice.toFixed(2)}</td>
-                        <td className={`py-2 text-right font-semibold ${holding.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                          ₹{holding.pnl.toFixed(2)}
+                      <tr
+                        key={holding.stock}
+                        className={`border-b border-[#1a2744] transition hover:bg-[#0f1929] ${index % 2 === 0 ? "bg-[#0d1421]" : "bg-[#0f1727]"}`}
+                      >
+                        <td className={`py-1.5 text-left font-bold ${holding.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{holding.stock}</td>
+                        <td className="py-1.5 text-right text-[#d1d5db]">{holding.quantity}</td>
+                        <td className="py-1.5 text-right text-[#d1d5db]">₹{holding.avgBuyPrice.toFixed(2)}</td>
+                        <td className="py-1.5 text-right font-semibold text-[#3b82f6]">₹{holding.currentPrice.toFixed(2)}</td>
+                        <td className={`py-1.5 text-right font-semibold ${holding.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                          <span className="inline-flex items-center gap-1">
+                            {holding.pnl >= 0 ? <ArrowUpRight size={12} /> : <ArrowDownRight size={12} />}
+                            ₹{holding.pnl.toFixed(2)}
+                          </span>
                         </td>
-                        <td className={`py-2 text-right font-semibold ${pnlPercent >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                          {pnlPercent.toFixed(2)}%
+                        <td className="py-1.5 text-right">
+                          <span
+                            className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-semibold ${
+                              pnlPercent >= 0 ? "bg-[#123427] text-[#22c55e]" : "bg-[#3f1d1d] text-[#ef4444]"
+                            }`}
+                          >
+                            {pnlPercent.toFixed(2)}%
+                          </span>
                         </td>
                       </tr>
                     );
@@ -354,14 +425,14 @@ export default function DashboardPage() {
               <p className="text-sm text-[#9ca3af]">No trades yet.</p>
             ) : (
               recentTrades.map((trade) => (
-                <div key={trade.id} className="rounded-lg border border-[#1f2937] bg-[#0d1117] px-3 py-2">
+                <div key={trade.id} className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] px-3 py-2">
                   <div className="flex items-center justify-between">
-                    <p className="text-sm font-semibold text-white">{trade.stock}</p>
+                    <p className="text-sm font-bold text-white">{trade.stock}</p>
                     <span
                       className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
                         trade.type.toLowerCase() === "buy"
-                          ? "bg-[#0f3d2e] text-[#22c55e]"
-                          : "bg-[#3f1d1d] text-[#ef4444]"
+                          ? "bg-[#14532d] text-[#22c55e]"
+                          : "bg-[#7f1d1d] text-[#ef4444]"
                       }`}
                     >
                       {trade.type.toUpperCase()}
@@ -371,11 +442,12 @@ export default function DashboardPage() {
                     <p className="text-[#9ca3af]">
                       ₹{trade.price.toFixed(2)} x {trade.quantity}
                     </p>
-                    <p className={`${(trade.pnl ?? 0) >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                    <p className={`inline-flex items-center gap-1 ${(trade.pnl ?? 0) >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                      {(trade.pnl ?? 0) >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
                       {trade.pnl === null ? "-" : `₹${trade.pnl.toFixed(2)}`}
                     </p>
                   </div>
-                  <p className="mt-1 text-[11px] text-[#6b7280]">{timeAgo(trade.createdAt)}</p>
+                  <p className="mt-1 text-[11px] uppercase tracking-wide text-[#6b7280]">{timeAgo(trade.createdAt)}</p>
                 </div>
               ))
             )}
@@ -385,6 +457,42 @@ export default function DashboardPage() {
             View full history →
           </Link>
         </div>
+      </div>
+
+      <div className={cardClass}>
+        <div className="mb-3 flex items-center gap-2">
+          <Newspaper size={16} className="text-[#3b82f6]" />
+          <h2 className="text-sm font-semibold text-white">Market News</h2>
+        </div>
+
+        {news.length === 0 ? (
+          <p className="text-sm text-[#9ca3af]">No recent news for your holdings</p>
+        ) : (
+          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+            {news.map((item) => (
+              <a
+                key={`${item.url}-${item.datetime}`}
+                href={item.url}
+                target="_blank"
+                rel="noreferrer"
+                className="group rounded-lg border border-[#1a2744] bg-[#0d1421] p-3 transition hover:border-[#3b82f6] hover:brightness-110"
+              >
+                {item.image ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={item.image} alt={item.headline} className="mb-2 h-28 w-full rounded-md object-cover" />
+                ) : null}
+                <div className="mb-2 inline-flex rounded-md bg-[#0f1929] px-2 py-0.5 text-[10px] font-semibold text-[#3b82f6]">
+                  {item.symbol}
+                </div>
+                <p className="line-clamp-2 text-sm font-semibold text-white">{item.headline}</p>
+                <div className="mt-2 flex items-center justify-between text-[11px] text-[#9ca3af]">
+                  <span>{item.source}</span>
+                  <span>{timeAgo(item.datetime)}</span>
+                </div>
+              </a>
+            ))}
+          </div>
+        )}
       </div>
     </section>
   );
