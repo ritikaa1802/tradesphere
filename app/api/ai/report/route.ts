@@ -4,6 +4,17 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Groq from "groq-sdk";
 
+type TradeRecord = {
+  createdAt: Date;
+  stock: string;
+  type: string;
+  price: number;
+  quantity: number;
+  charges: number | null;
+  pnl: number | null;
+  mood: string | null;
+};
+
 const GROQ_API_KEY = process.env.GROQ_API_KEY;
 const GROQ_MODEL = process.env.GROQ_MODEL || "llama-3.3-70b-versatile";
 console.log("GROQ_API_KEY loaded:", !!GROQ_API_KEY, "model:", GROQ_MODEL); // debug only
@@ -31,7 +42,7 @@ export async function POST(request: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  const data = trades.map((trade) => ({
+  const data = trades.map((trade: TradeRecord) => ({
     date: trade.createdAt.toISOString(),
     stock: trade.stock,
     type: trade.type,
