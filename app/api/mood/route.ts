@@ -3,6 +3,13 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 
+type TradeRecord = {
+  createdAt: Date;
+  mood: string | null;
+  type: string;
+  pnl: number | null;
+};
+
 export async function GET(request: NextRequest) {
   const session = await getServerSession(authOptions);
   if (!session?.user?.id) {
@@ -19,7 +26,7 @@ export async function GET(request: NextRequest) {
   const moodPnl: Record<string, { total: number; count: number }> = {};
   const moodPerDay: Record<string, string> = {};
 
-  trades.forEach((trade) => {
+  trades.forEach((trade: TradeRecord) => {
     if (trade.mood) {
       // Frequency
       moodCount[trade.mood] = (moodCount[trade.mood] || 0) + 1;
