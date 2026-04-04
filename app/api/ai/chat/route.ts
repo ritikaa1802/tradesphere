@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { type Trade } from "@prisma/client";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Groq from "groq-sdk";
@@ -33,7 +34,7 @@ export async function POST(request: NextRequest) {
     orderBy: { createdAt: "asc" },
   });
 
-  const history = trades.map((trade) => ({
+  const history = trades.map((trade: Trade) => ({
     date: trade.createdAt.toISOString(),
     stock: trade.stock,
     type: trade.type,

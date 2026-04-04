@@ -10,15 +10,70 @@
       "page": "/",
       "matchers": [
         {
-          "regexp": "^/.*$",
-          "originalSource": "/:path*"
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/dashboard(.json)?[\\/#\\?]?$",
+          "originalSource": "/dashboard"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/trade(.json)?[\\/#\\?]?$",
+          "originalSource": "/trade"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/onboarding(.json)?[\\/#\\?]?$",
+          "originalSource": "/onboarding"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/history(.json)?[\\/#\\?]?$",
+          "originalSource": "/history"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/mood(.json)?[\\/#\\?]?$",
+          "originalSource": "/mood"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/mistakes(.json)?[\\/#\\?]?$",
+          "originalSource": "/mistakes"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/ai-coach(.json)?[\\/#\\?]?$",
+          "originalSource": "/ai-coach"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/trade(.json)?[\\/#\\?]?$",
+          "originalSource": "/api/trade"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/trades(.json)?[\\/#\\?]?$",
+          "originalSource": "/api/trades"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/mood(.json)?[\\/#\\?]?$",
+          "originalSource": "/api/mood"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/analytics\\/mistakes(.json)?[\\/#\\?]?$",
+          "originalSource": "/api/analytics/mistakes"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/ai\\/report(.json)?[\\/#\\?]?$",
+          "originalSource": "/api/ai/report"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/ai\\/chat(.json)?[\\/#\\?]?$",
+          "originalSource": "/api/ai/chat"
+        },
+        {
+          "regexp": "^(?:\\/(_next\\/data\\/[^/]{1,}))?\\/api\\/auth\\/signup(.json)?[\\/#\\?]?$",
+          "originalSource": "/api/auth/signup"
         }
       ],
       "wasm": [],
       "assets": [],
       "env": {
-        "__NEXT_BUILD_ID": "development",
-        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "BUxEdCIqfP0cIUH5cnvKFUtG4jKmtEn0I5qSvLZ3aNg="
+        "__NEXT_BUILD_ID": "4-bqhct2xGbg4CTMdaWZc",
+        "NEXT_SERVER_ACTIONS_ENCRYPTION_KEY": "IMycUwtcTY/Qo1XVObCYnEi88lAUMAxwRJnCmL/LjCQ=",
+        "__NEXT_PREVIEW_MODE_ID": "7a3ce2606eb2bca497baa6335b757bd4",
+        "__NEXT_PREVIEW_MODE_ENCRYPTION_KEY": "c5485b45e7e8689837f5568c0b7009febea551889beb8ee5d13c2918cdf2513e",
+        "__NEXT_PREVIEW_MODE_SIGNING_KEY": "772f481bce36b80523a887e2f917a563efad682b6c7cec4d6e0ee1abb50dba42"
       }
     }
   },
