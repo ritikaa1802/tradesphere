@@ -1,23 +1,122 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useEffect, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+
+interface StockOption {
+  symbol: string;
+  name: string;
+}
 
 export default function TradePage() {
   const [stock, setStock] = useState("");
+  const [stockQuery, setStockQuery] = useState("");
+  const [selectedStock, setSelectedStock] = useState<StockOption | null>(null);
+  const [stockSuggestions, setStockSuggestions] = useState<StockOption[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [isSearching, setIsSearching] = useState(false);
   const [type, setType] = useState("buy");
   const [price, setPrice] = useState("");
+  const [livePrice, setLivePrice] = useState<number | null>(null);
+  const [livePriceStatus, setLivePriceStatus] = useState<"idle" | "loading" | "error">("idle");
   const [quantity, setQuantity] = useState("");
   const [note, setNote] = useState("");
   const [mood, setMood] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (!searchContainerRef.current) {
+        return;
+      }
+
+      if (!searchContainerRef.current.contains(event.target as Node)) {
+        setShowSuggestions(false);
+      }
+    };
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  useEffect(() => {
+    const query = stockQuery.trim();
+
+    if (!query) {
+      setStockSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeout = setTimeout(async () => {
+      try {
+        setIsSearching(true);
+        const response = await fetch(`/api/stocks/search?q=${encodeURIComponent(query)}`, {
+          signal: controller.signal,
+        });
+        const data = (await response.json()) as { stocks?: StockOption[] };
+        setStockSuggestions(data.stocks || []);
+        setShowSuggestions(true);
+      } catch {
+        setStockSuggestions([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 250);
+
+    return () => {
+      controller.abort();
+      clearTimeout(timeout);
+    };
+  }, [stockQuery]);
+
+  async function loadLivePrice(symbol: string) {
+    setLivePriceStatus("loading");
+
+    try {
+      const response = await fetch(`/api/stocks/price?symbol=${encodeURIComponent(symbol)}`);
+      const data = (await response.json()) as { price?: number };
+
+      if (!response.ok || typeof data.price !== "number") {
+        setLivePrice(null);
+        setLivePriceStatus("error");
+        return;
+      }
+
+      setLivePrice(data.price);
+      setPrice(data.price.toFixed(2));
+      setLivePriceStatus("idle");
+    } catch {
+      setLivePrice(null);
+      setLivePriceStatus("error");
+    }
+  }
+
+  function selectStock(option: StockOption) {
+    setSelectedStock(option);
+    setStock(option.symbol);
+    setStockQuery(`${option.name} (${option.symbol})`);
+    setShowSuggestions(false);
+    setMessage("");
+    loadLivePrice(option.symbol);
+  }
 
   async function onSubmit(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     setLoading(true);
     setMessage("");
+
+    if (!stock) {
+      setLoading(false);
+      setMessage("Please select a stock from the search results");
+      return;
+    }
 
     try {
       const res = await fetch("/api/trade", {
@@ -49,9 +148,50 @@ export default function TradePage() {
         </div>
 
         <form onSubmit={onSubmit} className="space-y-6 rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
-        <div>
+        <div className="relative" ref={searchContainerRef}>
           <label className="mb-1 block text-sm">Stock</label>
-          <input value={stock} onChange={(e) => setStock(e.target.value)} className="w-full rounded border border-slate-700 bg-slate-900 p-2" required />
+          <input
+            value={stockQuery}
+            onChange={(e) => {
+              setStockQuery(e.target.value);
+              setSelectedStock(null);
+              setStock("");
+            }}
+            onFocus={() => {
+              if (stockSuggestions.length > 0) {
+                setShowSuggestions(true);
+              }
+            }}
+            placeholder="Search stock (e.g. Reliance, TCS, INFY)"
+            className="w-full rounded border border-slate-700 bg-slate-900 p-2"
+            required
+          />
+          {showSuggestions && (
+            <div className="absolute z-20 mt-1 max-h-64 w-full overflow-y-auto rounded border border-slate-700 bg-slate-950 shadow-lg">
+              {isSearching ? (
+                <p className="px-3 py-2 text-sm text-slate-400">Searching...</p>
+              ) : stockSuggestions.length === 0 ? (
+                <p className="px-3 py-2 text-sm text-slate-400">No matching stocks</p>
+              ) : (
+                stockSuggestions.map((option) => (
+                  <button
+                    key={option.symbol}
+                    type="button"
+                    onClick={() => selectStock(option)}
+                    className="flex w-full items-center justify-between px-3 py-2 text-left text-sm text-slate-200 transition hover:bg-slate-800"
+                  >
+                    <span>{option.name}</span>
+                    <span className="font-semibold text-blue-300">{option.symbol}</span>
+                  </button>
+                ))
+              )}
+            </div>
+          )}
+          {selectedStock && (
+            <p className="mt-2 text-xs text-slate-400">
+              Selected: <span className="text-slate-200">{selectedStock.name}</span> ({selectedStock.symbol})
+            </p>
+          )}
         </div>
         <div>
           <label className="mb-1 block text-sm">Type</label>
@@ -63,6 +203,9 @@ export default function TradePage() {
         <div>
           <label className="mb-1 block text-sm">Price</label>
           <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" step="0.01" className="w-full rounded border border-slate-700 bg-slate-900 p-2" required />
+          {livePriceStatus === "loading" && <p className="mt-2 text-xs text-blue-300">Fetching live price...</p>}
+          {livePrice !== null && livePriceStatus !== "loading" && <p className="mt-2 text-xs text-emerald-300">Live price: ₹{livePrice.toFixed(2)}</p>}
+          {livePriceStatus === "error" && <p className="mt-2 text-xs text-amber-300">Live price unavailable right now. You can still enter price manually.</p>}
         </div>
         <div>
           <label className="mb-1 block text-sm">Quantity</label>

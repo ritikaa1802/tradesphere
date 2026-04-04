@@ -1,11 +1,13 @@
 import prisma from "@/lib/prisma";
+import { fetchStockPrice } from "@/lib/stockApi";
 
 export interface Holding {
   stock: string;
   quantity: number;
   avgBuyPrice: number;
   invested: number;
-  currentValue: number; // since no real prices, maybe use last trade price or something, but for now, perhaps invested for currentValue?
+  currentPrice: number;
+  currentValue: number;
   pnl: number;
 }
 
@@ -46,6 +48,7 @@ export async function getHoldings(userId: string): Promise<Holding[]> {
         quantity: data.totalQty,
         avgBuyPrice,
         invested,
+        currentPrice: data.lastPrice,
         currentValue,
         pnl,
       });
@@ -60,9 +63,25 @@ export async function getPortfolioSummary(userId: string) {
   if (!portfolio) throw new Error("Portfolio not found");
 
   const holdings = await getHoldings(userId);
-  const totalInvested = holdings.reduce((sum, h) => sum + h.invested, 0);
-  const totalCurrentValue = holdings.reduce((sum, h) => sum + h.currentValue, 0);
-  const totalPnl = holdings.reduce((sum, h) => sum + h.pnl, 0);
+  const holdingsWithLivePrices = await Promise.all(
+    holdings.map(async (holding) => {
+      const livePrice = await fetchStockPrice(holding.stock);
+      const currentPrice = livePrice ?? holding.currentPrice;
+      const currentValue = currentPrice * holding.quantity;
+      const pnl = currentValue - holding.invested;
+
+      return {
+        ...holding,
+        currentPrice,
+        currentValue,
+        pnl,
+      };
+    }),
+  );
+
+  const totalInvested = holdingsWithLivePrices.reduce((sum, h) => sum + h.invested, 0);
+  const totalCurrentValue = holdingsWithLivePrices.reduce((sum, h) => sum + h.currentValue, 0);
+  const totalPnl = holdingsWithLivePrices.reduce((sum, h) => sum + h.pnl, 0);
   const pnlPercentage = totalInvested > 0 ? (totalPnl / totalInvested) * 100 : 0;
 
   return {
@@ -70,6 +89,7 @@ export async function getPortfolioSummary(userId: string) {
     invested: totalInvested,
     pnl: totalPnl,
     pnlPercentage,
-    holdings,
+    holdings: holdingsWithLivePrices,
+    lastUpdated: new Date().toISOString(),
   };
 }

@@ -1,0 +1,87 @@
+"use client";
+
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import {
+  AlertTriangle,
+  BarChart2,
+  Brain,
+  Clock,
+  Globe,
+  LayoutDashboard,
+  LogOut,
+  Sparkles,
+  TrendingUp,
+} from "lucide-react";
+
+const navItems = [
+  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
+  { label: "Trade", href: "/trade", icon: TrendingUp },
+  { label: "History", href: "/history", icon: Clock },
+  { label: "TradeMind", href: "/mood", icon: Brain },
+  { label: "Mistakes", href: "/mistakes", icon: AlertTriangle },
+  { label: "Analytics", href: "/analytics", icon: BarChart2 },
+  { label: "AI Coach", href: "/ai-coach", icon: Sparkles },
+];
+
+export default function Sidebar() {
+  const pathname = usePathname();
+  const { data: session } = useSession();
+
+  return (
+    <aside className="fixed left-0 top-0 z-40 flex h-screen w-[240px] flex-col border-r border-[#1f2937] bg-[#0d1117]">
+      <div className="flex items-center gap-3 border-b border-[#1f2937] px-5 py-4">
+        <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-[#111827] text-[#3b82f6]">
+          <Globe size={18} />
+        </div>
+        <div>
+          <p className="text-sm font-semibold text-white">TradeSphere</p>
+          <p className="text-xs text-[#9ca3af]">Trading Terminal</p>
+        </div>
+      </div>
+
+      <nav className="flex-1 space-y-1 p-3">
+        {navItems.map((item) => {
+          const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                active
+                  ? "bg-[#1d4ed8] text-white"
+                  : "text-[#9ca3af] hover:bg-[#111827] hover:text-white"
+              }`}
+            >
+              <Icon size={16} />
+              <span>{item.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
+      <div className="border-t border-[#1f2937] p-3">
+        <p className="truncate text-xs text-[#9ca3af]">{session?.user?.email ?? "Guest"}</p>
+        {session ? (
+          <button
+            onClick={() => signOut({ callbackUrl: "/login" })}
+            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#111827] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#1f2937]"
+          >
+            <LogOut size={14} />
+            Logout
+          </button>
+        ) : (
+          <Link
+            href="/login"
+            className="mt-2 flex w-full items-center justify-center rounded-lg bg-[#111827] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#1f2937]"
+          >
+            Login
+          </Link>
+        )}
+      </div>
+    </aside>
+  );
+}
