@@ -37,8 +37,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.replace("/dashboard");
-    router.refresh();
+    const targetUrl = res.url || "/dashboard";
+    window.location.assign(targetUrl);
   }
 
   return (
