@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 
 interface MoodData {
@@ -52,10 +51,10 @@ export default function MoodPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl p-6">
-        <div className="w-full">
-          <h1 className="mb-4 text-3xl font-bold">TradeMind</h1>
-          <p>Loading...</p>
+      <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="mb-4 text-3xl font-semibold text-white">TradeMind</h1>
+          <p className="text-slate-400">Loading...</p>
         </div>
       </main>
     );
@@ -63,9 +62,9 @@ export default function MoodPage() {
 
   if (error || !data) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl p-6">
-        <div className="w-full">
-          <h1 className="mb-4 text-3xl font-bold">TradeMind</h1>
+      <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="mb-4 text-3xl font-semibold text-white">TradeMind</h1>
           <p className="text-rose-400">{error}</p>
         </div>
       </main>
@@ -101,19 +100,21 @@ export default function MoodPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl p-6">
-      <div className="w-full">
-        <h1 className="mb-4 text-3xl font-bold">TradeMind</h1>
+    <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="text-3xl font-semibold text-white">TradeMind</h1>
+          <p className="mt-2 text-slate-400">Understand how your mood impacts trade performance.</p>
+        </div>
 
         {bestMood && (
-          <div className="mb-6 rounded bg-slate-800 p-4">
-            <p className="text-lg">
+          <div className="mb-6 rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <p className="text-lg text-slate-200">
               You trade best when <span className="font-bold text-green-400">{bestMood}</span>
             </p>
             {Object.keys(data.avgPnlPerMood).length > 1 && (
               <p className="mt-2 text-sm text-slate-400">
-                Your worst trades happen when you're in{" "}
-                {Object.keys(data.avgPnlPerMood).reduce((a, b) =>
+                Your worst trades happen when you're in {Object.keys(data.avgPnlPerMood).reduce((a, b) =>
                   data.avgPnlPerMood[a] < data.avgPnlPerMood[b] ? a : b
                 )} mode
               </p>
@@ -123,8 +124,8 @@ export default function MoodPage() {
 
         <div className="mb-6 grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Mood vs P&L Chart */}
-          <div className="rounded bg-slate-800 p-4">
-            <h2 className="text-xl font-bold mb-4">Mood vs P&L Correlation</h2>
+          <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <h2 className="text-xl font-semibold text-white mb-4">Mood vs P&L Correlation</h2>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
@@ -140,8 +141,8 @@ export default function MoodPage() {
           </div>
 
           {/* Mood Heatmap */}
-          <div className="rounded bg-slate-800 p-4">
-            <h2 className="text-xl font-bold mb-4">Mood History Heatmap</h2>
+          <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <h2 className="text-xl font-semibold text-white mb-4">Mood History Heatmap</h2>
             <div className="grid grid-cols-7 gap-1 text-center text-xs">
               {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day) => (
                 <div key={day} className="font-semibold text-slate-400 py-2">
@@ -174,11 +175,6 @@ export default function MoodPage() {
           </div>
         </div>
 
-        <div className="mt-4">
-          <Link href="/dashboard" className="rounded bg-blue-600 px-4 py-2 hover:bg-blue-500">
-            Back to Dashboard
-          </Link>
-        </div>
       </div>
     </main>
   );

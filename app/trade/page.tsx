@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export default function TradePage() {
@@ -14,7 +14,7 @@ export default function TradePage() {
   const [message, setMessage] = useState("");
   const router = useRouter();
 
-  async function onSubmit(ev: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     setLoading(true);
     setMessage("");
@@ -41,9 +41,14 @@ export default function TradePage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center p-6">
-      <h1 className="mb-4 text-3xl font-bold">Place Trade</h1>
-      <form onSubmit={onSubmit} className="space-y-3 rounded bg-slate-800 p-5">
+    <main className="mx-auto min-h-screen w-full max-w-2xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="text-3xl font-semibold text-white">Place Trade</h1>
+          <p className="mt-2 text-slate-400">Add a new trade with a consistent and modern order entry experience.</p>
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-6 rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
         <div>
           <label className="mb-1 block text-sm">Stock</label>
           <input value={stock} onChange={(e) => setStock(e.target.value)} className="w-full rounded border border-slate-700 bg-slate-900 p-2" required />
@@ -91,6 +96,7 @@ export default function TradePage() {
           {loading ? "Submitting..." : "Place Trade"}
         </button>
       </form>
+      </div>
     </main>
   );
 }

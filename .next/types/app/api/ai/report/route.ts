@@ -1,8 +1,8 @@
-// File: C:\Users\Ritika\Desktop\tradespere\app\api\ai\chat\route.ts
-import * as entry from '../../../../../../app/api/ai/chat/route.js'
+// File: C:\Users\Ritika\Desktop\tradespere\app\api\ai\report\route.ts
+import * as entry from '../../../../../../app/api/ai/report/route.js'
 import type { NextRequest } from 'next/server.js'
 
-type TEntry = typeof import('../../../../../../app/api/ai/chat/route.js')
+type TEntry = typeof import('../../../../../../app/api/ai/report/route.js')
 
 // Check that the entry is a valid entry
 checkFields<Diff<{

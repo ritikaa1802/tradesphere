@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 export default function SignupPage() {
@@ -10,7 +10,7 @@ export default function SignupPage() {
   const [error, setError] = useState("");
   const router = useRouter();
 
-  async function onSubmit(event: React.FormEvent<HTMLFormElement>) {
+  async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
     setLoading(true);
@@ -35,9 +35,13 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center p-6">
-      <h1 className="mb-4 text-3xl font-bold">Signup</h1>
-      <form onSubmit={onSubmit} className="space-y-3 rounded bg-slate-800 p-5">
+    <main className="mx-auto min-h-screen w-full max-w-md px-4 py-10 sm:px-6 lg:px-8">
+      <div className="space-y-6 rounded-3xl border border-slate-800 bg-[#0f1629] p-8 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+        <div>
+          <h1 className="text-3xl font-semibold text-white">Signup</h1>
+          <p className="mt-2 text-slate-400">Create your account and start trading with confidence.</p>
+        </div>
+        <form onSubmit={onSubmit} className="space-y-5">
         <div>
           <label className="mb-1 block text-sm">Email</label>
           <input
@@ -66,6 +70,7 @@ export default function SignupPage() {
       <p className="mt-3 text-slate-400">
         Already have an account? <a className="text-blue-400" href="/login">Login</a>
       </p>
+      </div>
     </main>
   );
 }

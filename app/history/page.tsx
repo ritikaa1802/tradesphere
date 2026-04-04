@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 interface Trade {
   id: string;
@@ -82,10 +81,10 @@ export default function HistoryPage() {
 
   if (loading) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl p-6">
-        <div className="w-full">
-          <h1 className="mb-4 text-3xl font-bold">Trade History</h1>
-          <p>Loading...</p>
+      <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="mb-4 text-3xl font-semibold text-white">Trade History</h1>
+          <p className="text-slate-400">Loading...</p>
         </div>
       </main>
     );
@@ -93,9 +92,9 @@ export default function HistoryPage() {
 
   if (error) {
     return (
-      <main className="mx-auto flex min-h-screen w-full max-w-6xl p-6">
-        <div className="w-full">
-          <h1 className="mb-4 text-3xl font-bold">Trade History</h1>
+      <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="mb-4 text-3xl font-semibold text-white">Trade History</h1>
           <p className="text-rose-400">{error}</p>
         </div>
       </main>
@@ -103,11 +102,14 @@ export default function HistoryPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl p-6">
-      <div className="w-full">
-        <h1 className="mb-4 text-3xl font-bold">Trade History</h1>
+    <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="text-3xl font-semibold text-white">Trade History</h1>
+          <p className="mt-2 text-slate-400">Review and filter your executed trades with confidence.</p>
+        </div>
 
-        <div className="mb-4 flex flex-wrap gap-4 rounded bg-slate-800 p-4">
+        <div className="grid gap-4 rounded-3xl border border-slate-800 bg-[#0f1629] p-5 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)] md:grid-cols-2 lg:grid-cols-4">
           <div>
             <label className="mb-1 block text-sm">From Date</label>
             <input
@@ -153,8 +155,8 @@ export default function HistoryPage() {
         {filteredTrades.length === 0 ? (
           <p className="text-slate-500">No trades found.</p>
         ) : (
-          <div className="overflow-x-auto rounded bg-slate-800 p-4">
-            <table className="w-full text-sm">
+          <div className="overflow-x-auto rounded-3xl border border-slate-800 bg-[#0f1629] p-4 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <table className="min-w-full text-sm text-slate-200">
               <thead>
                 <tr className="border-b border-slate-700">
                   <th className="text-left py-2">Date & Time</th>
@@ -196,12 +198,6 @@ export default function HistoryPage() {
             </table>
           </div>
         )}
-
-        <div className="mt-4">
-          <Link href="/dashboard" className="rounded bg-blue-600 px-4 py-2 hover:bg-blue-500">
-            Back to Dashboard
-          </Link>
-        </div>
       </div>
     </main>
   );

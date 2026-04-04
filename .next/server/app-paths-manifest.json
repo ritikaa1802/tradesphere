@@ -1,4 +1,5 @@
 {
+  "/api/auth/[...nextauth]/route": "app/api/auth/[...nextauth]/route.js",
   "/ai-coach/page": "app/ai-coach/page.js",
-  "/api/ai/chat/route": "app/api/ai/chat/route.js"
+  "/api/ai/report/route": "app/api/ai/report/route.js"
 }

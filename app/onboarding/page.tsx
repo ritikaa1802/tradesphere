@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 
 const traderOptions = ["Beginner", "Intermediate"];
@@ -44,7 +44,7 @@ export default function OnboardingPage() {
     }
   };
 
-  const onSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (step === 1) {
       nextStep();
@@ -56,9 +56,13 @@ export default function OnboardingPage() {
   };
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-md flex-col justify-center p-6">
-      <h1 className="mb-4 text-3xl font-bold">Onboarding</h1>
-      <form onSubmit={onSubmit} className="space-y-4 rounded bg-slate-800 p-5">
+    <main className="mx-auto min-h-screen w-full max-w-md px-4 py-10 sm:px-6 lg:px-8">
+      <div className="space-y-6 rounded-3xl border border-slate-800 bg-[#0f1629] p-8 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+        <div>
+          <h1 className="text-3xl font-semibold text-white">Onboarding</h1>
+          <p className="mt-2 text-slate-400">Set up your trader profile and style preferences.</p>
+        </div>
+        <form onSubmit={onSubmit} className="space-y-5">
         {step === 1 && (
           <div>
             <p className="mb-3 text-slate-300">Choose your trader type:</p>
@@ -108,6 +112,7 @@ export default function OnboardingPage() {
           {loading ? "Saving..." : step === 1 ? "Next" : "Finish"}
         </button>
       </form>
+      </div>
     </main>
   );
 }

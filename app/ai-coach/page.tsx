@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 
 type AiReport = {
   mistakes: string[];
@@ -48,7 +47,7 @@ export default function AiCoachPage() {
     }
   }
 
-  async function sendQuestion(event: React.FormEvent<HTMLFormElement>) {
+  async function sendQuestion(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!question.trim()) return;
 
@@ -96,12 +95,13 @@ export default function AiCoachPage() {
 
     for (const line of lines) {
       const trimmed = line.trim();
-      if (trimmed.startsWith("* ")) {
+      const bulletMatch = trimmed.match(/^(?:\*|-|\+)\s+(.*)$/);
+      if (bulletMatch) {
         if (!inList) {
-          html += "<ul class='ml-5 list-disc mb-2'>";
+          html += "<ul class='ml-5 list-disc space-y-2 mb-4'>";
           inList = true;
         }
-        html += `<li>${trimmed.slice(2).trim()}</li>`;
+        html += `<li>${bulletMatch[1].trim()}</li>`;
       } else {
         if (inList) {
           html += "</ul>";
@@ -124,21 +124,21 @@ export default function AiCoachPage() {
   }
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-6xl p-6">
-      <div className="w-full">
-        <h1 className="mb-4 text-3xl font-bold">AI Coach</h1>
+    <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <div className="space-y-6">
+        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+          <h1 className="text-3xl font-semibold text-white">AI Coach</h1>
+          <p className="mt-2 text-slate-400">Get quick insights from TradeSphere’s intelligent coach.</p>
+        </div>
 
-        <div className="mb-6 flex items-center gap-3">
+        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
             onClick={generateReport}
-            className="rounded bg-indigo-600 px-5 py-2 font-semibold text-white hover:bg-indigo-500"
+            className="rounded-3xl bg-indigo-600 px-5 py-2 font-semibold text-white transition hover:bg-indigo-500"
             disabled={loadingReport}
           >
             {loadingReport ? "Thinking..." : "Generate My Weekly Report"}
           </button>
-          <Link href="/dashboard" className="rounded bg-slate-700 px-4 py-2 text-slate-100 hover:bg-slate-600">
-            Back to Dashboard
-          </Link>
         </div>
 
         {error && <p className="mb-4 text-sm text-rose-400">{error}</p>}

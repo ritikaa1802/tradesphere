@@ -57,11 +57,19 @@ export async function POST(request: NextRequest) {
 
     const text = result?.choices?.[0]?.message?.content || "";
 
+    const cleaned = text.trim();
+    const fencedMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/i);
+    const jsonContent = fencedMatch ? fencedMatch[1].trim() : cleaned;
+    const objectMatch = jsonContent.match(/\{[\s\S]*\}$/);
+    const candidate = objectMatch ? objectMatch[0] : jsonContent;
+    const normalized = candidate.replace(/,\s*(?=[}\]])/g, "");
+
     let parsed;
     try {
-      parsed = JSON.parse(text);
+      parsed = JSON.parse(normalized);
     } catch (e) {
-      return NextResponse.json({ error: "Failed to parse AI coach response", text }, { status: 500 });
+      console.error("Failed to parse AI coach response", { text, normalized, error: e });
+      return NextResponse.json({ error: "Failed to parse AI coach response", text: normalized }, { status: 500 });
     }
 
     return NextResponse.json(parsed);
