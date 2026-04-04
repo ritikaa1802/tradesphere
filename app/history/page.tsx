@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { FileClock } from "lucide-react";
 
 interface Trade {
   id: string;
@@ -153,7 +155,15 @@ export default function HistoryPage() {
         </div>
 
         {filteredTrades.length === 0 ? (
-          <p className="text-slate-500">No trades found.</p>
+          <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-8 text-center shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/15 text-blue-300">
+              <FileClock size={22} />
+            </div>
+            <p className="mt-3 text-slate-300">No trades found for your current filters.</p>
+            <Link href="/trade" className="mt-3 inline-block text-sm font-semibold text-blue-400 hover:text-blue-300">
+              Place your first trade →
+            </Link>
+          </div>
         ) : (
           <div className="overflow-x-auto rounded-3xl border border-slate-800 bg-[#0f1629] p-4 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
             <table className="min-w-full text-sm text-slate-200">

@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { Trophy } from "lucide-react";
 
 interface LeaderboardEntry {
   rank: number;
@@ -72,8 +74,16 @@ export default function LeaderboardPage() {
   if (!data || data.entries.length === 0) {
     return (
       <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
-        <h2 className="text-lg font-semibold text-white">Leaderboard</h2>
-        <p className="mt-3 text-sm text-[#9ca3af]">No users opted in yet.</p>
+        <div className="flex flex-col items-center justify-center py-10 text-center">
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0f1929] text-[#3b82f6]">
+            <Trophy size={20} />
+          </div>
+          <h2 className="mt-3 text-lg font-semibold text-white">Leaderboard</h2>
+          <p className="mt-2 text-sm text-[#9ca3af]">No users opted in yet.</p>
+          <Link href="/settings" className="mt-3 text-sm font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
+            Opt in from Settings →
+          </Link>
+        </div>
       </section>
     );
   }

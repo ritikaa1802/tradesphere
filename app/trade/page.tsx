@@ -17,6 +17,7 @@ export default function TradePage() {
   const [isSearching, setIsSearching] = useState(false);
   const [type, setType] = useState("buy");
   const [price, setPrice] = useState("");
+  const [autoFillPrice, setAutoFillPrice] = useState(true);
   const [livePrice, setLivePrice] = useState<number | null>(null);
   const [livePriceStatus, setLivePriceStatus] = useState<"idle" | "loading" | "error">("idle");
   const [quantity, setQuantity] = useState("");
@@ -76,6 +77,20 @@ export default function TradePage() {
     };
   }, [stockQuery]);
 
+  useEffect(() => {
+    if (!selectedStock?.symbol) {
+      return;
+    }
+
+    const intervalId = setInterval(() => {
+      loadLivePrice(selectedStock.symbol);
+    }, 30000);
+
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [selectedStock?.symbol]);
+
   async function loadLivePrice(symbol: string) {
     setLivePriceStatus("loading");
 
@@ -90,7 +105,9 @@ export default function TradePage() {
       }
 
       setLivePrice(data.price);
-      setPrice(data.price.toFixed(2));
+      if (autoFillPrice) {
+        setPrice(data.price.toFixed(2));
+      }
       setLivePriceStatus("idle");
     } catch {
       setLivePrice(null);
@@ -102,10 +119,21 @@ export default function TradePage() {
     setSelectedStock(option);
     setStock(option.symbol);
     setStockQuery(`${option.name} (${option.symbol})`);
+    setAutoFillPrice(true);
     setShowSuggestions(false);
     setMessage("");
     loadLivePrice(option.symbol);
   }
+
+  const numericPrice = Number(price) || 0;
+  const numericQuantity = Number(quantity) || 0;
+  const tradeValue = numericPrice * numericQuantity;
+  const estimatedCharges = numericPrice > 0 && numericQuantity > 0
+    ? 20 + (type === "buy" ? 0.001 * tradeValue : 0)
+    : 0;
+  const estimatedTotal = type === "buy"
+    ? tradeValue + estimatedCharges
+    : tradeValue - estimatedCharges;
 
   async function onSubmit(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
@@ -202,7 +230,17 @@ export default function TradePage() {
         </div>
         <div>
           <label className="mb-1 block text-sm">Price</label>
-          <input value={price} onChange={(e) => setPrice(e.target.value)} type="number" step="0.01" className="w-full rounded border border-slate-700 bg-slate-900 p-2" required />
+          <input
+            value={price}
+            onChange={(e) => {
+              setPrice(e.target.value);
+              setAutoFillPrice(false);
+            }}
+            type="number"
+            step="0.01"
+            className="w-full rounded border border-slate-700 bg-slate-900 p-2"
+            required
+          />
           {livePriceStatus === "loading" && <p className="mt-2 text-xs text-blue-300">Fetching live price...</p>}
           {livePrice !== null && livePriceStatus !== "loading" && <p className="mt-2 text-xs text-emerald-300">Live price: ₹{livePrice.toFixed(2)}</p>}
           {livePriceStatus === "error" && <p className="mt-2 text-xs text-amber-300">Live price unavailable right now. You can still enter price manually.</p>}
@@ -210,6 +248,12 @@ export default function TradePage() {
         <div>
           <label className="mb-1 block text-sm">Quantity</label>
           <input value={quantity} onChange={(e) => setQuantity(e.target.value)} type="number" className="w-full rounded border border-slate-700 bg-slate-900 p-2" required />
+        </div>
+        <div className="rounded border border-slate-700 bg-slate-900/70 p-3 text-sm">
+          <p className="text-slate-300">Estimated charges: <span className="font-semibold text-white">₹{estimatedCharges.toFixed(2)}</span></p>
+          <p className="mt-1 text-slate-300">
+            Estimated {type === "buy" ? "total cost" : "proceeds"}: <span className="font-semibold text-white">₹{estimatedTotal.toFixed(2)}</span>
+          </p>
         </div>
         <div>
           <label className="mb-1 block text-sm">Note</label>

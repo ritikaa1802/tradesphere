@@ -8,9 +8,13 @@ import {
   ArrowDownRight,
   ArrowUp,
   ArrowUpRight,
+  Flame,
+  Gauge,
+  LineChart as LineChartIcon,
   Newspaper,
   Target,
   TrendingUp,
+  WalletCards,
   Wallet,
 } from "lucide-react";
 import {
@@ -116,6 +120,49 @@ function timeAgo(isoDate: string) {
   return `${days}d ago`;
 }
 
+function AnimatedNumber({
+  value,
+  decimals = 2,
+  prefix = "",
+}: {
+  value: number;
+  decimals?: number;
+  prefix?: string;
+}) {
+  const [displayValue, setDisplayValue] = useState(0);
+
+  useEffect(() => {
+    const duration = 1000;
+    const start = performance.now();
+    const from = displayValue;
+    const to = value;
+
+    let frame = 0;
+    const tick = (now: number) => {
+      const progress = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setDisplayValue(from + (to - from) * eased);
+      if (progress < 1) {
+        frame = requestAnimationFrame(tick);
+      }
+    };
+
+    frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frame);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [value]);
+
+  return <>{prefix}{displayValue.toLocaleString(undefined, { minimumFractionDigits: decimals, maximumFractionDigits: decimals })}</>;
+}
+
+function fearGreedLabel(score: number): string {
+  if (score <= 20) return "Extreme Fear";
+  if (score <= 40) return "Fear";
+  if (score <= 60) return "Neutral";
+  if (score <= 80) return "Greed";
+  return "Extreme Greed";
+}
+
 export default function DashboardPage() {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([]);
@@ -210,10 +257,67 @@ export default function DashboardPage() {
 
   const recentTrades = useMemo(() => trades.slice(0, 5), [trades]);
 
+  const fearGreedScore = useMemo(() => {
+    const moods = trades.map((trade) => normalizeMoodLabel(trade.mood));
+    if (moods.length === 0) {
+      return 50;
+    }
+
+    let score = 0;
+    for (const mood of moods) {
+      if (mood === "Confident" || mood === "Greedy") {
+        score += 1;
+      } else if (mood === "Anxious" || mood === "Fearful") {
+        score -= 1;
+      }
+    }
+
+    const normalized = ((score / moods.length) * 50) + 50;
+    return Math.max(0, Math.min(100, normalized));
+  }, [trades]);
+
+  const streakSummary = useMemo(() => {
+    const sellTrades = [...trades]
+      .filter((trade) => trade.pnl !== null)
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+
+    if (sellTrades.length === 0) {
+      return { type: "none" as const, count: 0 };
+    }
+
+    const first = sellTrades[0].pnl ?? 0;
+    const isWin = first > 0;
+    const isLoss = first < 0;
+    if (!isWin && !isLoss) {
+      return { type: "none" as const, count: 0 };
+    }
+
+    let count = 0;
+    for (const trade of sellTrades) {
+      const pnl = trade.pnl ?? 0;
+      if ((isWin && pnl > 0) || (isLoss && pnl < 0)) {
+        count += 1;
+      } else {
+        break;
+      }
+    }
+
+    return { type: isWin ? "win" as const : "loss" as const, count };
+  }, [trades]);
+
   if (loading) {
     return (
       <section className="space-y-4">
-        <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-5 text-[#9ca3af]">Loading trading terminal...</div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={`skeleton-stat-${index}`} className="h-32 animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421]" />
+          ))}
+        </div>
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+          <div className="h-[300px] animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421] xl:col-span-3" />
+          <div className="h-[300px] animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421] xl:col-span-2" />
+        </div>
+        <div className="h-[220px] animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421]" />
       </section>
     );
   }
@@ -235,7 +339,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Balance</p>
           <p className="mt-2 text-4xl font-bold text-white">
-            ₹{summary.balance.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <AnimatedNumber value={summary.balance} prefix="₹" />
           </p>
         </div>
 
@@ -245,7 +349,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Invested</p>
           <p className="mt-2 text-4xl font-bold text-[#c7cfe0]">
-            ₹{summary.invested.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <AnimatedNumber value={summary.invested} prefix="₹" />
           </p>
         </div>
 
@@ -255,7 +359,7 @@ export default function DashboardPage() {
           </div>
           <p className="text-xs uppercase tracking-wide text-[#9ca3af]">P&amp;L</p>
           <p className={`mt-2 text-4xl font-bold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-            ₹{summary.pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+            <AnimatedNumber value={summary.pnl} prefix="₹" />
           </p>
           <p className={`mt-1 text-sm font-semibold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{summary.pnlPercentage.toFixed(2)}%</p>
         </div>
@@ -274,6 +378,52 @@ export default function DashboardPage() {
               style={{ width: `${Math.min(100, Math.max(0, analytics?.winRate ?? 0))}%` }}
             />
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+        <div className={`${cardClass} xl:col-span-3`}>
+          <div className="mb-2 flex items-center gap-2">
+            <Gauge size={16} className="text-[#3b82f6]" />
+            <h3 className="text-sm font-semibold text-white">Fear &amp; Greed Meter</h3>
+          </div>
+          <div className="relative mx-auto mt-4 h-28 w-56">
+            <svg viewBox="0 0 220 120" className="h-full w-full">
+              <path d="M20 100 A90 90 0 0 1 200 100" fill="none" stroke="#1a2744" strokeWidth="14" strokeLinecap="round" />
+              <path
+                d="M20 100 A90 90 0 0 1 200 100"
+                fill="none"
+                stroke={fearGreedScore >= 60 ? "#22c55e" : fearGreedScore <= 40 ? "#ef4444" : "#f59e0b"}
+                strokeWidth="14"
+                strokeLinecap="round"
+                strokeDasharray={`${(fearGreedScore / 100) * 282.7} 282.7`}
+              />
+            </svg>
+            <div className="absolute inset-0 flex flex-col items-center justify-end pb-2">
+              <p className="text-2xl font-bold text-white">{fearGreedScore.toFixed(0)}</p>
+              <p className="text-xs text-[#9ca3af]">{fearGreedLabel(fearGreedScore)}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className={`${cardClass} xl:col-span-2`}>
+          <div className="mb-2 flex items-center gap-2">
+            <LineChartIcon size={16} className="text-[#3b82f6]" />
+            <h3 className="text-sm font-semibold text-white">Trading Streak</h3>
+          </div>
+          {streakSummary.type === "none" ? (
+            <p className="mt-4 text-sm text-[#9ca3af]">No realized streak yet. Close some trades to start a streak.</p>
+          ) : streakSummary.type === "win" ? (
+            <div className="mt-4">
+              <p className="text-3xl font-bold text-[#22c55e]">{streakSummary.count} Win{streakSummary.count > 1 ? "s" : ""} 🔥</p>
+              <p className="mt-1 text-sm text-[#9ca3af]">You are on a winning run. Keep risk in check.</p>
+            </div>
+          ) : (
+            <div className="mt-4">
+              <p className="text-3xl font-bold text-[#ef4444]">{streakSummary.count} Loss{streakSummary.count > 1 ? "es" : ""}</p>
+              <p className="mt-1 text-sm text-[#9ca3af]">Pause and review your recent setup quality.</p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -393,7 +543,10 @@ export default function DashboardPage() {
                 {summary.holdings.length === 0 ? (
                   <tr>
                     <td className="py-4 text-[#9ca3af]" colSpan={6}>
-                      No holdings yet.
+                      <div className="flex flex-col items-center gap-2 py-2 text-center">
+                        <WalletCards size={20} className="text-[#3b82f6]" />
+                        <p>No holdings yet. Place your first trade to build positions.</p>
+                      </div>
                     </td>
                   </tr>
                 ) : (
@@ -443,7 +596,12 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-2">
             {recentTrades.length === 0 ? (
-              <p className="text-sm text-[#9ca3af]">No trades yet.</p>
+              <div className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-4 text-center text-sm text-[#9ca3af]">
+                <p>No trades yet. Start with your first order.</p>
+                <Link href="/trade" className="mt-2 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
+                  Go to Trade →
+                </Link>
+              </div>
             ) : (
               recentTrades.map((trade) => (
                 <div key={trade.id} className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] px-3 py-2">

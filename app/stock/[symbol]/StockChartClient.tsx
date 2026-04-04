@@ -14,9 +14,10 @@ import {
 interface StockChartClientProps {
   candles: Array<{ time: number; open: number; high: number; low: number; close: number }>;
   volumes: Array<{ time: number; value: number; color: string }>;
+  entryPrice?: number | null;
 }
 
-export default function StockChartClient({ candles, volumes }: StockChartClientProps) {
+export default function StockChartClient({ candles, volumes, entryPrice }: StockChartClientProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -63,6 +64,17 @@ export default function StockChartClient({ candles, volumes }: StockChartClientP
       })) as CandlestickData<Time>[],
     );
 
+    if (typeof entryPrice === "number" && entryPrice > 0) {
+      candlestickSeries.createPriceLine({
+        price: entryPrice,
+        color: "#facc15",
+        lineWidth: 2,
+        lineStyle: 2,
+        axisLabelVisible: true,
+        title: "Your Entry",
+      });
+    }
+
     const volumeSeries = chart.addSeries(HistogramSeries, {
       priceFormat: {
         type: "volume",
@@ -102,7 +114,7 @@ export default function StockChartClient({ candles, volumes }: StockChartClientP
       window.removeEventListener("resize", handleResize);
       chart.remove();
     };
-  }, [candles, volumes]);
+  }, [candles, volumes, entryPrice]);
 
   return <div ref={containerRef} className="w-full" />;
 }
