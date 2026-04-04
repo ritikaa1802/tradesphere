@@ -70,20 +70,24 @@ interface NewsItem {
   source: string;
   url: string;
   datetime: string;
-  symbol: string;
   image: string | null;
 }
 
 const cardClass = "rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 shadow-[inset_0_1px_0_#1a2744] transition duration-200 hover:brightness-110";
 
-const moodColors: Record<string, string> = {
+const MOOD_COLORS: Record<string, string> = {
   Confident: "#22c55e",
+  confident: "#22c55e",
   Anxious: "#ef4444",
+  anxious: "#ef4444",
   Neutral: "#6b7280",
+  neutral: "#6b7280",
   FOMO: "#f59e0b",
+  fomo: "#f59e0b",
   Greedy: "#8b5cf6",
+  greedy: "#8b5cf6",
   Fearful: "#f97316",
-  Unknown: "#9ca3af",
+  fearful: "#f97316",
 };
 
 function timeAgo(isoDate: string) {
@@ -100,20 +104,6 @@ function timeAgo(isoDate: string) {
 
   const days = Math.floor(hours / 24);
   return `${days}d ago`;
-}
-
-function normalizeMood(mood: string | null): keyof typeof moodColors {
-  const normalized = (mood || "").trim().toLowerCase();
-  const map: Record<string, keyof typeof moodColors> = {
-    confident: "Confident",
-    anxious: "Anxious",
-    neutral: "Neutral",
-    fomo: "FOMO",
-    greedy: "Greedy",
-    fearful: "Fearful",
-  };
-
-  return map[normalized] || "Unknown";
 }
 
 export default function DashboardPage() {
@@ -181,21 +171,25 @@ export default function DashboardPage() {
   }, []);
 
   const moodVsPnlData = useMemo(() => {
-    const moodMap: Record<string, number> = {};
+    const moodMap: Record<string, { total: number; count: number }> = {};
 
     for (const trade of trades) {
       if (trade.pnl === null) {
         continue;
       }
 
-      const mood = normalizeMood(trade.mood);
-      moodMap[mood] = (moodMap[mood] ?? 0) + trade.pnl;
+      const mood = (trade.mood || "Neutral").trim();
+      if (!moodMap[mood]) {
+        moodMap[mood] = { total: 0, count: 0 };
+      }
+
+      moodMap[mood].total += trade.pnl;
+      moodMap[mood].count += 1;
     }
 
-    return Object.entries(moodMap).map(([mood, pnl]) => ({
+    return Object.entries(moodMap).map(([mood, data]) => ({
       mood,
-      pnl,
-      fill: moodColors[mood] ?? moodColors.Unknown,
+      pnl: data.total / data.count,
     }));
   }, [trades]);
 
@@ -323,7 +317,7 @@ export default function DashboardPage() {
             <h2 className="text-sm font-semibold text-white">Mood vs P&amp;L</h2>
             <p className="text-xs text-[#9ca3af]">Behavior impact</p>
           </div>
-          <div className="h-[220px] w-full">
+          <div className="h-[250px] w-full">
             <ResponsiveContainer>
               <BarChart data={moodVsPnlData}>
                 <CartesianGrid stroke="#1a2744" strokeDasharray="3 3" />
@@ -335,15 +329,16 @@ export default function DashboardPage() {
                     border: "1px solid #1f2937",
                     color: "#ffffff",
                   }}
+                  labelFormatter={(label) => `Mood: ${String(label)}`}
                   formatter={(value) => {
                     const rawValue = Array.isArray(value) ? value[0] : value;
                     const numericValue = Number(rawValue) || 0;
-                    return [`₹${numericValue.toFixed(2)}`, "P&L"];
+                    return [`₹${numericValue.toFixed(2)}`, "Avg P&L"];
                   }}
                 />
                 <Bar dataKey="pnl" radius={[4, 4, 0, 0]}>
                   {moodVsPnlData.map((entry) => (
-                    <Cell key={entry.mood} fill={entry.fill} />
+                    <Cell key={entry.mood} fill={MOOD_COLORS[entry.mood] || "#6b7280"} />
                   ))}
                 </Bar>
               </BarChart>
@@ -481,9 +476,6 @@ export default function DashboardPage() {
                   // eslint-disable-next-line @next/next/no-img-element
                   <img src={item.image} alt={item.headline} className="mb-2 h-28 w-full rounded-md object-cover" />
                 ) : null}
-                <div className="mb-2 inline-flex rounded-md bg-[#0f1929] px-2 py-0.5 text-[10px] font-semibold text-[#3b82f6]">
-                  {item.symbol}
-                </div>
                 <p className="line-clamp-2 text-sm font-semibold text-white">{item.headline}</p>
                 <div className="mt-2 flex items-center justify-between text-[11px] text-[#9ca3af]">
                   <span>{item.source}</span>
