@@ -19,7 +19,8 @@ function getDateKey(date: Date) {
 }
 
 export async function getAnalyticsSummary(userId: string): Promise<AnalyticsSummary> {
-  const trades = await prisma.trade.findMany({
+  type PrismaTrade = Awaited<ReturnType<typeof prisma.trade.findMany>>[number];
+  const trades: PrismaTrade[] = await prisma.trade.findMany({
     where: { userId, pnl: { not: null } },
     orderBy: { createdAt: "asc" },
   });
