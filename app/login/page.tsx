@@ -1,15 +1,22 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
-import { signIn } from "next-auth/react";
+import { useEffect, useState, type FormEvent } from "react";
+import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
+  const { status } = useSession();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    if (status === "authenticated") {
+      router.replace("/dashboard");
+    }
+  }, [status, router]);
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -18,6 +25,7 @@ export default function LoginPage() {
 
     const res = await signIn("credentials", {
       redirect: false,
+      callbackUrl: "/dashboard",
       email,
       password,
     });
@@ -29,7 +37,8 @@ export default function LoginPage() {
       return;
     }
 
-    router.push("/dashboard");
+    router.replace("/dashboard");
+    router.refresh();
   }
 
   return (

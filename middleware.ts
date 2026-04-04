@@ -7,6 +7,11 @@ export default withAuth(
   function middleware(req) {
     const { pathname } = req.nextUrl;
 
+    if (req.nextauth.token && PUBLIC_PATHS.includes(pathname)) {
+      const dashboardUrl = new URL("/dashboard", req.url);
+      return NextResponse.redirect(dashboardUrl);
+    }
+
     if (PUBLIC_PATHS.includes(pathname)) {
       return NextResponse.next();
     }
@@ -39,5 +44,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/dashboard", "/trade", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/api/trade", "/api/trades", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup"],
+  matcher: ["/login", "/signup", "/dashboard", "/trade", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/leaderboard", "/settings", "/stock/:path*", "/api/trade", "/api/trades", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup", "/api/leaderboard", "/api/settings", "/api/news", "/api/portfolio", "/api/portfolio/history"],
 };
