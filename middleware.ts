@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
 
-const PUBLIC_PATHS = ["/login", "/signup"];
+const PUBLIC_PATHS = ["/", "/login", "/signup"];
 
 export default withAuth(
   function middleware(req) {
@@ -44,5 +44,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/login", "/signup", "/dashboard", "/trade", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/leaderboard", "/settings", "/stock/:path*", "/api/trade", "/api/trades", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup", "/api/leaderboard", "/api/settings", "/api/news", "/api/portfolio", "/api/portfolio/history"],
+  matcher: ["/", "/login", "/signup", "/dashboard", "/trade", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/leaderboard", "/settings", "/stock/:path*", "/api/trade", "/api/trades", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup", "/api/leaderboard", "/api/settings", "/api/news", "/api/portfolio", "/api/portfolio/history"],
 };

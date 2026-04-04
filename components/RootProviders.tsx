@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/DashboardLayout";
 
 export default function RootProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const hideAppShell = pathname === "/login" || pathname === "/signup";
+  const hideAppShell = pathname === "/" || pathname === "/login" || pathname === "/signup";
 
   return (
     <SessionProvider>
