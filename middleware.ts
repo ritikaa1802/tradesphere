@@ -44,5 +44,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/", "/login", "/signup", "/dashboard", "/trade", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/leaderboard", "/settings", "/stock/:path*", "/api/trade", "/api/trades", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup", "/api/leaderboard", "/api/settings", "/api/news", "/api/portfolio", "/api/portfolio/history"],
+  matcher: ["/", "/login", "/signup", "/dashboard", "/trade", "/orders", "/watchlist", "/alerts", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/leaderboard", "/settings", "/stock/:path*", "/api/trade", "/api/trades", "/api/orders/:path*", "/api/watchlist/:path*", "/api/alerts/:path*", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup", "/api/leaderboard", "/api/settings", "/api/news", "/api/portfolio", "/api/portfolio/history", "/api/portfolio/reset"],
 };

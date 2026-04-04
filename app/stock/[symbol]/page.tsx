@@ -28,8 +28,8 @@ function parseSymbol(raw: string): string {
 
 const INTERVAL_OPTIONS = {
   "1D": { interval: "5m", range: "1d" },
-  "5D": { interval: "5m", range: "5d" },
-  "1M": { interval: "30m", range: "1mo" },
+  "5D": { interval: "15m", range: "5d" },
+  "1M": { interval: "60m", range: "1mo" },
   "3M": { interval: "1d", range: "3mo" },
 } as const;
 

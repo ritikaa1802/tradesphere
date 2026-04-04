@@ -65,6 +65,8 @@ interface YahooChartResponse {
     result?: Array<{
       meta?: {
         regularMarketPrice?: number;
+        previousClose?: number;
+        chartPreviousClose?: number;
       };
       indicators?: {
         quote?: Array<{
@@ -134,6 +136,55 @@ export async function fetchStockPrice(symbol: string): Promise<number | null> {
   }
 
   return fetchYahooPrice(`${normalized}.BO`);
+}
+
+export async function fetchStockQuote(symbol: string): Promise<{ price: number; changePercent: number } | null> {
+  const normalized = normalizeSymbol(symbol);
+  if (!normalized) {
+    return null;
+  }
+
+  async function fetchQuote(symbolWithExchange: string): Promise<{ price: number; changePercent: number } | null> {
+    const url = `https://query1.finance.yahoo.com/v8/finance/chart/${symbolWithExchange}`;
+
+    try {
+      const response = await fetch(url, {
+        method: "GET",
+        cache: "no-store",
+        headers: {
+          Accept: "application/json",
+        },
+      });
+
+      if (!response.ok) {
+        return null;
+      }
+
+      const parsed = (await response.json()) as YahooChartResponse;
+      const result = parsed.chart?.result?.[0];
+      const price = parseYahooPrice(parsed);
+
+      if (typeof price !== "number" || !Number.isFinite(price)) {
+        return null;
+      }
+
+      const prev = result?.meta?.previousClose ?? result?.meta?.chartPreviousClose;
+      const changePercent = typeof prev === "number" && prev > 0
+        ? ((price - prev) / prev) * 100
+        : 0;
+
+      return { price, changePercent };
+    } catch {
+      return null;
+    }
+  }
+
+  const nseQuote = await fetchQuote(`${normalized}.NS`);
+  if (nseQuote) {
+    return nseQuote;
+  }
+
+  return fetchQuote(`${normalized}.BO`);
 }
 
 export function searchTopStocks(query: string, limit = 10): StockSearchItem[] {

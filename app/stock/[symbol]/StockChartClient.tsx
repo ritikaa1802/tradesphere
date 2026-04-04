@@ -71,7 +71,7 @@ export default function StockChartClient({ candles, volumes, entryPrice }: Stock
         lineWidth: 2,
         lineStyle: 2,
         axisLabelVisible: true,
-        title: "Your Entry",
+        title: `Your Entry ₹${entryPrice.toFixed(2)}`,
       });
     }
 

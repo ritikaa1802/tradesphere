@@ -13,7 +13,10 @@ export interface Holding {
 
 export async function getHoldings(userId: string): Promise<Holding[]> {
   const trades = await prisma.trade.findMany({
-    where: { userId },
+    where: {
+      userId,
+      status: { in: ["executed", "triggered"] },
+    },
     orderBy: { createdAt: "asc" },
   });
 

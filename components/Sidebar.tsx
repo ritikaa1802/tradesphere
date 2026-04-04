@@ -6,10 +6,13 @@ import { signOut, useSession } from "next-auth/react";
 import {
   AlertTriangle,
   BarChart2,
+  Bell,
   Brain,
   Clock,
+  Eye,
   Globe,
   LayoutDashboard,
+  ListOrdered,
   LogOut,
   Settings as SettingsIcon,
   Sparkles,
@@ -20,6 +23,9 @@ import {
 const navItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
   { label: "Trade", href: "/trade", icon: TrendingUp },
+  { label: "Orders", href: "/orders", icon: ListOrdered },
+  { label: "Watchlist", href: "/watchlist", icon: Eye },
+  { label: "Alerts", href: "/alerts", icon: Bell },
   { label: "History", href: "/history", icon: Clock },
   { label: "TradeMind", href: "/mood", icon: Brain },
   { label: "Mistakes", href: "/mistakes", icon: AlertTriangle },

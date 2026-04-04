@@ -77,6 +77,14 @@ interface NewsItem {
   image: string | null;
 }
 
+interface TriggeredAlertItem {
+  id: string;
+  symbol: string;
+  targetPrice: number;
+  currentPrice: number;
+  condition: string;
+}
+
 const cardClass = "rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 shadow-[inset_0_1px_0_#1a2744] transition duration-200 hover:brightness-110";
 
 const MOOD_COLORS: Record<string, string> = {
@@ -169,6 +177,7 @@ export default function DashboardPage() {
   const [trades, setTrades] = useState<TradeItem[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
+  const [triggeredAlerts, setTriggeredAlerts] = useState<TriggeredAlertItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -178,25 +187,27 @@ export default function DashboardPage() {
     async function loadDashboardData() {
       try {
         setError("");
-        const [summaryRes, historyRes, tradesRes, analyticsRes, newsRes] = await Promise.all([
+        const [summaryRes, historyRes, tradesRes, analyticsRes, newsRes, alertsCheckRes] = await Promise.all([
           fetch("/api/portfolio", { cache: "no-store" }),
           fetch("/api/portfolio/history", { cache: "no-store" }),
           fetch("/api/trades", { cache: "no-store" }),
           fetch("/api/analytics/summary", { cache: "no-store" }),
           fetch("/api/news", { cache: "no-store" }),
+          fetch("/api/alerts/check", { cache: "no-store" }),
         ]);
 
-        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !newsRes.ok) {
+        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !newsRes.ok || !alertsCheckRes.ok) {
           throw new Error("Failed to load dashboard data");
         }
 
-        const [summaryData, historyData, tradesData, analyticsData, newsData] = (await Promise.all([
+        const [summaryData, historyData, tradesData, analyticsData, newsData, alertsData] = (await Promise.all([
           summaryRes.json(),
           historyRes.json(),
           tradesRes.json(),
           analyticsRes.json(),
           newsRes.json(),
-        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, NewsItem[]];
+          alertsCheckRes.json(),
+        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, NewsItem[], { triggeredAlerts: TriggeredAlertItem[] }];
 
         if (!isMounted) {
           return;
@@ -207,6 +218,7 @@ export default function DashboardPage() {
         setTrades(tradesData);
         setAnalytics(analyticsData);
         setNews(newsData);
+        setTriggeredAlerts(alertsData.triggeredAlerts || []);
       } catch {
         if (isMounted) {
           setError("Unable to load dashboard data right now.");
@@ -332,6 +344,19 @@ export default function DashboardPage() {
 
   return (
     <section className="space-y-4 text-white">
+      {triggeredAlerts.length > 0 ? (
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4">
+          <p className="text-sm font-semibold text-amber-200">Price Alert Triggered</p>
+          <div className="mt-2 space-y-1">
+            {triggeredAlerts.slice(0, 3).map((alert) => (
+              <p key={alert.id} className="text-sm text-amber-100">
+                {alert.symbol}: {alert.condition === "above" ? "above" : "below"} ₹{alert.targetPrice.toFixed(2)} (now ₹{alert.currentPrice.toFixed(2)})
+              </p>
+            ))}
+          </div>
+        </div>
+      ) : null}
+
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
         <div className={`${cardClass} border-t-2 border-t-[#3b82f6]`}>
           <div className="mb-3 inline-flex rounded-lg bg-[#14213a] p-2 text-[#3b82f6]">

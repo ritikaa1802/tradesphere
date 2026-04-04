@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 
 interface SettingsResponse {
   showOnLeaderboard: boolean;
@@ -8,10 +9,13 @@ interface SettingsResponse {
 }
 
 export default function SettingsPage() {
+  const router = useRouter();
   const [showOnLeaderboard, setShowOnLeaderboard] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [resetting, setResetting] = useState(false);
+  const [showResetModal, setShowResetModal] = useState(false);
   const [message, setMessage] = useState("");
 
   useEffect(() => {
@@ -73,6 +77,28 @@ export default function SettingsPage() {
     }
   }
 
+  async function onConfirmReset() {
+    setResetting(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/portfolio/reset", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data?.error || "Could not reset portfolio");
+        return;
+      }
+
+      router.push("/dashboard");
+    } catch {
+      setMessage("Could not reset portfolio");
+    } finally {
+      setResetting(false);
+      setShowResetModal(false);
+    }
+  }
+
   if (loading) {
     return <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 text-[#9ca3af]">Loading settings...</section>;
   }
@@ -113,7 +139,43 @@ export default function SettingsPage() {
         >
           {saving ? "Saving..." : "Save"}
         </button>
+
+        <button
+          type="button"
+          onClick={() => setShowResetModal(true)}
+          className="ml-2 rounded-lg bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white transition hover:bg-[#dc2626]"
+        >
+          Reset Portfolio
+        </button>
       </form>
+
+      {showResetModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
+          <div className="w-full max-w-md rounded-xl border border-[#1a2744] bg-[#0d1421] p-5">
+            <h3 className="text-lg font-semibold text-white">Reset Portfolio</h3>
+            <p className="mt-2 text-sm text-[#9ca3af]">
+              This will delete all your trades and reset balance to ₹1,00,000. Are you sure?
+            </p>
+            <div className="mt-4 flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowResetModal(false)}
+                className="rounded-lg bg-[#1a2744] px-4 py-2 text-sm font-semibold text-white hover:bg-[#223150]"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={onConfirmReset}
+                disabled={resetting}
+                className="rounded-lg bg-[#b91c1c] px-4 py-2 text-sm font-semibold text-white hover:bg-[#dc2626] disabled:opacity-60"
+              >
+                {resetting ? "Resetting..." : "Yes, Reset"}
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

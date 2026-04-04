@@ -23,6 +23,8 @@ model User {
   createdAt    DateTime   @default(now())
   portfolio    Portfolio?
   trades       Trade[]
+  watchlist    Watchlist[]
+  alerts       Alert[]
 }
 
 model Portfolio {
@@ -39,6 +41,9 @@ model Trade {
   userId    String
   stock     String
   type      String
+  orderType String   @default("market")
+  targetPrice Float?
+  status    String   @default("executed")
   price     Float
   quantity  Int
   charges   Float
@@ -46,4 +51,25 @@ model Trade {
   note      String?
   mood      String?
   createdAt DateTime @default(now())
+}
+
+model Watchlist {
+  id      String   @id @default(cuid())
+  user    User     @relation(fields: [userId], references: [id])
+  userId  String
+  symbol  String
+  addedAt DateTime @default(now())
+
+  @@unique([userId, symbol])
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  user        User     @relation(fields: [userId], references: [id])
+  userId      String
+  symbol      String
+  targetPrice Float
+  condition   String
+  triggered   Boolean  @default(false)
+  createdAt   DateTime @default(now())
 }

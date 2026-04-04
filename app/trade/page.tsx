@@ -16,6 +16,8 @@ export default function TradePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [type, setType] = useState("buy");
+  const [orderType, setOrderType] = useState("market");
+  const [targetPrice, setTargetPrice] = useState("");
   const [price, setPrice] = useState("");
   const [autoFillPrice, setAutoFillPrice] = useState(true);
   const [livePrice, setLivePrice] = useState<number | null>(null);
@@ -27,6 +29,25 @@ export default function TradePage() {
   const [message, setMessage] = useState("");
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    if (typeof window === "undefined") {
+      return;
+    }
+
+    const symbolParam = new URLSearchParams(window.location.search).get("symbol");
+    if (!symbolParam) {
+      return;
+    }
+
+    const normalized = symbolParam.trim().toUpperCase();
+    if (!normalized) {
+      return;
+    }
+
+    selectStock({ symbol: normalized, name: normalized });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -135,6 +156,8 @@ export default function TradePage() {
     ? tradeValue + estimatedCharges
     : tradeValue - estimatedCharges;
 
+  const needsTargetPrice = orderType === "limit" || orderType === "stoploss";
+
   async function onSubmit(ev: FormEvent<HTMLFormElement>) {
     ev.preventDefault();
     setLoading(true);
@@ -150,14 +173,23 @@ export default function TradePage() {
       const res = await fetch("/api/trade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ stock, type, price: Number(price), quantity: Number(quantity), note, mood }),
+        body: JSON.stringify({
+          stock,
+          type,
+          orderType,
+          targetPrice: needsTargetPrice ? Number(targetPrice) : null,
+          price: Number(price),
+          quantity: Number(quantity),
+          note,
+          mood,
+        }),
       });
 
       const data = await res.json();
       if (!res.ok) {
         setMessage(data?.error || "Trade submission failed");
       } else {
-        setMessage("Trade saved successfully");
+        setMessage(data?.message || "Trade saved successfully");
         router.push("/dashboard");
       }
     } catch (err) {
@@ -228,6 +260,32 @@ export default function TradePage() {
             <option value="sell">Sell</option>
           </select>
         </div>
+        <div>
+          <label className="mb-1 block text-sm">Order Type</label>
+          <select value={orderType} onChange={(e) => setOrderType(e.target.value)} className="w-full rounded border border-slate-700 bg-slate-900 p-2">
+            <option value="market">Market</option>
+            <option value="limit">Limit</option>
+            <option value="stoploss">Stop Loss</option>
+          </select>
+        </div>
+        {needsTargetPrice && (
+          <div>
+            <label className="mb-1 block text-sm">Target Price</label>
+            <input
+              value={targetPrice}
+              onChange={(e) => setTargetPrice(e.target.value)}
+              type="number"
+              step="0.01"
+              className="w-full rounded border border-slate-700 bg-slate-900 p-2"
+              required
+            />
+            <p className="mt-1 text-xs text-slate-400">
+              {orderType === "limit"
+                ? "This order will trigger when price reaches or moves above target."
+                : "This stop-loss order will trigger when price falls to or below target."}
+            </p>
+          </div>
+        )}
         <div>
           <label className="mb-1 block text-sm">Price</label>
           <input
