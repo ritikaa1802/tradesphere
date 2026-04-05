@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
+import { Resend } from "resend";
 import { authOptions } from "@/lib/auth";
 import { generateWeeklyReport } from "@/lib/emailReport";
-import { getMailer } from "@/lib/mailer";
 import prisma from "@/lib/prisma";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST() {
   const session = await getServerSession(authOptions);
@@ -18,10 +20,9 @@ export async function POST() {
 
   try {
     const report = await generateWeeklyReport(session.user.id);
-    const transporter = getMailer();
 
-    await transporter.sendMail({
-      from: `TradeSphere <${process.env.GMAIL_USER}>`,
+    await resend.emails.send({
+      from: "TradeSphere <onboarding@resend.dev>",
       to: report.to,
       subject: report.subject,
       html: report.html,

@@ -1,7 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
+import { Resend } from "resend";
 import prisma from "@/lib/prisma";
 import { compare } from "bcryptjs";
-import { sendOtpEmail } from "@/lib/mailer";
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 function createOtp() {
   return String(Math.floor(100000 + Math.random() * 900000));
@@ -53,7 +55,21 @@ export async function POST(request: NextRequest) {
   });
 
   try {
-    await sendOtpEmail(email, otp);
+    await resend.emails.send({
+      from: "TradeSphere <onboarding@resend.dev>",
+      to: email,
+      subject: "Your TradeSphere verification code",
+      html: `
+        <div style="font-family:Segoe UI,Arial,sans-serif;background:#060d1a;color:#e5e7eb;padding:24px;">
+          <div style="max-width:560px;margin:0 auto;background:#0f1729;border:1px solid #1f2d4d;border-radius:12px;padding:24px;">
+            <h2 style="margin:0 0 12px 0;color:#ffffff;">TradeSphere Verification</h2>
+            <p style="margin:0 0 16px 0;color:#9ca3af;">Use this 6-digit code to continue:</p>
+            <div style="font-size:30px;letter-spacing:8px;font-weight:700;color:#60a5fa;margin:10px 0 18px 0;">${otp}</div>
+            <p style="margin:0;color:#9ca3af;">This code expires in 10 minutes.</p>
+          </div>
+        </div>
+      `,
+    });
   } catch {
     return NextResponse.json({ error: "Failed to send OTP email" }, { status: 500 });
   }
