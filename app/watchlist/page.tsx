@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { SkeletonTable } from "@/components/Skeleton";
 
 interface StockOption {
   symbol: string;
@@ -159,9 +160,12 @@ export default function WatchlistPage() {
 
         <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-4 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
           {loading ? (
-            <p className="text-slate-400">Loading watchlist...</p>
+            <SkeletonTable rows={5} />
           ) : watchlist.length === 0 ? (
-            <p className="text-slate-400">No stocks in your watchlist yet.</p>
+            <div className="rounded-xl border border-slate-700 bg-slate-900 p-8 text-center">
+              <p className="text-xl font-semibold text-white">Your watchlist is empty</p>
+              <p className="mt-2 text-sm text-slate-400">Search and add stocks to monitor.</p>
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="min-w-full text-sm text-slate-200">

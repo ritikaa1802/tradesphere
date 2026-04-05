@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import ProGate from "@/components/ProGate";
+import { SkeletonCard, SkeletonChart, SkeletonTable } from "@/components/Skeleton";
 import {
   Activity,
   AlertTriangle,
@@ -417,16 +418,16 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <section className="space-y-4">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
-            <div key={`skeleton-stat-${index}`} className="h-32 animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421]" />
+            <SkeletonCard key={`skeleton-stat-${index}`} className="h-32" />
           ))}
         </div>
         <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
-          <div className="h-[300px] animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421] xl:col-span-3" />
-          <div className="h-[300px] animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421] xl:col-span-2" />
+          <SkeletonChart className="h-[300px] xl:col-span-3" />
+          <SkeletonChart className="h-[300px] xl:col-span-2" />
         </div>
-        <div className="h-[220px] animate-pulse rounded-xl border border-[#1a2744] bg-[#0d1421]" />
+        <SkeletonTable rows={5} />
       </section>
     );
   }
@@ -435,6 +436,106 @@ export default function DashboardPage() {
     return (
       <section className="space-y-4">
         <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-5 text-[#ef4444]">{error || "Dashboard unavailable."}</div>
+      </section>
+    );
+  }
+
+  if (trades.length === 0) {
+    return (
+      <section className="space-y-4 text-white">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className={`${cardClass} border-t-2 border-t-[#3b82f6]`}>
+            <div className="mb-3 inline-flex rounded-lg bg-[#14213a] p-2 text-[#3b82f6]">
+              <Wallet size={18} />
+            </div>
+            <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Balance</p>
+            <p className="mt-2 text-4xl font-bold text-white">
+              <AnimatedNumber value={summary.balance} prefix="₹" />
+            </p>
+          </div>
+
+          <div className={`${cardClass} border-t-2 border-t-[#8b5cf6]`}>
+            <div className="mb-3 inline-flex rounded-lg bg-[#24193a] p-2 text-[#8b5cf6]">
+              <TrendingUp size={18} />
+            </div>
+            <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Invested</p>
+            <p className="mt-2 text-4xl font-bold text-white">
+              <AnimatedNumber value={summary.invested} prefix="₹" />
+            </p>
+          </div>
+
+          <div className={`${cardClass} border-t-2 border-t-[#ef4444]`}>
+            <div className="mb-3 inline-flex rounded-lg bg-[#3f1d1d] p-2 text-[#ef4444]">
+              <Activity size={18} />
+            </div>
+            <p className="text-xs uppercase tracking-wide text-[#9ca3af]">P&amp;L</p>
+            <p className={`mt-2 text-4xl font-bold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+              {summary.pnl >= 0 ? "₹" : "₹-"}
+              <AnimatedNumber value={Math.abs(summary.pnl)} />
+            </p>
+          </div>
+
+          <div className={`${cardClass} border-t-2 border-t-[#3b82f6]`}>
+            <div className="mb-3 inline-flex rounded-lg bg-[#14213a] p-2 text-[#3b82f6]">
+              <Target size={18} />
+            </div>
+            <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Win Rate</p>
+            <p className="mt-2 text-4xl font-bold text-white">
+              <AnimatedNumber value={analytics?.winRate || 0} decimals={2} />%
+            </p>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-6 text-center">
+          <h2 className="text-2xl font-bold text-white">Welcome to TradeSphere! 🎉</h2>
+          <p className="mt-2 text-sm text-[#9ca3af]">You have ₹1,00,000 virtual cash ready to invest.</p>
+          <p className="mt-1 text-sm text-[#9ca3af]">Place your first trade to see your portfolio here.</p>
+          <Link
+            href="/trade"
+            className="mt-5 inline-flex items-center justify-center rounded-lg bg-[#3b82f6] px-5 py-3 text-sm font-semibold text-white hover:bg-[#2563eb]"
+          >
+            Place First Trade
+          </Link>
+        </div>
+
+        <div className={cardClass}>
+          <h3 className="text-sm font-semibold text-white">Holdings</h3>
+          <p className="mt-3 text-sm text-[#9ca3af]">No holdings yet.</p>
+          <p className="mt-1 text-sm text-[#9ca3af]">Buy your first stock to see it here.</p>
+        </div>
+
+        <div className={cardClass}>
+          <div className="mb-3 flex items-center gap-2">
+            <Newspaper size={16} className="text-[#3b82f6]" />
+            <h2 className="text-sm font-semibold text-white">Market News</h2>
+          </div>
+
+          {news.length === 0 ? (
+            <p className="text-sm text-[#9ca3af]">No recent market news</p>
+          ) : (
+            <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {news.map((item) => (
+                <a
+                  key={`${item.url}-${item.datetime}`}
+                  href={item.url}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="group rounded-lg border border-[#1a2744] bg-[#0d1421] p-3 transition hover:border-[#3b82f6] hover:brightness-110"
+                >
+                  {item.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img src={item.image} alt={item.headline} className="mb-2 h-28 w-full rounded-md object-cover" />
+                  ) : null}
+                  <p className="line-clamp-2 text-sm font-semibold text-white">{item.headline}</p>
+                  <div className="mt-2 flex items-center justify-between text-[11px] text-[#9ca3af]">
+                    <span>{item.source}</span>
+                    <span>{timeAgo(item.datetime)}</span>
+                  </div>
+                </a>
+              ))}
+            </div>
+          )}
+        </div>
       </section>
     );
   }
@@ -742,7 +843,8 @@ export default function DashboardPage() {
                     <td className="py-4 text-[#9ca3af]" colSpan={6}>
                       <div className="flex flex-col items-center gap-2 py-2 text-center">
                         <WalletCards size={20} className="text-[#3b82f6]" />
-                        <p>No holdings yet. Place your first trade to build positions.</p>
+                        <p>No holdings yet</p>
+                        <p>Buy your first stock to see it here.</p>
                       </div>
                     </td>
                   </tr>

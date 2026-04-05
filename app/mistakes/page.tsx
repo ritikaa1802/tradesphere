@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Mistake } from "@/lib/mistakes";
+import { SkeletonCard } from "@/components/Skeleton";
 
 export default function MistakesPage() {
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
@@ -36,9 +37,16 @@ export default function MistakesPage() {
   if (loading) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
-          <h1 className="mb-4 text-3xl font-semibold text-white">Trading Mistakes</h1>
-          <p className="text-slate-400">Loading...</p>
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <div className="animate-skeleton h-8 w-56 rounded bg-[#1a2744]" />
+            <div className="animate-skeleton mt-3 h-4 w-72 max-w-full rounded bg-[#1a2744]" />
+          </div>
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, index) => (
+              <SkeletonCard key={`mistake-skeleton-${index}`} className="h-44" />
+            ))}
+          </div>
         </div>
       </main>
     );
@@ -72,8 +80,8 @@ export default function MistakesPage() {
 
           {mistakes.length === 0 ? (
             <div className="rounded-3xl border border-slate-800 bg-slate-900 p-8 text-center">
-              <p className="text-xl font-semibold text-green-400 mb-2">🎉 No Mistakes Found!</p>
-              <p className="text-slate-400">Keep up the good trading habits. Continue monitoring your patterns.</p>
+              <p className="mb-2 text-xl font-semibold text-green-400">Great job! 🎉 No mistakes detected</p>
+              <p className="text-slate-400">Keep trading with discipline.</p>
             </div>
           ) : (
             <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">

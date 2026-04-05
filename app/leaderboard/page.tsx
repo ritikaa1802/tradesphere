@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Trophy } from "lucide-react";
+import { SkeletonCard, SkeletonTable } from "@/components/Skeleton";
 
 interface LeaderboardEntry {
   rank: number;
@@ -65,7 +66,16 @@ export default function LeaderboardPage() {
   const topThree = useMemo(() => data?.entries.slice(0, 3) ?? [], [data]);
 
   if (loading) {
-    return <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 text-[#9ca3af]">Loading leaderboard...</section>;
+    return (
+      <section className="space-y-4">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <SkeletonCard key={`leader-top-${index}`} className="h-36" />
+          ))}
+        </div>
+        <SkeletonTable rows={5} />
+      </section>
+    );
   }
 
   if (error) {
@@ -79,10 +89,10 @@ export default function LeaderboardPage() {
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#0f1929] text-[#3b82f6]">
             <Trophy size={20} />
           </div>
-          <h2 className="mt-3 text-lg font-semibold text-white">Leaderboard</h2>
-          <p className="mt-2 text-sm text-[#9ca3af]">No users opted in yet.</p>
+          <h2 className="mt-3 text-lg font-semibold text-white">Be the first on the leaderboard!</h2>
+          <p className="mt-2 text-sm text-[#9ca3af]">Enable leaderboard in settings.</p>
           <Link href="/settings" className="mt-3 text-sm font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
-            Opt in from Settings →
+            Open Settings →
           </Link>
         </div>
       </section>

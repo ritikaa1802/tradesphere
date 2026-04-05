@@ -4,6 +4,7 @@ import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import ProGate from "@/components/ProGate";
+import { SkeletonCard } from "@/components/Skeleton";
 
 type AiReport = {
   mistakes: string[];
@@ -158,6 +159,14 @@ export default function AiCoachPage() {
         </div>
 
         {error && <p className="mb-4 text-sm text-rose-400">{error}</p>}
+
+        {loadingReport ? (
+          <div className="grid gap-3">
+            <SkeletonCard className="h-20" />
+            <SkeletonCard className="h-28" />
+            <SkeletonCard className="h-24" />
+          </div>
+        ) : null}
 
         {report && (
           <div className="mb-6 space-y-3">

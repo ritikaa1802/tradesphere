@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
 import { ArrowDownRight, ArrowUpRight, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
+import ThemeToggle from "@/components/ThemeToggle";
 
 interface PortfolioSummary {
   balance: number;
@@ -134,6 +135,7 @@ export default function TopBar({
       </div>
 
       <div className="flex items-center gap-3 text-xs sm:text-sm md:gap-4 lg:gap-6">
+        <ThemeToggle />
         {pathname === "/dashboard" && yourRank !== null ? (
           <div className="hidden rounded-md border border-[#1a2744] bg-[#0d1421] px-2 py-1 sm:block">
             <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">YOUR RANK</p>

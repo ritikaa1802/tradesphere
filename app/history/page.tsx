@@ -5,6 +5,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FileClock } from "lucide-react";
 import ProGate from "@/components/ProGate";
+import { SkeletonTable } from "@/components/Skeleton";
 
 interface Trade {
   id: string;
@@ -112,9 +113,12 @@ export default function HistoryPage() {
   if (loading) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
-        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
-          <h1 className="mb-4 text-3xl font-semibold text-white">Trade History</h1>
-          <p className="text-slate-400">Loading...</p>
+        <div className="space-y-4">
+          <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <div className="animate-skeleton h-8 w-52 rounded bg-[#1a2744]" />
+            <div className="animate-skeleton mt-3 h-4 w-72 max-w-full rounded bg-[#1a2744]" />
+          </div>
+          <SkeletonTable rows={5} />
         </div>
       </main>
     );
@@ -196,14 +200,25 @@ export default function HistoryPage() {
           </div>
         </div>
 
-        {filteredTrades.length === 0 ? (
+        {trades.length === 0 ? (
+          <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-8 text-center shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/15 text-blue-300">
+              <FileClock size={22} />
+            </div>
+            <p className="mt-3 text-xl font-semibold text-slate-100">No trades yet</p>
+            <p className="mt-2 text-slate-300">Start trading to build your history.</p>
+            <Link href="/trade" className="mt-3 inline-block text-sm font-semibold text-blue-400 hover:text-blue-300">
+              Place Trade →
+            </Link>
+          </div>
+        ) : filteredTrades.length === 0 ? (
           <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-8 text-center shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
             <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-blue-500/15 text-blue-300">
               <FileClock size={22} />
             </div>
             <p className="mt-3 text-slate-300">No trades found for your current filters.</p>
             <Link href="/trade" className="mt-3 inline-block text-sm font-semibold text-blue-400 hover:text-blue-300">
-              Place your first trade →
+              Place Trade →
             </Link>
           </div>
         ) : (
