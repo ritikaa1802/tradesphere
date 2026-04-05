@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Globe, Trophy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import HeroAnimation from "@/components/HeroAnimation";
-import SystemFlow from "@/components/SystemFlow";
+import NeuralEngine from "@/components/NeuralEngine";
+import JourneyTimeline from "@/components/JourneyTimeline";
 
 // ─── Animated number counter ─────────────────────────────────────────────────
 function AnimatedCounter({ end, prefix = "", suffix = "" }: { end: number; prefix?: string; suffix?: string }) {
@@ -275,9 +276,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── SYSTEM FLOW (Formerly Features & How it Works) ──────────────────── */}
+      {/* ── NEURAL ENGINE (Formerly Features) ─────────────────────────────────── */}
       <div id="features">
-        <SystemFlow />
+        <NeuralEngine />
+      </div>
+
+      {/* ── JOURNEY TIMELINE (Formerly How it Works) ────────────────────────── */}
+      <div id="how-it-works">
+        <JourneyTimeline />
       </div>
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
