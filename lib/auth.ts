@@ -27,6 +27,7 @@ export const authOptions = {
         return {
           id: user.id,
           email: user.email,
+          isPro: user.isPro,
         };
       },
     }),
@@ -38,12 +39,14 @@ export const authOptions = {
     async jwt({ token, user }: { token: any; user?: any }) {
       if (user) {
         token.id = (user as any).id;
+        token.isPro = (user as any).isPro;
       }
       return token;
     },
     async session({ session, token }: { session: any; token: any }) {
       if (session.user) {
         session.user.id = token.id as string;
+        session.user.isPro = Boolean(token.isPro);
       }
       return session;
     },

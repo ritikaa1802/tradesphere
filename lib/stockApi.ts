@@ -3,6 +3,30 @@ export interface StockSearchItem {
   name: string;
 }
 
+const SECTOR_MAP: Record<string, string> = {
+  TCS: "IT",
+  INFY: "IT",
+  WIPRO: "IT",
+  HCLTECH: "IT",
+  TECHM: "IT",
+  HDFCBANK: "Banking",
+  HDFC: "Banking",
+  ICICIBANK: "Banking",
+  SBIN: "Banking",
+  AXISBANK: "Banking",
+  KOTAKBANK: "Banking",
+  MARUTI: "Auto",
+  TATAMOTORS: "Auto",
+  HEROMOTOCO: "Auto",
+  SUNPHARMA: "Pharma",
+  DRREDDY: "Pharma",
+  CIPLA: "Pharma",
+  ONGC: "Energy",
+  BPCL: "Energy",
+  IOC: "Energy",
+  COALINDIA: "Energy",
+};
+
 export const TOP_NSE_STOCKS: StockSearchItem[] = [
   { symbol: "RELIANCE", name: "Reliance Industries" },
   { symbol: "TCS", name: "Tata Consultancy Services" },
@@ -58,6 +82,11 @@ export const TOP_NSE_STOCKS: StockSearchItem[] = [
 
 function normalizeSymbol(symbol: string): string {
   return symbol.trim().toUpperCase().replace(/\.(NS|BO)$/i, "");
+}
+
+export function getSectorForSymbol(symbol: string): string {
+  const normalized = normalizeSymbol(symbol);
+  return SECTOR_MAP[normalized] || "Others";
 }
 
 interface YahooChartResponse {

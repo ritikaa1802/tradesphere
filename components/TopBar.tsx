@@ -13,6 +13,14 @@ interface LeaderboardSummary {
   yourRank: number | null;
 }
 
+interface StreakInsight {
+  type: string;
+  meta?: {
+    streakType?: "win" | "loss" | "none";
+    streakCount?: number;
+  };
+}
+
 function getTitle(pathname: string): string {
   const titleMap: Record<string, string> = {
     "/": "Dashboard",
@@ -27,7 +35,10 @@ function getTitle(pathname: string): string {
     "/analytics": "Analytics",
     "/ai-coach": "AI Coach",
     "/leaderboard": "Leaderboard",
+    "/competitions": "Competitions",
     "/settings": "Settings",
+    "/pricing": "Pricing",
+    "/verify-otp": "Verify OTP",
     "/login": "Login",
     "/signup": "Sign Up",
     "/onboarding": "Onboarding",
@@ -40,15 +51,17 @@ export default function TopBar() {
   const pathname = usePathname();
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [yourRank, setYourRank] = useState<number | null>(null);
+  const [streak, setStreak] = useState<{ type: "win" | "loss" | "none"; count: number }>({ type: "none", count: 0 });
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadSummary() {
       try {
-        const [portfolioResponse, leaderboardResponse] = await Promise.all([
+        const [portfolioResponse, leaderboardResponse, insightsResponse] = await Promise.all([
           fetch("/api/portfolio", { cache: "no-store" }),
           fetch("/api/leaderboard", { cache: "no-store" }),
+          fetch("/api/insights", { cache: "no-store" }),
         ]);
 
         if (!portfolioResponse.ok) {
@@ -63,6 +76,15 @@ export default function TopBar() {
         if (leaderboardResponse.ok && isMounted) {
           const leaderboardData = (await leaderboardResponse.json()) as LeaderboardSummary;
           setYourRank(leaderboardData.yourRank);
+        }
+
+        if (insightsResponse.ok && isMounted) {
+          const insights = (await insightsResponse.json()) as StreakInsight[];
+          const streakInsight = insights.find((item) => item.type === "streak");
+          setStreak({
+            type: streakInsight?.meta?.streakType || "none",
+            count: Number(streakInsight?.meta?.streakCount || 0),
+          });
         }
       } catch {
         // Ignore top bar polling errors and keep last known values.
@@ -87,8 +109,15 @@ export default function TopBar() {
       <div className="flex items-center gap-6 text-sm">
         {pathname === "/dashboard" && yourRank !== null ? (
           <div className="rounded-md border border-[#1a2744] bg-[#0d1421] px-2 py-1">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">Your Rank</p>
-            <p className="text-sm font-bold text-[#3b82f6]">#{yourRank}</p>
+            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">YOUR RANK</p>
+            <p className="text-sm font-bold text-[#3b82f6]">
+              #{yourRank}
+              {streak.type !== "none" ? (
+                <span className={`ml-2 text-xs font-semibold ${streak.type === "win" ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                  | {streak.type === "win" ? "🔥" : "⚠️"} {streak.count} {streak.type === "win" ? "Win" : "Loss"} Streak
+                </span>
+              ) : null}
+            </p>
           </div>
         ) : null}
         <div>

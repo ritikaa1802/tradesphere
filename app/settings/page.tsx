@@ -2,6 +2,7 @@
 
 import { FormEvent, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import ProGate from "@/components/ProGate";
 
 interface SettingsResponse {
   showOnLeaderboard: boolean;
@@ -17,6 +18,7 @@ export default function SettingsPage() {
   const [resetting, setResetting] = useState(false);
   const [showResetModal, setShowResetModal] = useState(false);
   const [message, setMessage] = useState("");
+  const [sendingWeeklyReport, setSendingWeeklyReport] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -99,6 +101,27 @@ export default function SettingsPage() {
     }
   }
 
+  async function onSendWeeklyReport() {
+    setSendingWeeklyReport(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/email/weekly-report", { method: "POST" });
+      const data = await response.json();
+
+      if (!response.ok) {
+        setMessage(data?.error || "Could not send weekly report");
+        return;
+      }
+
+      setMessage(data?.message || "Weekly report sent");
+    } catch {
+      setMessage("Could not send weekly report");
+    } finally {
+      setSendingWeeklyReport(false);
+    }
+  }
+
   if (loading) {
     return <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 text-[#9ca3af]">Loading settings...</section>;
   }
@@ -147,6 +170,19 @@ export default function SettingsPage() {
         >
           Reset Portfolio
         </button>
+
+        <div className="pt-2">
+          <ProGate>
+            <button
+              type="button"
+              onClick={onSendWeeklyReport}
+              disabled={sendingWeeklyReport}
+              className="rounded-lg bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black transition hover:bg-[#16a34a] disabled:opacity-70"
+            >
+              {sendingWeeklyReport ? "Sending..." : "Send Weekly Report"}
+            </button>
+          </ProGate>
+        </div>
       </form>
 
       {showResetModal ? (

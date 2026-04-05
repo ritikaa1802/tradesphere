@@ -2,6 +2,8 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
+import ProGate from "@/components/ProGate";
 
 type AiReport = {
   mistakes: string[];
@@ -16,6 +18,7 @@ type ChatMessage = {
 };
 
 export default function AiCoachPage() {
+  const { data: session } = useSession();
   const [report, setReport] = useState<AiReport | null>(null);
   const [loadingReport, setLoadingReport] = useState(false);
   const [question, setQuestion] = useState("");
@@ -25,6 +28,12 @@ export default function AiCoachPage() {
   const router = useRouter();
 
   async function generateReport() {
+    const monthKey = `ai-report-month-${new Date().toISOString().slice(0, 7)}`;
+    if (!session?.user?.isPro && localStorage.getItem(monthKey) === "used") {
+      setError("Free plan allows 1 AI report per month. Upgrade to Pro for unlimited reports.");
+      return;
+    }
+
     setLoadingReport(true);
     setError("");
 
@@ -40,6 +49,10 @@ export default function AiCoachPage() {
         throw new Error(`${data.error || "Failed to generate report"}${details}`);
       }
       setReport(data);
+
+      if (!session?.user?.isPro) {
+        localStorage.setItem(monthKey, "used");
+      }
     } catch (err) {
       setError((err as Error).message);
     } finally {
@@ -139,6 +152,7 @@ export default function AiCoachPage() {
           >
             {loadingReport ? "Thinking..." : "Generate My Weekly Report"}
           </button>
+          {!session?.user?.isPro ? <p className="text-xs text-amber-300">Free plan: 1 report / month</p> : null}
         </div>
 
         {error && <p className="mb-4 text-sm text-rose-400">{error}</p>}
@@ -167,37 +181,39 @@ export default function AiCoachPage() {
           </div>
         )}
 
-        <div className="rounded bg-slate-800 p-5">
-          <h2 className="mb-3 text-xl font-bold">Ask a follow-up question</h2>
-          <form onSubmit={sendQuestion} className="mb-4 flex gap-2">
-            <input
-              value={question}
-              onChange={(e) => setQuestion(e.target.value)}
-              className="w-full rounded border border-slate-700 bg-slate-900 p-2"
-              placeholder="Ask AI Coach about your trades..."
-              required
-            />
-            <button type="submit" className="rounded bg-blue-600 px-4 py-2 font-semibold hover:bg-blue-500" disabled={chatLoading}>
-              {chatLoading ? "Thinking..." : "Send"}
-            </button>
-          </form>
+        <ProGate>
+          <div className="rounded bg-slate-800 p-5">
+            <h2 className="mb-3 text-xl font-bold">Ask a follow-up question</h2>
+            <form onSubmit={sendQuestion} className="mb-4 flex gap-2">
+              <input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                className="w-full rounded border border-slate-700 bg-slate-900 p-2"
+                placeholder="Ask AI Coach about your trades..."
+                required
+              />
+              <button type="submit" className="rounded bg-blue-600 px-4 py-2 font-semibold hover:bg-blue-500" disabled={chatLoading}>
+                {chatLoading ? "Thinking..." : "Send"}
+              </button>
+            </form>
 
-          <div className="space-y-3">
-            {chatMessages.map((msg, idx) => (
-              <div key={idx} className={`rounded p-3 ${msg.role === "assistant" ? "bg-slate-700" : "bg-slate-600"}`}>
-                <p className="text-xs text-slate-400 uppercase">{msg.role}</p>
-                {msg.role === "assistant" ? (
-                  <div
-                    className="mt-1 text-slate-100"
-                    dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text) }}
-                  />
-                ) : (
-                  <p className="mt-1 text-slate-100">{msg.text}</p>
-                )}
-              </div>
-            ))}
+            <div className="space-y-3">
+              {chatMessages.map((msg, idx) => (
+                <div key={idx} className={`rounded p-3 ${msg.role === "assistant" ? "bg-slate-700" : "bg-slate-600"}`}>
+                  <p className="text-xs text-slate-400 uppercase">{msg.role}</p>
+                  {msg.role === "assistant" ? (
+                    <div
+                      className="mt-1 text-slate-100"
+                      dangerouslySetInnerHTML={{ __html: parseMarkdown(msg.text) }}
+                    />
+                  ) : (
+                    <p className="mt-1 text-slate-100">{msg.text}</p>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
-        </div>
+        </ProGate>
       </div>
     </main>
   );

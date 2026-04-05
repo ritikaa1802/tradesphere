@@ -9,6 +9,7 @@ interface LeaderboardEntry {
   displayName: string;
   gainPercent: number;
   totalTrades: number;
+  isPro: boolean;
 }
 
 interface LeaderboardResponse {
@@ -102,6 +103,7 @@ export default function LeaderboardPage() {
           <div key={entry.rank} className={`rounded-xl border p-4 ${rankStyle(entry.rank)}`}>
             <p className="text-xs font-semibold uppercase tracking-wide text-[#9ca3af]">Rank #{entry.rank}</p>
             <p className="mt-2 text-lg font-bold text-white">{entry.displayName}</p>
+            {entry.isPro ? <span className="mt-2 inline-block rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
             <p className={`mt-2 text-xl font-bold ${entry.gainPercent >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
               {entry.gainPercent.toFixed(2)}%
             </p>
@@ -127,7 +129,9 @@ export default function LeaderboardPage() {
                 className={`border-b border-[#1a2744] ${data.yourRank === entry.rank ? "bg-[#0f1929]" : "bg-transparent"}`}
               >
                 <td className="py-2 text-white">#{entry.rank}</td>
-                <td className="py-2 font-semibold text-white">{entry.displayName}</td>
+                <td className="py-2 font-semibold text-white">
+                  {entry.displayName} {entry.isPro ? <span className="ml-1 rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
+                </td>
                 <td className={`py-2 text-right font-semibold ${entry.gainPercent >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
                   {entry.gainPercent.toFixed(2)}%
                 </td>

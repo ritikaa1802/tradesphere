@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { withAuth } from "next-auth/middleware";
 
-const PUBLIC_PATHS = ["/", "/login", "/signup"];
+const PUBLIC_PATHS = ["/", "/login", "/signup", "/verify-otp"];
 
 export default withAuth(
   function middleware(req) {
@@ -44,5 +44,5 @@ export default withAuth(
 );
 
 export const config = {
-  matcher: ["/", "/login", "/signup", "/dashboard", "/trade", "/orders", "/watchlist", "/alerts", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/leaderboard", "/settings", "/stock/:path*", "/api/trade", "/api/trades", "/api/orders/:path*", "/api/watchlist/:path*", "/api/alerts/:path*", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup", "/api/leaderboard", "/api/settings", "/api/news", "/api/portfolio", "/api/portfolio/history", "/api/portfolio/reset"],
+  matcher: ["/", "/login", "/signup", "/verify-otp", "/dashboard", "/trade", "/orders", "/watchlist", "/alerts", "/onboarding", "/history", "/mood", "/mistakes", "/ai-coach", "/leaderboard", "/competitions", "/pricing", "/settings", "/stock/:path*", "/api/trade", "/api/trades", "/api/orders/:path*", "/api/watchlist/:path*", "/api/alerts/:path*", "/api/mood", "/api/analytics/mistakes", "/api/ai/report", "/api/ai/chat", "/api/auth/signup", "/api/auth/send-otp", "/api/auth/verify-otp", "/api/leaderboard", "/api/competitions", "/api/competitions/:path*", "/api/settings", "/api/news", "/api/portfolio", "/api/portfolio/history", "/api/portfolio/reset", "/api/portfolio/sectors", "/api/insights", "/api/email/weekly-report", "/api/export/csv", "/api/pro/upgrade"],
 };

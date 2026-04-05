@@ -2,18 +2,21 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import ProGate from "@/components/ProGate";
 import {
   Activity,
+  AlertTriangle,
   ArrowDown,
   ArrowDownRight,
   ArrowUp,
   ArrowUpRight,
-  Flame,
+  CheckCircle2,
   Gauge,
-  LineChart as LineChartIcon,
+  Info,
   Newspaper,
   Target,
   TrendingUp,
+  TriangleAlert,
   WalletCards,
   Wallet,
 } from "lucide-react";
@@ -24,6 +27,8 @@ import {
   BarChart,
   CartesianGrid,
   Cell,
+  Pie,
+  PieChart,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -85,7 +90,54 @@ interface TriggeredAlertItem {
   condition: string;
 }
 
+interface SectorPoint {
+  sector: string;
+  value: number;
+  percentage: number;
+}
+
+interface SectorResponse {
+  sectors: SectorPoint[];
+  diversification: {
+    score: number;
+    label: string;
+    tip: string;
+  };
+}
+
+type InsightSeverity = "warning" | "danger" | "success" | "info";
+
+interface LossBreakdownItem {
+  type: string;
+  reason: string;
+  amount: number;
+  percent: number;
+}
+
+interface InsightItem {
+  type: string;
+  title: string;
+  description: string;
+  severity: InsightSeverity;
+  amount?: number;
+  meta?: {
+    mood?: string;
+    percent?: number;
+    bestMood?: string;
+    bestPercent?: number;
+    bestHour?: number;
+    worstHour?: number;
+    riskScore?: number;
+    riskLabel?: string;
+    reasons?: string[];
+    breakdown?: LossBreakdownItem[];
+    streakType?: "win" | "loss" | "none";
+    streakCount?: number;
+  };
+}
+
 const cardClass = "rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 shadow-[inset_0_1px_0_#1a2744] transition duration-200 hover:brightness-110";
+const SECTOR_COLORS = ["#3b82f6", "#22c55e", "#f59e0b", "#ef4444", "#8b5cf6", "#14b8a6"];
 
 const MOOD_COLORS: Record<string, string> = {
   Confident: "#22c55e",
@@ -171,6 +223,20 @@ function fearGreedLabel(score: number): string {
   return "Extreme Greed";
 }
 
+function getSeverityAccentColor(severity: InsightSeverity): string {
+  if (severity === "danger") return "#ef4444";
+  if (severity === "warning") return "#f59e0b";
+  if (severity === "success") return "#22c55e";
+  return "#3b82f6";
+}
+
+function InsightSeverityIcon({ severity }: { severity: InsightSeverity }) {
+  if (severity === "danger") return <TriangleAlert size={18} className="text-[#ef4444]" />;
+  if (severity === "warning") return <AlertTriangle size={18} className="text-[#f59e0b]" />;
+  if (severity === "success") return <CheckCircle2 size={18} className="text-[#22c55e]" />;
+  return <Info size={18} className="text-[#3b82f6]" />;
+}
+
 export default function DashboardPage() {
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([]);
@@ -178,6 +244,8 @@ export default function DashboardPage() {
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [news, setNews] = useState<NewsItem[]>([]);
   const [triggeredAlerts, setTriggeredAlerts] = useState<TriggeredAlertItem[]>([]);
+  const [insights, setInsights] = useState<InsightItem[]>([]);
+  const [sectorData, setSectorData] = useState<SectorResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -187,27 +255,31 @@ export default function DashboardPage() {
     async function loadDashboardData() {
       try {
         setError("");
-        const [summaryRes, historyRes, tradesRes, analyticsRes, newsRes, alertsCheckRes] = await Promise.all([
+        const [summaryRes, historyRes, tradesRes, analyticsRes, newsRes, alertsCheckRes, insightsRes, sectorsRes] = await Promise.all([
           fetch("/api/portfolio", { cache: "no-store" }),
           fetch("/api/portfolio/history", { cache: "no-store" }),
           fetch("/api/trades", { cache: "no-store" }),
           fetch("/api/analytics/summary", { cache: "no-store" }),
           fetch("/api/news", { cache: "no-store" }),
           fetch("/api/alerts/check", { cache: "no-store" }),
+          fetch("/api/insights", { cache: "no-store" }),
+          fetch("/api/portfolio/sectors", { cache: "no-store" }),
         ]);
 
-        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !newsRes.ok || !alertsCheckRes.ok) {
+        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !newsRes.ok || !alertsCheckRes.ok || !insightsRes.ok || !sectorsRes.ok) {
           throw new Error("Failed to load dashboard data");
         }
 
-        const [summaryData, historyData, tradesData, analyticsData, newsData, alertsData] = (await Promise.all([
+        const [summaryData, historyData, tradesData, analyticsData, newsData, alertsData, insightsData, sectorsData] = (await Promise.all([
           summaryRes.json(),
           historyRes.json(),
           tradesRes.json(),
           analyticsRes.json(),
           newsRes.json(),
           alertsCheckRes.json(),
-        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, NewsItem[], { triggeredAlerts: TriggeredAlertItem[] }];
+          insightsRes.json(),
+          sectorsRes.json(),
+        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, NewsItem[], { triggeredAlerts: TriggeredAlertItem[] }, InsightItem[], SectorResponse];
 
         if (!isMounted) {
           return;
@@ -219,6 +291,8 @@ export default function DashboardPage() {
         setAnalytics(analyticsData);
         setNews(newsData);
         setTriggeredAlerts(alertsData.triggeredAlerts || []);
+        setInsights(insightsData || []);
+        setSectorData(sectorsData);
       } catch {
         if (isMounted) {
           setError("Unable to load dashboard data right now.");
@@ -288,34 +362,42 @@ export default function DashboardPage() {
     return Math.max(0, Math.min(100, normalized));
   }, [trades]);
 
-  const streakSummary = useMemo(() => {
-    const sellTrades = [...trades]
-      .filter((trade) => trade.pnl !== null)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-
-    if (sellTrades.length === 0) {
-      return { type: "none" as const, count: 0 };
-    }
-
-    const first = sellTrades[0].pnl ?? 0;
-    const isWin = first > 0;
-    const isLoss = first < 0;
-    if (!isWin && !isLoss) {
-      return { type: "none" as const, count: 0 };
-    }
-
-    let count = 0;
-    for (const trade of sellTrades) {
-      const pnl = trade.pnl ?? 0;
-      if ((isWin && pnl > 0) || (isLoss && pnl < 0)) {
-        count += 1;
-      } else {
-        break;
-      }
-    }
-
-    return { type: isWin ? "win" as const : "loss" as const, count };
+  const todayTradesCount = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return trades.filter((trade) => trade.createdAt.slice(0, 10) === today).length;
   }, [trades]);
+
+  const revengeLossInsight = useMemo(() => {
+    return insights.find((insight) => insight.type === "revenge-trading");
+  }, [insights]);
+
+  const moodWorstInsight = useMemo(() => {
+    return insights.find((insight) => insight.type === "mood-worst");
+  }, [insights]);
+
+  const lossBreakdownInsight = useMemo(() => {
+    return insights.find((insight) => insight.type === "loss-breakdown");
+  }, [insights]);
+
+  const riskScoreInsight = useMemo(() => {
+    return insights.find((insight) => insight.type === "risk-score");
+  }, [insights]);
+
+  const todaysInsight = useMemo(() => {
+    const score: Record<InsightSeverity, number> = {
+      danger: 4,
+      warning: 3,
+      success: 2,
+      info: 1,
+    };
+
+    const candidates = insights.filter((insight) => insight.type !== "loss-breakdown" && insight.type !== "risk-score" && insight.type !== "streak");
+    if (candidates.length === 0) {
+      return null;
+    }
+
+    return [...candidates].sort((a, b) => score[b.severity] - score[a.severity])[0];
+  }, [insights]);
 
   if (loading) {
     return (
@@ -386,6 +468,9 @@ export default function DashboardPage() {
           <p className={`mt-2 text-4xl font-bold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
             <AnimatedNumber value={summary.pnl} prefix="₹" />
           </p>
+          {Number(revengeLossInsight?.amount || 0) > 0 ? (
+            <p className="mt-1 text-xs font-semibold text-[#ef4444]">₹{Number(revengeLossInsight?.amount || 0).toFixed(2)} from revenge trading</p>
+          ) : null}
           <p className={`mt-1 text-sm font-semibold ${summary.pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>{summary.pnlPercentage.toFixed(2)}%</p>
         </div>
 
@@ -406,8 +491,8 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
-        <div className={`${cardClass} xl:col-span-3`}>
+      <div className="grid grid-cols-1 gap-4 xl:grid-cols-1">
+        <div className={`${cardClass}`}>
           <div className="mb-2 flex items-center gap-2">
             <Gauge size={16} className="text-[#3b82f6]" />
             <h3 className="text-sm font-semibold text-white">Fear &amp; Greed Meter</h3>
@@ -431,25 +516,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={`${cardClass} xl:col-span-2`}>
-          <div className="mb-2 flex items-center gap-2">
-            <LineChartIcon size={16} className="text-[#3b82f6]" />
-            <h3 className="text-sm font-semibold text-white">Trading Streak</h3>
-          </div>
-          {streakSummary.type === "none" ? (
-            <p className="mt-4 text-sm text-[#9ca3af]">No realized streak yet. Close some trades to start a streak.</p>
-          ) : streakSummary.type === "win" ? (
-            <div className="mt-4">
-              <p className="text-3xl font-bold text-[#22c55e]">{streakSummary.count} Win{streakSummary.count > 1 ? "s" : ""} 🔥</p>
-              <p className="mt-1 text-sm text-[#9ca3af]">You are on a winning run. Keep risk in check.</p>
-            </div>
-          ) : (
-            <div className="mt-4">
-              <p className="text-3xl font-bold text-[#ef4444]">{streakSummary.count} Loss{streakSummary.count > 1 ? "es" : ""}</p>
-              <p className="mt-1 text-sm text-[#9ca3af]">Pause and review your recent setup quality.</p>
-            </div>
-          )}
-        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
@@ -541,8 +607,86 @@ export default function DashboardPage() {
               </BarChart>
             </ResponsiveContainer>
           </div>
+          <p className={`mt-2 text-xs ${Number(moodWorstInsight?.meta?.percent || 0) > 0 ? "text-[#ef4444]" : "text-[#22c55e]"}`}>
+            Your profit drops {(moodWorstInsight?.meta?.percent || 0).toFixed(1)}% when mood = {moodWorstInsight?.meta?.mood || "Neutral"}
+          </p>
         </div>
       </div>
+
+      <ProGate>
+      <div className="space-y-4">
+        <div
+          className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4"
+          style={{ borderLeft: `3px solid ${getSeverityAccentColor(todaysInsight?.severity || "info")}` }}
+        >
+          <div className="flex items-start gap-3">
+            <div className="mt-0.5">
+              <InsightSeverityIcon severity={todaysInsight?.severity || "info"} />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Today&apos;s Insight</p>
+              {todayTradesCount === 0 ? (
+                <p className="mt-1 text-sm text-[#9ca3af]">No trades today - start trading to get insights</p>
+              ) : todaysInsight ? (
+                <>
+                  <p className="mt-1 text-sm font-semibold text-white">{todaysInsight.title}</p>
+                  <p className="mt-1 text-sm text-[#9ca3af]">{todaysInsight.description}</p>
+                </>
+              ) : (
+                <p className="mt-1 text-sm text-[#9ca3af]">Keep trading consistently to unlock behavior patterns.</p>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+          <div className={`${cardClass}`}>
+            <h3 className="text-sm font-semibold text-white">Why You&apos;re Losing Money</h3>
+            <div className="mt-3 space-y-3">
+              {(lossBreakdownInsight?.meta?.breakdown || []).slice(0, 3).map((item) => (
+                <div key={item.type}>
+                  <div className="mb-1 flex items-center justify-between text-xs">
+                    <span className="text-[#d1d5db]">{item.reason}</span>
+                    <span className="font-semibold text-[#ef4444]">₹{item.amount.toFixed(2)}</span>
+                  </div>
+                  <div className="h-2 overflow-hidden rounded-full bg-[#1a2744]">
+                    <div className="h-full rounded-full bg-[#ef4444]" style={{ width: `${Math.max(3, Math.min(100, item.percent))}%` }} />
+                  </div>
+                  <p className="mt-1 text-[11px] text-[#9ca3af]">{item.percent.toFixed(1)}%</p>
+                </div>
+              ))}
+              {(lossBreakdownInsight?.meta?.breakdown || []).length === 0 ? (
+                <p className="text-sm text-[#9ca3af]">Not enough losing-trade data to break down losses yet.</p>
+              ) : null}
+            </div>
+          </div>
+
+          <div className={`${cardClass}`}>
+            <h3 className="text-sm font-semibold text-white">Risk Score</h3>
+            <div className="mt-3 flex flex-col items-center justify-center">
+              <p
+                className={`text-6xl font-bold ${
+                  Number(riskScoreInsight?.meta?.riskScore || 0) <= 3
+                    ? "text-[#22c55e]"
+                    : Number(riskScoreInsight?.meta?.riskScore || 0) <= 6
+                      ? "text-[#f59e0b]"
+                      : "text-[#ef4444]"
+                }`}
+              >
+                {Number(riskScoreInsight?.meta?.riskScore || 0)}
+              </p>
+              <p className="mt-1 text-sm font-semibold text-[#d1d5db]">{riskScoreInsight?.meta?.riskLabel || "Moderate Risk Trader"}</p>
+            </div>
+            <ul className="mt-4 space-y-1 text-xs text-[#9ca3af]">
+              {(riskScoreInsight?.meta?.reasons || []).slice(0, 3).map((reason) => (
+                <li key={reason}>• {reason}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+      </div>
+      </ProGate>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
         <div className={`${cardClass} xl:col-span-3`}>
@@ -614,52 +758,81 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={`${cardClass} xl:col-span-2`}>
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Recent Trades</h2>
-            <p className="text-xs text-[#9ca3af]">Last 5</p>
-          </div>
-          <div className="space-y-2">
-            {recentTrades.length === 0 ? (
-              <div className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-4 text-center text-sm text-[#9ca3af]">
-                <p>No trades yet. Start with your first order.</p>
-                <Link href="/trade" className="mt-2 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
-                  Go to Trade →
-                </Link>
-              </div>
-            ) : (
-              recentTrades.map((trade) => (
-                <div key={trade.id} className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] px-3 py-2">
-                  <div className="flex items-center justify-between">
-                    <p className="text-sm font-bold text-white">{trade.stock}</p>
-                    <span
-                      className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                        trade.type.toLowerCase() === "buy"
-                          ? "bg-[#14532d] text-[#22c55e]"
-                          : "bg-[#7f1d1d] text-[#ef4444]"
-                      }`}
-                    >
-                      {trade.type.toUpperCase()}
-                    </span>
-                  </div>
-                  <div className="mt-1 flex items-center justify-between text-xs">
-                    <p className="text-[#9ca3af]">
-                      ₹{trade.price.toFixed(2)} x {trade.quantity}
-                    </p>
-                    <p className={`inline-flex items-center gap-1 ${(trade.pnl ?? 0) >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                      {(trade.pnl ?? 0) >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                      {trade.pnl === null ? "-" : `₹${trade.pnl.toFixed(2)}`}
-                    </p>
-                  </div>
-                  <p className="mt-1 text-[11px] uppercase tracking-wide text-[#6b7280]">{timeAgo(trade.createdAt)}</p>
-                </div>
-              ))
-            )}
+        <div className="space-y-4 xl:col-span-2">
+          <div className={`${cardClass}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-white">Sector Allocation</h2>
+              <p className="text-xs text-[#9ca3af]">Portfolio mix</p>
+            </div>
+            <div className="h-[220px] w-full">
+              <ResponsiveContainer>
+                <PieChart>
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#0d1117", border: "1px solid #1a2744", color: "#fff" }}
+                    formatter={(value, name, props) => [`₹${Number(value).toFixed(2)}`, `${String(name)} (${(props.payload as SectorPoint).percentage.toFixed(1)}%)`]}
+                  />
+                  <Pie data={sectorData?.sectors || []} dataKey="value" nameKey="sector" outerRadius={80} label>
+                    {(sectorData?.sectors || []).map((entry, index) => (
+                      <Cell key={entry.sector} fill={SECTOR_COLORS[index % SECTOR_COLORS.length]} />
+                    ))}
+                  </Pie>
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            <div className="mt-2 rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-3">
+              <p className="text-sm font-semibold text-white">Diversification Score: {sectorData?.diversification?.score ?? 1}/10</p>
+              <p className="mt-1 text-xs text-[#9ca3af]">{sectorData?.diversification?.label || "Highly Concentrated ⚠️"}</p>
+              <p className="mt-1 text-xs text-[#9ca3af]">{sectorData?.diversification?.tip || "Add more sectors to reduce concentration risk."}</p>
+            </div>
           </div>
 
-          <Link href="/history" className="mt-3 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
-            View full history →
-          </Link>
+          <div className={`${cardClass}`}>
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-white">Recent Trades</h2>
+              <p className="text-xs text-[#9ca3af]">Last 5</p>
+            </div>
+            <div className="space-y-2">
+              {recentTrades.length === 0 ? (
+                <div className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-4 text-center text-sm text-[#9ca3af]">
+                  <p>No trades yet. Start with your first order.</p>
+                  <Link href="/trade" className="mt-2 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
+                    Go to Trade →
+                  </Link>
+                </div>
+              ) : (
+                recentTrades.map((trade) => (
+                  <div key={trade.id} className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] px-3 py-2">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-bold text-white">{trade.stock}</p>
+                      <span
+                        className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                          trade.type.toLowerCase() === "buy"
+                            ? "bg-[#14532d] text-[#22c55e]"
+                            : "bg-[#7f1d1d] text-[#ef4444]"
+                        }`}
+                      >
+                        {trade.type.toUpperCase()}
+                      </span>
+                    </div>
+                    <div className="mt-1 flex items-center justify-between text-xs">
+                      <p className="text-[#9ca3af]">
+                        ₹{trade.price.toFixed(2)} x {trade.quantity}
+                      </p>
+                      <p className={`inline-flex items-center gap-1 ${(trade.pnl ?? 0) >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                        {(trade.pnl ?? 0) >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                        {trade.pnl === null ? "-" : `₹${trade.pnl.toFixed(2)}`}
+                      </p>
+                    </div>
+                    <p className="mt-1 text-[11px] uppercase tracking-wide text-[#6b7280]">{timeAgo(trade.createdAt)}</p>
+                  </div>
+                ))
+              )}
+            </div>
+
+            <Link href="/history" className="mt-3 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
+              View full history →
+            </Link>
+          </div>
         </div>
       </div>
 

@@ -9,6 +9,7 @@ interface LeaderboardEntry {
   displayName: string;
   gainPercent: number;
   totalTrades: number;
+  isPro: boolean;
 }
 
 function getWeeklyResetDays(): number {
@@ -29,6 +30,7 @@ export async function GET() {
     select: {
       id: true,
       displayName: true,
+      isPro: true,
       createdAt: true,
       trades: {
         select: { id: true },
@@ -55,6 +57,7 @@ export async function GET() {
         displayName: user.displayName || `Trader-${user.id.slice(0, 6)}`,
         gainPercent,
         totalTrades: user.trades.length,
+        isPro: user.isPro,
       };
     }),
   );
@@ -72,6 +75,7 @@ export async function GET() {
     displayName: item.displayName,
     gainPercent: item.gainPercent,
     totalTrades: item.totalTrades,
+    isPro: item.isPro,
   }));
 
   const currentUserRank = ranked.find((entry) => entry.userId === session.user.id)?.rank ?? null;

@@ -15,17 +15,18 @@ export default function SignupPage() {
     setError("");
     setLoading(true);
     try {
-      const res = await fetch("/api/auth/signup", {
+      const res = await fetch("/api/auth/send-otp", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, type: "signup" }),
       });
 
       const body = await res.json();
       if (!res.ok) {
         setError(body?.error || "Signup failed");
       } else {
-        router.push("/login");
+        sessionStorage.setItem("pendingPassword", password);
+        router.push(`/verify-otp?type=signup&email=${encodeURIComponent(email)}`);
       }
     } catch (err) {
       setError("Could not signup. Please try again.");

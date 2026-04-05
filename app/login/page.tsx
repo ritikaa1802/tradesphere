@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, type FormEvent } from "react";
-import { signIn, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
 export default function LoginPage() {
@@ -23,22 +23,23 @@ export default function LoginPage() {
     setError("");
     setLoading(true);
 
-    const res = await signIn("credentials", {
-      redirect: false,
-      callbackUrl: "/dashboard",
-      email,
-      password,
+    const response = await fetch("/api/auth/send-otp", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, type: "login" }),
     });
+
+    const body = await response.json();
 
     setLoading(false);
 
-    if (!res || res.error) {
-      setError(res?.error || "Login failed");
+    if (!response.ok) {
+      setError(body?.error || "Login failed");
       return;
     }
 
-    const targetUrl = res.url || "/dashboard";
-    window.location.assign(targetUrl);
+    sessionStorage.setItem("pendingPassword", password);
+    router.push(`/verify-otp?type=login&email=${encodeURIComponent(email)}`);
   }
 
   return (

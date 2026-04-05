@@ -28,9 +28,10 @@ const navItems = [
   { label: "Alerts", href: "/alerts", icon: Bell },
   { label: "History", href: "/history", icon: Clock },
   { label: "TradeMind", href: "/mood", icon: Brain },
-  { label: "Mistakes", href: "/mistakes", icon: AlertTriangle },
-  { label: "Analytics", href: "/analytics", icon: BarChart2 },
-  { label: "AI Coach", href: "/ai-coach", icon: Sparkles },
+  { label: "Bad Trades", href: "/mistakes", icon: AlertTriangle },
+  { label: "Why I'm Losing", href: "/analytics", icon: BarChart2 },
+  { label: "My Coach", href: "/ai-coach", icon: Sparkles },
+  { label: "Competitions", href: "/competitions", icon: Trophy },
   { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
 ];
 
@@ -73,7 +74,18 @@ export default function Sidebar() {
       </nav>
 
       <div className="border-t border-[#1a2744] p-3">
-        <p className="truncate text-xs text-[#9ca3af]">{session?.user?.email ?? "Guest"}</p>
+        <div className="flex items-center gap-2">
+          <p className="truncate text-xs text-[#9ca3af]">{session?.user?.email ?? "Guest"}</p>
+          {session?.user?.isPro ? <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
+        </div>
+        {session && !session.user?.isPro ? (
+          <Link
+            href="/pricing"
+            className="mt-2 flex w-full items-center justify-center rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-black transition hover:bg-amber-300"
+          >
+            Upgrade to Pro
+          </Link>
+        ) : null}
         <Link
           href="/settings"
           className="mt-2 flex w-full items-center gap-2 rounded-lg bg-[#0d1421] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#1a2744]"

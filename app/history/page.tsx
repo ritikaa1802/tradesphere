@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { FileClock } from "lucide-react";
+import ProGate from "@/components/ProGate";
 
 interface Trade {
   id: string;
@@ -27,6 +28,7 @@ export default function HistoryPage() {
   const [dateTo, setDateTo] = useState("");
   const [stockFilter, setStockFilter] = useState("");
   const [typeFilter, setTypeFilter] = useState("");
+  const [exporting, setExporting] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
@@ -81,6 +83,32 @@ export default function HistoryPage() {
     setFilteredTrades(filtered);
   }
 
+  async function exportCsv() {
+    setExporting(true);
+    try {
+      const response = await fetch("/api/export/csv", { cache: "no-store" });
+      if (!response.ok) {
+        return;
+      }
+
+      const blob = await response.blob();
+      const disposition = response.headers.get("Content-Disposition") || "";
+      const fileNameMatch = disposition.match(/filename=([^;]+)/i);
+      const fileName = (fileNameMatch?.[1] || "tradesphere-trades.csv").replace(/\"/g, "");
+
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      URL.revokeObjectURL(url);
+    } finally {
+      setExporting(false);
+    }
+  }
+
   if (loading) {
     return (
       <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
@@ -107,8 +135,22 @@ export default function HistoryPage() {
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="space-y-6">
         <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
-          <h1 className="text-3xl font-semibold text-white">Trade History</h1>
-          <p className="mt-2 text-slate-400">Review and filter your executed trades with confidence.</p>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-semibold text-white">Trade History</h1>
+              <p className="mt-2 text-slate-400">Review and filter your executed trades with confidence.</p>
+            </div>
+            <ProGate>
+              <button
+                type="button"
+                onClick={exportCsv}
+                disabled={exporting}
+                className="rounded-lg bg-[#22c55e] px-4 py-2 text-sm font-semibold text-black hover:bg-[#16a34a] disabled:opacity-70"
+              >
+                {exporting ? "Exporting..." : "Export CSV"}
+              </button>
+            </ProGate>
+          </div>
         </div>
 
         <div className="grid gap-4 rounded-3xl border border-slate-800 bg-[#0f1629] p-5 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)] md:grid-cols-2 lg:grid-cols-4">
