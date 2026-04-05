@@ -33,5 +33,12 @@ export async function POST(request: NextRequest) {
     },
   });
 
-  return NextResponse.json({ success: true, user: { id: user.id, email: user.email } }, { status: 201 });
+  return NextResponse.json(
+    {
+      success: true,
+      redirectTo: "/onboarding",
+      user: { id: user.id, email: user.email },
+    },
+    { status: 201 },
+  );
 }
