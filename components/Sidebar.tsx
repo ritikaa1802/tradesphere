@@ -21,18 +21,18 @@ import {
 } from "lucide-react";
 
 const navItems = [
-  { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-  { label: "Trade", href: "/trade", icon: TrendingUp },
-  { label: "Orders", href: "/orders", icon: ListOrdered },
-  { label: "Watchlist", href: "/watchlist", icon: Eye },
-  { label: "Alerts", href: "/alerts", icon: Bell },
-  { label: "History", href: "/history", icon: Clock },
-  { label: "TradeMind", href: "/mood", icon: Brain },
-  { label: "Bad Trades", href: "/mistakes", icon: AlertTriangle },
-  { label: "Why I'm Losing", href: "/analytics", icon: BarChart2 },
-  { label: "My Coach", href: "/ai-coach", icon: Sparkles },
-  { label: "Competitions", href: "/competitions", icon: Trophy },
-  { label: "Leaderboard", href: "/leaderboard", icon: Trophy },
+  { label: "Dashboard",      href: "/dashboard",    icon: LayoutDashboard },
+  { label: "Trade",          href: "/trade",         icon: TrendingUp },
+  { label: "Orders",         href: "/orders",        icon: ListOrdered },
+  { label: "Watchlist",      href: "/watchlist",     icon: Eye },
+  { label: "Alerts",         href: "/alerts",        icon: Bell },
+  { label: "History",        href: "/history",       icon: Clock },
+  { label: "TradeMind",      href: "/mood",          icon: Brain },
+  { label: "Bad Trades",     href: "/mistakes",      icon: AlertTriangle },
+  { label: "Why I'm Losing", href: "/analytics",     icon: BarChart2 },
+  { label: "My Coach",       href: "/ai-coach",      icon: Sparkles },
+  { label: "Competitions",   href: "/competitions",  icon: Trophy },
+  { label: "Leaderboard",    href: "/leaderboard",   icon: Trophy },
 ];
 
 export default function Sidebar({
@@ -49,23 +49,36 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col border-r border-[#1a2744] bg-[#0a0f1a] transition-all duration-300 ${
+      className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col theme-bg-sidebar border-r theme-border transition-all duration-300 ${
         collapsed ? "w-[84px]" : "w-[220px]"
       } ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
+      style={{ borderColor: "var(--border)", boxShadow: "var(--shadow-sidebar)" }}
     >
-      <div className={`flex items-center border-b border-[#1a2744] py-4 ${collapsed ? "justify-center px-2" : "gap-3 px-5"}`}>
-        <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0d1421] text-[#3b82f6]">
-          <Globe size={18} />
+      {/* ── Logo ── */}
+      <div
+        className={`flex items-center border-b py-4 ${collapsed ? "justify-center px-2" : "gap-3 px-5"}`}
+        style={{ borderColor: "var(--border)" }}
+      >
+        <div
+          className="flex h-10 w-10 items-center justify-center rounded-xl"
+          style={{ background: "linear-gradient(135deg, #1d4ed8, #7c3aed)" }}
+        >
+          <Globe size={18} className="text-white" />
         </div>
         {!collapsed ? (
           <div>
-            <p className="text-lg font-bold tracking-wide text-white">TradeSphere</p>
-            <p className="text-xs font-medium text-[#3b82f6]">Trading Terminal</p>
+            <p className="text-sm font-bold tracking-wide" style={{ color: "var(--text-primary)" }}>
+              TradeSphere
+            </p>
+            <p className="text-xs font-medium" style={{ color: "var(--color-blue)" }}>
+              Trading Terminal
+            </p>
           </div>
         ) : null}
       </div>
 
-      <nav className="flex flex-1 flex-col gap-1 p-3">
+      {/* ── Nav items ── */}
+      <nav className="flex flex-1 flex-col gap-0.5 p-2 overflow-y-auto">
         {navItems.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const Icon = item.icon;
@@ -75,51 +88,112 @@ export default function Sidebar({
               key={item.href}
               href={item.href}
               onClick={onCloseMobile}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                active
-                  ? "border-l-[3px] border-[#3b82f6] bg-[#0f1929] pl-[9px] text-white"
-                  : "text-[#9ca3af] hover:bg-[#0d1421] hover:text-white"
-              }`}
               title={collapsed ? item.label : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                active ? "sidebar-active" : "sidebar-inactive"
+              }`}
+              style={
+                active
+                  ? {
+                      backgroundColor: "var(--bg-active)",
+                      color: "var(--color-blue)",
+                      borderLeft: `3px solid var(--color-blue)`,
+                      paddingLeft: collapsed ? "9px" : "9px",
+                    }
+                  : {
+                      color: "var(--text-secondary)",
+                      borderLeft: "3px solid transparent",
+                    }
+              }
+              onMouseEnter={(e) => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-hover)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--text-primary)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
+                }
+              }}
             >
-              <Icon size={20} />
+              <Icon size={18} />
               {!collapsed ? <span>{item.label}</span> : null}
             </Link>
           );
         })}
       </nav>
 
-      <div className="border-t border-[#1a2744] p-3">
-        {!collapsed ? (
-          <div className="flex items-center gap-2">
-            <p className="truncate text-xs text-[#9ca3af]">{session?.user?.email ?? "Guest"}</p>
-            {session?.user?.isPro ? <span className="rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
+      {/* ── Footer actions ── */}
+      <div className="border-t p-2 space-y-1" style={{ borderColor: "var(--border)" }}>
+        {!collapsed && session?.user?.email ? (
+          <div className="flex items-center gap-2 px-3 py-2">
+            <div
+              className="h-6 w-6 rounded-full flex items-center justify-center text-[10px] font-bold text-white shrink-0"
+              style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)" }}
+            >
+              {session.user.email.charAt(0).toUpperCase()}
+            </div>
+            <p
+              className="truncate text-xs font-medium"
+              style={{ color: "var(--text-secondary)" }}
+            >
+              {session.user.email}
+            </p>
+            {session.user?.isPro ? (
+              <span className="shrink-0 rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">
+                PRO
+              </span>
+            ) : null}
           </div>
         ) : null}
+
         {session && !session.user?.isPro ? (
           <Link
             href="/pricing"
             onClick={onCloseMobile}
-            className="mt-2 flex w-full items-center justify-center rounded-lg bg-amber-400 px-3 py-2 text-sm font-semibold text-black transition hover:bg-amber-300"
             title={collapsed ? "Upgrade to Pro" : undefined}
+            className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-black transition hover:opacity-90"
+            style={{ background: "linear-gradient(135deg, #fbbf24, #f59e0b)" }}
           >
-            {collapsed ? "PRO" : "Upgrade to Pro"}
+            {collapsed ? "PRO" : "⚡ Upgrade to Pro"}
           </Link>
         ) : null}
+
         <Link
           href="/settings"
           onClick={onCloseMobile}
-          className="mt-2 flex w-full items-center gap-2 rounded-lg bg-[#0d1421] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#1a2744]"
           title={collapsed ? "Settings" : undefined}
+          className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150"
+          style={{ color: "var(--text-secondary)" }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-hover)";
+            (e.currentTarget as HTMLElement).style.color = "var(--text-primary)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+            (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
+          }}
         >
           <SettingsIcon size={16} />
           {!collapsed ? "Settings" : null}
         </Link>
+
         {session ? (
           <button
             onClick={() => signOut({ callbackUrl: "/login" })}
-            className="mt-2 flex w-full items-center justify-center gap-2 rounded-lg bg-[#0d1421] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#1a2744]"
             title={collapsed ? "Logout" : undefined}
+            className="flex w-full items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150"
+            style={{ color: "var(--text-secondary)" }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = "var(--color-loss-bg)";
+              (e.currentTarget as HTMLElement).style.color = "var(--color-loss)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+              (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
+            }}
           >
             <LogOut size={16} />
             {!collapsed ? "Logout" : null}
@@ -128,8 +202,9 @@ export default function Sidebar({
           <Link
             href="/login"
             onClick={onCloseMobile}
-            className="mt-2 flex w-full items-center justify-center rounded-lg bg-[#0d1421] px-3 py-2 text-sm font-medium text-white transition hover:bg-[#1a2744]"
             title={collapsed ? "Login" : undefined}
+            className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-all"
+            style={{ color: "var(--text-secondary)" }}
           >
             {!collapsed ? "Login" : null}
           </Link>

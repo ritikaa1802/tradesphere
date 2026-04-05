@@ -15,20 +15,14 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname]);
 
   useEffect(() => {
-    if (!mobileSidebarOpen) {
-      return;
-    }
-
+    if (!mobileSidebarOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";
-
-    return () => {
-      document.body.style.overflow = originalOverflow;
-    };
+    return () => { document.body.style.overflow = originalOverflow; };
   }, [mobileSidebarOpen]);
 
   return (
-    <div className="min-h-screen bg-[#060b14] text-white">
+    <div className="min-h-screen theme-bg-app text-[var(--text-primary)]">
       <Sidebar
         mobileOpen={mobileSidebarOpen}
         collapsed={sidebarCollapsed}
@@ -45,21 +39,21 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       ) : null}
 
       <main
-        className={`min-h-screen bg-[#060b14] transition-[padding] duration-300 ${
+        className={`min-h-screen theme-bg-app transition-[padding] duration-300 ${
           sidebarCollapsed ? "md:pl-[84px]" : "md:pl-[220px]"
         }`}
       >
         <TopBar
           onOpenMobileMenu={() => setMobileSidebarOpen(true)}
-          onToggleSidebar={() => setSidebarCollapsed((value) => !value)}
+          onToggleSidebar={() => setSidebarCollapsed((v) => !v)}
           sidebarCollapsed={sidebarCollapsed}
         />
 
         <div className="pt-14">
           <div className="mx-auto w-full max-w-[1600px] overflow-x-hidden p-2 md:p-4 lg:p-6">
-        <div key={pathname} className="page-transition">
-          {children}
-        </div>
+            <div key={pathname} className="page-transition">
+              {children}
+            </div>
           </div>
         </div>
       </main>

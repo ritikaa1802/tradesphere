@@ -4,17 +4,102 @@
 
 @import url('https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300;0,14..32,400;0,14..32,500;0,14..32,600;0,14..32,700;0,14..32,800;0,14..32,900;1,14..32,400&display=swap');
 
+/* ══════════════════════════════════════════════════════
+   DESIGN TOKENS — CSS Custom Properties
+   Dark is default; light overrides via [data-theme="light"]
+   ══════════════════════════════════════════════════════ */
 :root {
   color-scheme: dark;
+
+  /* Backgrounds */
+  --bg-app:        #050912;
+  --bg-surface:    #0d1421;
+  --bg-surface-2:  #0a0f1a;
+  --bg-sidebar:    #0a0f1a;
+  --bg-topbar:     rgba(10, 15, 26, 0.95);
+  --bg-card:       #0d1421;
+  --bg-card-inner: #0a0f1a;
+  --bg-input:      #0d1421;
+  --bg-hover:      #0f1929;
+  --bg-active:     #0f1929;
+  --bg-skeleton:   #1a2744;
+
+  /* Borders */
+  --border:        #1a2744;
+  --border-active: #3b82f6;
+
+  /* Text */
+  --text-primary:   #ffffff;
+  --text-secondary: #9ca3af;
+  --text-tertiary:  #6b7280;
+  --text-muted:     #d1d5db;
+
+  /* Semantic colors (same in both themes) */
+  --color-profit:      #22c55e;
+  --color-profit-bg:   #123427;
+  --color-loss:        #ef4444;
+  --color-loss-bg:     #3f1d1d;
+  --color-warn:        #f59e0b;
+  --color-blue:        #3b82f6;
+  --color-blue-bg:     #14213a;
+  --color-purple:      #8b5cf6;
+  --color-purple-bg:   #24193a;
+
+  /* Shadows — none in dark mode */
+  --shadow-card:   none;
+  --shadow-topbar: none;
+  --shadow-sidebar:none;
+  --shadow-hover:  none;
 }
 
 html[data-theme="light"] {
   color-scheme: light;
+
+  /* Backgrounds */
+  --bg-app:        #F1F5F9;
+  --bg-surface:    #ffffff;
+  --bg-surface-2:  #F8FAFF;
+  --bg-sidebar:    #ffffff;
+  --bg-topbar:     rgba(255, 255, 255, 0.97);
+  --bg-card:       #ffffff;
+  --bg-card-inner: #F8FAFF;
+  --bg-input:      #F1F5F9;
+  --bg-hover:      #EFF6FF;
+  --bg-active:     #EFF6FF;
+  --bg-skeleton:   #E2E8F0;
+
+  /* Borders */
+  --border:        #E2E8F0;
+  --border-active: #2563EB;
+
+  /* Text */
+  --text-primary:   #0F172A;
+  --text-secondary: #64748B;
+  --text-tertiary:  #94A3B8;
+  --text-muted:     #334155;
+
+  /* Semantic colors — calibrated for light backgrounds */
+  --color-profit:      #16A34A;
+  --color-profit-bg:   #F0FDF4;
+  --color-loss:        #DC2626;
+  --color-loss-bg:     #FEF2F2;
+  --color-warn:        #D97706;
+  --color-blue:        #2563EB;
+  --color-blue-bg:     #EFF6FF;
+  --color-purple:      #7C3AED;
+  --color-purple-bg:   #F5F3FF;
+
+  /* Shadows — layered elevation system */
+  --shadow-card:   0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-topbar: 0 1px 0 #E2E8F0, 0 2px 8px rgba(0,0,0,0.04);
+  --shadow-sidebar:1px 0 0 #E2E8F0, 2px 0 12px rgba(0,0,0,0.04);
+  --shadow-hover:  0 4px 12px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
 }
 
-* {
-  box-sizing: border-box;
-}
+/* ══════════════════════════════════════════════════════
+   BASE STYLES
+   ══════════════════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; }
 
 html {
   min-height: 100%;
@@ -24,109 +109,330 @@ html {
 body {
   margin: 0;
   min-height: 100%;
-  background: #050912;
-  color: #f8fafc;
+  background: var(--bg-app);
+  color: var(--text-primary);
   font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 ::selection {
   background: #3b82f6;
-  color: #eef2ff;
+  color: #ffffff;
 }
 
-button,
-input,
-select,
-textarea {
-  font: inherit;
+button, input, select, textarea { font: inherit; }
+
+/* ══════════════════════════════════════════════════════
+   THEME-AWARE UTILITY CLASSES
+   Used by components via className=""
+   ══════════════════════════════════════════════════════ */
+
+/* App shell */
+.theme-bg-app     { background-color: var(--bg-app); }
+.theme-bg-surface { background-color: var(--bg-surface); }
+.theme-bg-sidebar {
+  background-color: var(--bg-sidebar);
+  box-shadow: var(--shadow-sidebar);
+}
+.theme-bg-topbar {
+  background-color: var(--bg-topbar);
+  box-shadow: var(--shadow-topbar);
 }
 
-/* ── Skeleton ── */
+/* Cards */
+.theme-card {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-card);
+  border-radius: 12px;
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.theme-card:hover {
+  box-shadow: var(--shadow-hover);
+}
+
+.theme-card-inner {
+  background-color: var(--bg-card-inner);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+/* Icon backgrounds */
+.theme-icon-blue   { background-color: var(--color-blue-bg);   color: var(--color-blue); }
+.theme-icon-purple { background-color: var(--color-purple-bg); color: var(--color-purple); }
+.theme-icon-profit { background-color: var(--color-profit-bg); color: var(--color-profit); }
+.theme-icon-loss   { background-color: var(--color-loss-bg);   color: var(--color-loss); }
+
+/* Text */
+.theme-text-primary   { color: var(--text-primary); }
+.theme-text-secondary { color: var(--text-secondary); }
+.theme-text-muted     { color: var(--text-muted); }
+.theme-text-profit    { color: var(--color-profit); }
+.theme-text-loss      { color: var(--color-loss); }
+.theme-text-blue      { color: var(--color-blue); }
+.theme-text-purple    { color: var(--color-purple); }
+
+/* Borders */
+.theme-border { border-color: var(--border); }
+
+/* Interactive */
+.theme-hover:hover { background-color: var(--bg-hover); }
+.theme-active      { background-color: var(--bg-active); }
+.theme-btn-icon {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border);
+  color: var(--text-secondary);
+  transition: all 0.15s ease;
+}
+.theme-btn-icon:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+  box-shadow: var(--shadow-hover);
+}
+
+/* Skeletons */
+.theme-skeleton {
+  background-color: var(--bg-skeleton);
+}
+
+/* Tables */
+.theme-table-row-even { background-color: var(--bg-card); }
+.theme-table-row-odd  { background-color: var(--bg-card-inner); }
+.theme-table-row-hover:hover { background-color: var(--bg-hover); }
+
+/* Progress track */
+.theme-progress-track { background-color: var(--border); }
+
+/* ══════════════════════════════════════════════════════
+   LIGHT MODE — OVERRIDES FOR HARDCODED TAILWIND COLORS
+   Catches all hardcoded dark values used throughout the app
+   ══════════════════════════════════════════════════════ */
+
+/* ── Body & shell ── */
+html[data-theme="light"] body,
+html[data-theme="light"] .bg-\[\#060b14\],
+html[data-theme="light"] .bg-\[\#050912\] {
+  background-color: #F1F5F9 !important;
+}
+
+/* ── Card / surface backgrounds ── */
+html[data-theme="light"] .bg-\[\#0d1421\],
+html[data-theme="light"] .bg-\[\#0f1727\],
+html[data-theme="light"] .bg-slate-900,
+html[data-theme="light"] .bg-slate-950 {
+  background-color: #ffffff !important;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+}
+
+html[data-theme="light"] .bg-\[\#0a0f1a\],
+html[data-theme="light"] .bg-\[\#0a111b\],
+html[data-theme="light"] .bg-\[\#0b1320\] {
+  background-color: #F8FAFF !important;
+}
+
+html[data-theme="light"] .bg-\[\#0f1929\],
+html[data-theme="light"] .bg-\[\#0f1629\] {
+  background-color: #EFF6FF !important;
+}
+
+/* ── Sidebar / TopBar backgrounds ── */
+html[data-theme="light"] .bg-\[\#0a0f1a\]\/95 {
+  background-color: rgba(255, 255, 255, 0.97) !important;
+}
+
+/* ── Icon pill backgrounds (dark) ── */
+html[data-theme="light"] .bg-\[\#14213a\] {
+  background-color: #EFF6FF !important; /* blue-bg */
+}
+html[data-theme="light"] .bg-\[\#24193a\] {
+  background-color: #F5F3FF !important; /* purple-bg */
+}
+html[data-theme="light"] .bg-\[\#123427\] {
+  background-color: #F0FDF4 !important; /* profit-bg */
+}
+html[data-theme="light"] .bg-\[\#391a1f\],
+html[data-theme="light"] .bg-\[\#3f1d1d\] {
+  background-color: #FEF2F2 !important; /* loss-bg */
+}
+html[data-theme="light"] .bg-\[\#14532d\] {
+  background-color: #DCFCE7 !important;
+}
+html[data-theme="light"] .bg-\[\#7f1d1d\] {
+  background-color: #FEE2E2 !important;
+}
+
+/* Badge backgrounds */
+html[data-theme="light"] .bg-\[\#1a2744\] {
+  background-color: #E2E8F0 !important;
+}
+
+/* ── Borders ── */
+html[data-theme="light"] .border-\[\#1a2744\],
+html[data-theme="light"] .border-slate-700,
+html[data-theme="light"] .border-slate-800 {
+  border-color: #E2E8F0 !important;
+}
+
+/* ── Text overrides ── */
+html[data-theme="light"] .text-white,
+html[data-theme="light"] .text-slate-100,
+html[data-theme="light"] .text-slate-200,
+html[data-theme="light"] .text-\[\#c7cfe0\] {
+  color: #0F172A !important;
+}
+
+html[data-theme="light"] .text-\[\#d1d5db\],
+html[data-theme="light"] .text-slate-300 {
+  color: #334155 !important;
+}
+
+html[data-theme="light"] .text-\[\#9ca3af\],
+html[data-theme="light"] .text-slate-400,
+html[data-theme="light"] .text-slate-500 {
+  color: #64748B !important;
+}
+
+html[data-theme="light"] .text-\[\#6b7280\] {
+  color: #94A3B8 !important;
+}
+
+/* ── Semantic colors — recalibrated for light ── */
+html[data-theme="light"] .text-\[\#22c55e\] {
+  color: #16A34A !important;
+}
+html[data-theme="light"] .text-\[\#ef4444\] {
+  color: #DC2626 !important;
+}
+html[data-theme="light"] .text-\[\#3b82f6\] {
+  color: #2563EB !important;
+}
+html[data-theme="light"] .text-\[\#8b5cf6\] {
+  color: #7C3AED !important;
+}
+html[data-theme="light"] .text-\[\#f59e0b\] {
+  color: #D97706 !important;
+}
+html[data-theme="light"] .text-\[\#60a5fa\] {
+  color: #3B82F6 !important;
+}
+
+/* ── P&L badge backgrounds ── */
+html[data-theme="light"] .bg-\[\#123427\].text-\[\#22c55e\] {
+  background-color: #DCFCE7 !important;
+  color: #16A34A !important;
+}
+html[data-theme="light"] .bg-\[\#3f1d1d\].text-\[\#ef4444\] {
+  background-color: #FEE2E2 !important;
+  color: #DC2626 !important;
+}
+html[data-theme="light"] .bg-\[\#14532d\].text-\[\#22c55e\] {
+  background-color: #DCFCE7 !important;
+  color: #16A34A !important;
+}
+html[data-theme="light"] .bg-\[\#7f1d1d\].text-\[\#ef4444\] {
+  background-color: #FEE2E2 !important;
+  color: #DC2626 !important;
+}
+
+/* ── Chart SVG grid lines ── */
+html[data-theme="light"] .recharts-cartesian-grid line {
+  stroke: #E2E8F0 !important;
+}
+html[data-theme="light"] .recharts-cartesian-axis-tick-value {
+  fill: #64748B !important;
+}
+
+/* ── Tooltip override ── */
+html[data-theme="light"] .recharts-tooltip-wrapper .recharts-default-tooltip {
+  background-color: #ffffff !important;
+  border-color: #E2E8F0 !important;
+  color: #0F172A !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1) !important;
+}
+
+/* ── Fear & Greed SVG gauge arc track ── */
+html[data-theme="light"] path[stroke="#1a2744"] {
+  stroke: #E2E8F0 !important;
+}
+
+/* ── Progress bar tracks ── */
+html[data-theme="light"] .bg-\[\#1a2744\].h-2,
+html[data-theme="light"] .overflow-hidden.rounded-full.bg-\[\#1a2744\] {
+  background-color: #E2E8F0 !important;
+}
+
+/* ── Shadow: card-level brightness hover → replace with shadow ── */
+html[data-theme="light"] .hover\:brightness-110:hover {
+  filter: none !important;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.08) !important;
+  transform: translateY(-1px);
+}
+
+/* ── Border-left accent on insight card ── */
+html[data-theme="light"] .shadow-\[inset_0_1px_0_\#1a2744\] {
+  box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04) !important;
+}
+
+/* ── Remove glow/neon effects in light mode ── */
+html[data-theme="light"] .shadow-\[0_0_0_1px_rgba\(59\,130\,246\,0\.25\)\] {
+  box-shadow: 0 0 0 2px #BFDBFE !important;
+}
+
+/* ── Amber alerts ── */
+html[data-theme="light"] .border-amber-500\/30 {
+  border-color: rgba(217, 119, 6, 0.3) !important;
+}
+html[data-theme="light"] .bg-amber-500\/10 {
+  background-color: #FFFBEB !important;
+}
+html[data-theme="light"] .text-amber-200 {
+  color: #B45309 !important;
+}
+html[data-theme="light"] .text-amber-100 {
+  color: #92400E !important;
+}
+
+/* ══════════════════════════════════════════════════════
+   ANIMATIONS
+   ══════════════════════════════════════════════════════ */
+
 @keyframes skeleton-pulse {
-  0% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%   { opacity: 0.5; }
+  50%  { opacity: 1; }
   100% { opacity: 0.5; }
 }
-.animate-skeleton {
-  animation: skeleton-pulse 1.5s ease-in-out infinite;
-}
+.animate-skeleton { animation: skeleton-pulse 1.5s ease-in-out infinite; }
 
-/* ── Page transition ── */
 @keyframes fade-slide-in {
   from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.page-transition {
-  animation: fade-slide-in 300ms ease-out;
-}
+.page-transition { animation: fade-slide-in 300ms ease-out; }
 
-/* ── Hero device float ── */
 @keyframes deviceFloat {
   0%, 100% { transform: translateY(0px) rotateX(0deg); }
   50%       { transform: translateY(-14px) rotateX(1.5deg); }
 }
 
-/* ── Background orb drift ── */
 @keyframes orbDrift {
   from { transform: translate(0, 0) scale(1); }
   to   { transform: translate(4%, 6%) scale(1.08); }
 }
 
-/* ── Glow pulse ── */
 @keyframes glowPulse {
   0%, 100% { opacity: 0.65; }
   50%       { opacity: 1; }
 }
 
-/* ── Floating badge ── */
 @keyframes badgeFloat {
   0%, 100% { transform: translateY(0px); }
   50%       { transform: translateY(-6px); }
 }
 
-/* ── Smooth gradient border shimmer ── */
 @keyframes borderShimmer {
   0%   { background-position: 0% 50%; }
   50%  { background-position: 100% 50%; }
   100% { background-position: 0% 50%; }
 }
-
-/* ── Light theme overrides ── */
-html[data-theme="light"] body {
-  background: #eef4ff;
-  color: #0f172a;
-}
-
-html[data-theme="light"] .bg-\[\#060b14\],
-html[data-theme="light"] .bg-\[\#0a0f1a\],
-html[data-theme="light"] .bg-\[\#0d1421\],
-html[data-theme="light"] .bg-\[\#0f1629\],
-html[data-theme="light"] .bg-\[\#0f1929\],
-html[data-theme="light"] .bg-slate-900,
-html[data-theme="light"] .bg-slate-800,
-html[data-theme="light"] .bg-slate-950 {
-  background-color: #ffffff !important;
-}
-
-html[data-theme="light"] .border-\[\#1a2744\],
-html[data-theme="light"] .border-slate-700,
-html[data-theme="light"] .border-slate-800 {
-  border-color: #d7e3f9 !important;
-}
-
-html[data-theme="light"] .text-white,
-html[data-theme="light"] .text-slate-100,
-html[data-theme="light"] .text-slate-200 {
-  color: #0f172a !important;
-}
-
-html[data-theme="light"] .text-\[\#d1d5db\],
-html[data-theme="light"] .text-\[\#9ca3af\],
-html[data-theme="light"] .text-slate-300,
-html[data-theme="light"] .text-slate-400,
-html[data-theme="light"] .text-slate-500 {
-  color: #475569 !important;
-}
-

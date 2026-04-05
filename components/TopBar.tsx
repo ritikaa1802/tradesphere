@@ -44,7 +44,6 @@ function getTitle(pathname: string): string {
     "/signup": "Sign Up",
     "/onboarding": "Onboarding",
   };
-
   return titleMap[pathname] || "TradeSphere";
 }
 
@@ -73,14 +72,9 @@ export default function TopBar({
           fetch("/api/insights", { cache: "no-store" }),
         ]);
 
-        if (!portfolioResponse.ok) {
-          return;
-        }
-
+        if (!portfolioResponse.ok) return;
         const data = (await portfolioResponse.json()) as PortfolioSummary;
-        if (isMounted) {
-          setSummary(data);
-        }
+        if (isMounted) setSummary(data);
 
         if (leaderboardResponse.ok && isMounted) {
           const leaderboardData = (await leaderboardResponse.json()) as LeaderboardSummary;
@@ -96,29 +90,33 @@ export default function TopBar({
           });
         }
       } catch {
-        // Ignore top bar polling errors and keep last known values.
+        // Ignore polling errors
       }
     }
 
     loadSummary();
     const intervalId = setInterval(loadSummary, 30000);
-
-    return () => {
-      isMounted = false;
-      clearInterval(intervalId);
-    };
+    return () => { isMounted = false; clearInterval(intervalId); };
   }, [pathname]);
 
   const title = useMemo(() => getTitle(pathname), [pathname]);
   const pnl = summary?.pnl ?? 0;
 
   return (
-    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#1a2744] bg-[#0a0f1a]/95 px-2 backdrop-blur sm:px-4 lg:px-6">
+    <header
+      className="sticky top-0 z-30 flex h-14 items-center justify-between px-2 backdrop-blur sm:px-4 lg:px-6 transition-all duration-300"
+      style={{
+        backgroundColor: "var(--bg-topbar)",
+        boxShadow: "var(--shadow-topbar)",
+        borderBottom: "1px solid var(--border)",
+      }}
+    >
+      {/* Left: menu + title */}
       <div className="flex items-center gap-2">
         <button
           type="button"
           onClick={onOpenMobileMenu}
-          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#1a2744] bg-[#0d1421] text-[#9ca3af] hover:text-white md:hidden"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg transition-all theme-btn-icon md:hidden"
           aria-label="Open sidebar"
         >
           <Menu size={18} />
@@ -126,38 +124,69 @@ export default function TopBar({
         <button
           type="button"
           onClick={onToggleSidebar}
-          className="hidden h-9 w-9 items-center justify-center rounded-md border border-[#1a2744] bg-[#0d1421] text-[#9ca3af] hover:text-white md:inline-flex"
+          className="hidden h-9 w-9 items-center justify-center rounded-lg transition-all theme-btn-icon md:inline-flex"
           aria-label="Toggle sidebar"
         >
           {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
         </button>
-        <h1 className="text-sm font-semibold tracking-wide text-white md:text-base">{title}</h1>
+        <h1
+          className="text-sm font-semibold tracking-wide md:text-base"
+          style={{ color: "var(--text-primary)" }}
+        >
+          {title}
+        </h1>
       </div>
 
+      {/* Right: stats + toggle */}
       <div className="flex items-center gap-3 text-xs sm:text-sm md:gap-4 lg:gap-6">
         <ThemeToggle />
+
+        {/* Rank badge */}
         {pathname === "/dashboard" && yourRank !== null ? (
-          <div className="hidden rounded-md border border-[#1a2744] bg-[#0d1421] px-2 py-1 sm:block">
-            <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">YOUR RANK</p>
-            <p className="text-sm font-bold text-[#3b82f6]">
+          <div
+            className="hidden rounded-lg px-3 py-1.5 sm:block"
+            style={{
+              backgroundColor: "var(--bg-card-inner)",
+              border: "1px solid var(--border)",
+            }}
+          >
+            <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: "var(--text-tertiary)" }}>
+              YOUR RANK
+            </p>
+            <p className="text-sm font-bold" style={{ color: "var(--color-blue)" }}>
               #{yourRank}
               {streak.type !== "none" ? (
-                <span className={`ml-2 text-xs font-semibold ${streak.type === "win" ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                  | {streak.type === "win" ? "🔥" : "⚠️"} {streak.count} {streak.type === "win" ? "Win" : "Loss"} Streak
+                <span
+                  className="ml-2 text-xs font-semibold"
+                  style={{ color: streak.type === "win" ? "var(--color-profit)" : "var(--color-loss)" }}
+                >
+                  | {streak.type === "win" ? "🔥" : "⚠️"} {streak.count}{" "}
+                  {streak.type === "win" ? "Win" : "Loss"} Streak
                 </span>
               ) : null}
             </p>
           </div>
         ) : null}
+
+        {/* Portfolio value */}
         <div className="hidden sm:block">
-          <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">Portfolio Value</p>
-          <p className="text-base font-bold text-white lg:text-lg">
+          <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: "var(--text-tertiary)" }}>
+            Portfolio Value
+          </p>
+          <p className="text-base font-bold lg:text-lg" style={{ color: "var(--text-primary)" }}>
             ₹{(summary?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
+
+        {/* P&L */}
         <div>
-          <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">P&amp;L</p>
-          <p className={`inline-flex items-center gap-1 text-sm font-bold sm:text-base lg:text-lg ${pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+          <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: "var(--text-tertiary)" }}>
+            P&L
+          </p>
+          <p
+            className="inline-flex items-center gap-1 text-sm font-bold sm:text-base lg:text-lg"
+            style={{ color: pnl >= 0 ? "var(--color-profit)" : "var(--color-loss)" }}
+          >
             {pnl >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
             ₹{pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
