@@ -160,7 +160,7 @@ export default function HistoryPage() {
               type="date"
               value={dateFrom}
               onChange={(e) => setDateFrom(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-900 p-2"
+              className="w-full rounded border border-slate-700 bg-slate-900 p-2"
             />
           </div>
           <div>
@@ -169,7 +169,7 @@ export default function HistoryPage() {
               type="date"
               value={dateTo}
               onChange={(e) => setDateTo(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-900 p-2"
+              className="w-full rounded border border-slate-700 bg-slate-900 p-2"
             />
           </div>
           <div>
@@ -179,7 +179,7 @@ export default function HistoryPage() {
               value={stockFilter}
               onChange={(e) => setStockFilter(e.target.value)}
               placeholder="Filter by stock"
-              className="rounded border border-slate-700 bg-slate-900 p-2"
+              className="w-full rounded border border-slate-700 bg-slate-900 p-2"
             />
           </div>
           <div>
@@ -187,7 +187,7 @@ export default function HistoryPage() {
             <select
               value={typeFilter}
               onChange={(e) => setTypeFilter(e.target.value)}
-              className="rounded border border-slate-700 bg-slate-900 p-2"
+              className="w-full rounded border border-slate-700 bg-slate-900 p-2"
             >
               <option value="">All</option>
               <option value="buy">Buy</option>
@@ -207,33 +207,33 @@ export default function HistoryPage() {
             </Link>
           </div>
         ) : (
-          <div className="overflow-x-auto rounded-3xl border border-slate-800 bg-[#0f1629] p-4 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
-            <table className="min-w-full text-sm text-slate-200">
+          <div className="overflow-x-auto rounded-3xl border border-slate-800 bg-[#0f1629] p-3 sm:p-4 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
+            <table className="min-w-[760px] text-sm text-slate-200">
               <thead>
                 <tr className="border-b border-slate-700">
-                  <th className="text-left py-2">Date & Time</th>
-                  <th className="text-left py-2">Stock</th>
-                  <th className="text-left py-2">Type</th>
-                  <th className="text-right py-2">Price</th>
-                  <th className="text-right py-2">Quantity</th>
-                  <th className="text-right py-2">Charges</th>
-                  <th className="text-right py-2">P&L</th>
-                  <th className="text-left py-2">Note</th>
-                  <th className="text-left py-2">Mood</th>
+                  <th className="py-2 pr-3 text-left">Date & Time</th>
+                  <th className="py-2 pr-3 text-left">Stock</th>
+                  <th className="py-2 pr-3 text-left">Type</th>
+                  <th className="py-2 pr-3 text-right">Price</th>
+                  <th className="hidden py-2 pr-3 text-right sm:table-cell">Quantity</th>
+                  <th className="hidden py-2 pr-3 text-right md:table-cell">Charges</th>
+                  <th className="py-2 pr-3 text-right">P&L</th>
+                  <th className="hidden py-2 pr-3 text-left lg:table-cell">Note</th>
+                  <th className="hidden py-2 text-left md:table-cell">Mood</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredTrades.map((trade) => (
                   <tr key={trade.id} className="border-b border-slate-700">
-                    <td className="py-2">{new Date(trade.createdAt).toLocaleString()}</td>
-                    <td className="py-2">{trade.stock}</td>
-                    <td className={`py-2 font-semibold ${trade.type === "buy" ? "text-green-400" : "text-red-400"}`}>
+                    <td className="py-2 pr-3">{new Date(trade.createdAt).toLocaleString()}</td>
+                    <td className="py-2 pr-3">{trade.stock}</td>
+                    <td className={`py-2 pr-3 font-semibold ${trade.type === "buy" ? "text-green-400" : "text-red-400"}`}>
                       {trade.type.toUpperCase()}
                     </td>
-                    <td className="text-right py-2">₹{trade.price.toFixed(2)}</td>
-                    <td className="text-right py-2">{trade.quantity}</td>
-                    <td className="text-right py-2">₹{trade.charges.toFixed(2)}</td>
-                    <td className="text-right py-2">
+                    <td className="py-2 pr-3 text-right">₹{trade.price.toFixed(2)}</td>
+                    <td className="hidden py-2 pr-3 text-right sm:table-cell">{trade.quantity}</td>
+                    <td className="hidden py-2 pr-3 text-right md:table-cell">₹{trade.charges.toFixed(2)}</td>
+                    <td className="py-2 pr-3 text-right">
                       {trade.type === "sell" && trade.pnl !== null ? (
                         <span className={trade.pnl >= 0 ? "text-green-400" : "text-red-400"}>
                           ₹{trade.pnl.toFixed(2)}
@@ -242,8 +242,8 @@ export default function HistoryPage() {
                         "-"
                       )}
                     </td>
-                    <td className="py-2">{trade.note || "-"}</td>
-                    <td className="py-2">{trade.mood || "-"}</td>
+                    <td className="hidden py-2 pr-3 lg:table-cell">{trade.note || "-"}</td>
+                    <td className="hidden py-2 md:table-cell">{trade.mood || "-"}</td>
                   </tr>
                 ))}
               </tbody>

@@ -111,12 +111,12 @@ export default function CompetitionsPage() {
   }
 
   return (
-    <section className="space-y-4">
-      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-5">
+    <section className="space-y-3 sm:space-y-4">
+      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 sm:p-5">
         <h1 className="text-2xl font-bold text-white">{activeCompetition?.title || "Trading Competitions"}</h1>
         <p className="mt-1 text-sm text-[#9ca3af]">{activeCompetition?.description || "Join competitions and climb the leaderboard."}</p>
         <p className="mt-2 text-sm font-semibold text-amber-300">Prize: {activeCompetition?.prizeDescription || "TBA"}</p>
-        <div className="mt-3 grid grid-cols-4 gap-2 text-center">
+        <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
           <div className="rounded bg-[#0f1929] p-2"><p className="text-xl font-bold text-white">{countdown.days}</p><p className="text-xs text-[#9ca3af]">Days</p></div>
           <div className="rounded bg-[#0f1929] p-2"><p className="text-xl font-bold text-white">{countdown.hours}</p><p className="text-xs text-[#9ca3af]">Hours</p></div>
           <div className="rounded bg-[#0f1929] p-2"><p className="text-xl font-bold text-white">{countdown.minutes}</p><p className="text-xs text-[#9ca3af]">Minutes</p></div>
@@ -133,15 +133,16 @@ export default function CompetitionsPage() {
         {message ? <p className="mt-2 text-sm text-[#9ca3af]">{message}</p> : null}
       </div>
 
-      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
+      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-3 sm:p-4">
         <h2 className="mb-3 text-lg font-semibold text-white">Live Leaderboard</h2>
-        <table className="min-w-full text-sm">
+        <div className="overflow-x-auto">
+        <table className="min-w-[520px] text-sm">
           <thead>
             <tr className="border-b border-[#1a2744] text-left text-[#9ca3af]">
               <th className="py-2">Rank</th>
               <th className="py-2">Name</th>
               <th className="py-2 text-right">Gain %</th>
-              <th className="py-2 text-right">Trades</th>
+              <th className="hidden py-2 text-right sm:table-cell">Trades</th>
             </tr>
           </thead>
           <tbody>
@@ -157,11 +158,12 @@ export default function CompetitionsPage() {
                 <td className={`py-2 text-right font-semibold ${entry.gainPercent >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
                   {entry.gainPercent.toFixed(2)}%
                 </td>
-                <td className="py-2 text-right text-[#d1d5db]">{entry.totalTrades}</td>
+                <td className="hidden py-2 text-right text-[#d1d5db] sm:table-cell">{entry.totalTrades}</td>
               </tr>
             ))}
           </tbody>
         </table>
+        </div>
       </div>
 
       <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">

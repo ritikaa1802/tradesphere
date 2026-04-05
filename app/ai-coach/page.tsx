@@ -25,6 +25,8 @@ export default function AiCoachPage() {
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [chatLoading, setChatLoading] = useState(false);
   const [error, setError] = useState("");
+  const [reportOpen, setReportOpen] = useState(true);
+  const [chatOpen, setChatOpen] = useState(true);
   const router = useRouter();
 
   async function generateReport() {
@@ -158,7 +160,16 @@ export default function AiCoachPage() {
         {error && <p className="mb-4 text-sm text-rose-400">{error}</p>}
 
         {report && (
-          <div className="mb-6 space-y-4 rounded bg-slate-800 p-5">
+          <div className="mb-6 space-y-3">
+            <button
+              type="button"
+              onClick={() => setReportOpen((value) => !value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-left text-sm font-semibold text-white md:hidden"
+            >
+              {reportOpen ? "Hide Weekly Report" : "Show Weekly Report"}
+            </button>
+            {reportOpen ? (
+          <div className="space-y-4 rounded bg-slate-800 p-5">
             <div className="inline-block rounded-lg bg-green-600 px-3 py-1 text-sm font-semibold text-white">
               {report.personalityTag}
             </div>
@@ -179,12 +190,23 @@ export default function AiCoachPage() {
               <p>{report.tip}</p>
             </div>
           </div>
+            ) : null}
+          </div>
         )}
 
         <ProGate>
+          <div className="space-y-3">
+            <button
+              type="button"
+              onClick={() => setChatOpen((value) => !value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-800 px-4 py-2 text-left text-sm font-semibold text-white md:hidden"
+            >
+              {chatOpen ? "Hide AI Chat" : "Show AI Chat"}
+            </button>
+            {chatOpen ? (
           <div className="rounded bg-slate-800 p-5">
             <h2 className="mb-3 text-xl font-bold">Ask a follow-up question</h2>
-            <form onSubmit={sendQuestion} className="mb-4 flex gap-2">
+            <form onSubmit={sendQuestion} className="mb-4 flex flex-col gap-2 sm:flex-row">
               <input
                 value={question}
                 onChange={(e) => setQuestion(e.target.value)}
@@ -192,7 +214,7 @@ export default function AiCoachPage() {
                 placeholder="Ask AI Coach about your trades..."
                 required
               />
-              <button type="submit" className="rounded bg-blue-600 px-4 py-2 font-semibold hover:bg-blue-500" disabled={chatLoading}>
+              <button type="submit" className="rounded bg-blue-600 px-4 py-2 font-semibold hover:bg-blue-500 sm:w-auto" disabled={chatLoading}>
                 {chatLoading ? "Thinking..." : "Send"}
               </button>
             </form>
@@ -212,6 +234,8 @@ export default function AiCoachPage() {
                 </div>
               ))}
             </div>
+          </div>
+            ) : null}
           </div>
         </ProGate>
       </div>

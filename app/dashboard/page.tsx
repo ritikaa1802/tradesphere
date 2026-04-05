@@ -248,6 +248,21 @@ export default function DashboardPage() {
   const [sectorData, setSectorData] = useState<SectorResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [compactMode, setCompactMode] = useState(false);
+  const [insightsOpen, setInsightsOpen] = useState(true);
+
+  useEffect(() => {
+    const onResize = () => {
+      setCompactMode(window.innerWidth < 768);
+      if (window.innerWidth >= 768) {
+        setInsightsOpen(true);
+      }
+    };
+
+    onResize();
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -439,7 +454,7 @@ export default function DashboardPage() {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <div className={`${cardClass} border-t-2 border-t-[#3b82f6]`}>
           <div className="mb-3 inline-flex rounded-lg bg-[#14213a] p-2 text-[#3b82f6]">
             <Wallet size={18} />
@@ -491,7 +506,7 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-1">
+      <div className="grid grid-cols-1 gap-3">
         <div className={`${cardClass}`}>
           <div className="mb-2 flex items-center gap-2">
             <Gauge size={16} className="text-[#3b82f6]" />
@@ -518,7 +533,7 @@ export default function DashboardPage() {
 
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
         <div className={`${cardClass} xl:col-span-3`}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">Portfolio Value Over Time</h2>
@@ -526,7 +541,7 @@ export default function DashboardPage() {
           </div>
           <div className="h-[220px] w-full">
             <ResponsiveContainer>
-              <AreaChart data={history}>
+              <AreaChart data={history} margin={{ top: 8, right: compactMode ? 4 : 12, left: compactMode ? -14 : 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="portfolioGradient" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="0%" stopColor="#3b82f6" stopOpacity={0.4} />
@@ -534,11 +549,12 @@ export default function DashboardPage() {
                   </linearGradient>
                 </defs>
                 <CartesianGrid stroke="#1a2744" strokeDasharray="3 3" />
-                <XAxis dataKey="date" stroke="#9ca3af" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="date" stroke="#9ca3af" tick={{ fontSize: compactMode ? 9 : 11 }} interval={compactMode ? "preserveStartEnd" : 0} minTickGap={compactMode ? 28 : 8} />
                 <YAxis
                   stroke="#9ca3af"
-                  tick={{ fontSize: 11 }}
+                  tick={{ fontSize: compactMode ? 9 : 11 }}
                   domain={["auto", "auto"]}
+                  width={compactMode ? 38 : 52}
                   tickFormatter={(value: number) => `₹${Math.round(value / 1000)}k`}
                 />
                 <Tooltip
@@ -568,17 +584,17 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className={`${cardClass} xl:col-span-2`}>
+        <div className={`${cardClass} lg:col-span-2`}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">Mood vs P&amp;L</h2>
             <p className="text-xs text-[#9ca3af]">Behavior impact</p>
           </div>
           <div className="h-[250px] w-full">
             <ResponsiveContainer>
-              <BarChart data={moodVsPnlData}>
+              <BarChart data={moodVsPnlData} margin={{ top: 8, right: compactMode ? 4 : 12, left: compactMode ? -18 : 0, bottom: 0 }}>
                 <CartesianGrid stroke="#1a2744" strokeDasharray="3 3" />
-                <XAxis dataKey="mood" stroke="#9ca3af" tick={{ fontSize: 11 }} />
-                <YAxis stroke="#9ca3af" tick={{ fontSize: 11 }} />
+                <XAxis dataKey="mood" stroke="#9ca3af" tick={{ fontSize: compactMode ? 9 : 11 }} interval={0} minTickGap={compactMode ? 14 : 8} />
+                <YAxis stroke="#9ca3af" tick={{ fontSize: compactMode ? 9 : 11 }} width={compactMode ? 32 : 42} />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: "#0d1117",
@@ -614,7 +630,17 @@ export default function DashboardPage() {
       </div>
 
       <ProGate>
-      <div className="space-y-4">
+      <div className="space-y-3">
+        <button
+          type="button"
+          onClick={() => setInsightsOpen((value) => !value)}
+          className="w-full rounded-xl border border-[#1a2744] bg-[#0d1421] px-4 py-2 text-left text-sm font-semibold text-white md:hidden"
+        >
+          {insightsOpen ? "Hide Insights" : "Show Insights"}
+        </button>
+
+        {insightsOpen ? (
+          <>
         <div
           className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4"
           style={{ borderLeft: `3px solid ${getSeverityAccentColor(todaysInsight?.severity || "info")}` }}
@@ -639,7 +665,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-2">
           <div className={`${cardClass}`}>
             <h3 className="text-sm font-semibold text-white">Why You&apos;re Losing Money</h3>
             <div className="mt-3 space-y-3">
@@ -685,19 +711,21 @@ export default function DashboardPage() {
           </div>
         </div>
 
+          </>
+        ) : null}
       </div>
       </ProGate>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-5">
-        <div className={`${cardClass} xl:col-span-3`}>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
+        <div className={`${cardClass} lg:col-span-3`}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">Holdings</h2>
             <p className="text-xs text-[#9ca3af]">
               Last updated: {new Date(summary.lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
-          <div className="max-h-[260px] overflow-y-auto">
-            <table className="min-w-full text-xs">
+          <div className="max-h-[260px] overflow-auto">
+            <table className="min-w-[640px] text-xs">
               <thead>
                 <tr className="border-b border-[#1a2744] text-[#9ca3af]">
                   <th className="py-2 text-left font-medium">Stock</th>
@@ -758,7 +786,7 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="space-y-4 xl:col-span-2">
+        <div className="space-y-3 lg:col-span-2">
           <div className={`${cardClass}`}>
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-white">Sector Allocation</h2>
@@ -771,7 +799,7 @@ export default function DashboardPage() {
                     contentStyle={{ backgroundColor: "#0d1117", border: "1px solid #1a2744", color: "#fff" }}
                     formatter={(value, name, props) => [`₹${Number(value).toFixed(2)}`, `${String(name)} (${(props.payload as SectorPoint).percentage.toFixed(1)}%)`]}
                   />
-                  <Pie data={sectorData?.sectors || []} dataKey="value" nameKey="sector" outerRadius={80} label>
+                  <Pie data={sectorData?.sectors || []} dataKey="value" nameKey="sector" outerRadius={compactMode ? 64 : 80} label={!compactMode}>
                     {(sectorData?.sectors || []).map((entry, index) => (
                       <Cell key={entry.sector} fill={SECTOR_COLORS[index % SECTOR_COLORS.length]} />
                     ))}

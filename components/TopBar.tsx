@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { usePathname } from "next/navigation";
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 interface PortfolioSummary {
   balance: number;
@@ -47,7 +47,15 @@ function getTitle(pathname: string): string {
   return titleMap[pathname] || "TradeSphere";
 }
 
-export default function TopBar() {
+export default function TopBar({
+  onOpenMobileMenu,
+  onToggleSidebar,
+  sidebarCollapsed,
+}: {
+  onOpenMobileMenu: () => void;
+  onToggleSidebar: () => void;
+  sidebarCollapsed: boolean;
+}) {
   const pathname = usePathname();
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [yourRank, setYourRank] = useState<number | null>(null);
@@ -104,11 +112,30 @@ export default function TopBar() {
   const pnl = summary?.pnl ?? 0;
 
   return (
-    <header className="fixed left-[220px] right-0 top-0 z-30 flex h-14 items-center justify-between border-b border-[#1a2744] bg-[#0a0f1a] px-6">
-      <h1 className="text-sm font-semibold tracking-wide text-white">{title}</h1>
-      <div className="flex items-center gap-6 text-sm">
+    <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#1a2744] bg-[#0a0f1a]/95 px-2 backdrop-blur sm:px-4 lg:px-6">
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={onOpenMobileMenu}
+          className="inline-flex h-9 w-9 items-center justify-center rounded-md border border-[#1a2744] bg-[#0d1421] text-[#9ca3af] hover:text-white md:hidden"
+          aria-label="Open sidebar"
+        >
+          <Menu size={18} />
+        </button>
+        <button
+          type="button"
+          onClick={onToggleSidebar}
+          className="hidden h-9 w-9 items-center justify-center rounded-md border border-[#1a2744] bg-[#0d1421] text-[#9ca3af] hover:text-white md:inline-flex"
+          aria-label="Toggle sidebar"
+        >
+          {sidebarCollapsed ? <PanelLeftOpen size={18} /> : <PanelLeftClose size={18} />}
+        </button>
+        <h1 className="text-sm font-semibold tracking-wide text-white md:text-base">{title}</h1>
+      </div>
+
+      <div className="flex items-center gap-3 text-xs sm:text-sm md:gap-4 lg:gap-6">
         {pathname === "/dashboard" && yourRank !== null ? (
-          <div className="rounded-md border border-[#1a2744] bg-[#0d1421] px-2 py-1">
+          <div className="hidden rounded-md border border-[#1a2744] bg-[#0d1421] px-2 py-1 sm:block">
             <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">YOUR RANK</p>
             <p className="text-sm font-bold text-[#3b82f6]">
               #{yourRank}
@@ -120,15 +147,15 @@ export default function TopBar() {
             </p>
           </div>
         ) : null}
-        <div>
+        <div className="hidden sm:block">
           <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">Portfolio Value</p>
-          <p className="text-lg font-bold text-white">
+          <p className="text-base font-bold text-white lg:text-lg">
             ₹{(summary?.balance ?? 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
         <div>
           <p className="text-[10px] uppercase tracking-wide text-[#9ca3af]">P&amp;L</p>
-          <p className={`inline-flex items-center gap-1 text-lg font-bold ${pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+          <p className={`inline-flex items-center gap-1 text-sm font-bold sm:text-base lg:text-lg ${pnl >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
             {pnl >= 0 ? <ArrowUpRight size={16} /> : <ArrowDownRight size={16} />}
             ₹{pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
