@@ -716,15 +716,15 @@ export default function DashboardPage() {
       </div>
       </ProGate>
 
-      <div className="grid grid-cols-1 gap-3 lg:grid-cols-5">
-        <div className={`${cardClass} lg:col-span-3`}>
+      <div className="grid grid-cols-1 gap-3 lg:grid-cols-5 lg:items-stretch">
+        <div className={`${cardClass} h-full lg:col-span-3`}>
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-white">Holdings</h2>
             <p className="text-xs text-[#9ca3af]">
               Last updated: {new Date(summary.lastUpdated).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
             </p>
           </div>
-          <div className="max-h-[260px] overflow-auto">
+          <div className="overflow-x-auto">
             <table className="min-w-[640px] text-xs">
               <thead>
                 <tr className="border-b border-[#1a2744] text-[#9ca3af]">
@@ -786,82 +786,80 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="space-y-3 lg:col-span-2">
-          <div className={`${cardClass}`}>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-white">Sector Allocation</h2>
-              <p className="text-xs text-[#9ca3af]">Portfolio mix</p>
-            </div>
-            <div className="h-[220px] w-full">
-              <ResponsiveContainer>
-                <PieChart>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#0d1117", border: "1px solid #1a2744", color: "#fff" }}
-                    formatter={(value, name, props) => [`₹${Number(value).toFixed(2)}`, `${String(name)} (${(props.payload as SectorPoint).percentage.toFixed(1)}%)`]}
-                  />
-                  <Pie data={sectorData?.sectors || []} dataKey="value" nameKey="sector" outerRadius={compactMode ? 64 : 80} label={!compactMode}>
-                    {(sectorData?.sectors || []).map((entry, index) => (
-                      <Cell key={entry.sector} fill={SECTOR_COLORS[index % SECTOR_COLORS.length]} />
-                    ))}
-                  </Pie>
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-2 rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-3">
-              <p className="text-sm font-semibold text-white">Diversification Score: {sectorData?.diversification?.score ?? 1}/10</p>
-              <p className="mt-1 text-xs text-[#9ca3af]">{sectorData?.diversification?.label || "Highly Concentrated ⚠️"}</p>
-              <p className="mt-1 text-xs text-[#9ca3af]">{sectorData?.diversification?.tip || "Add more sectors to reduce concentration risk."}</p>
-            </div>
+        <div className={`${cardClass} h-full lg:col-span-2`}>
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-white">Sector Allocation</h2>
+            <p className="text-xs text-[#9ca3af]">Portfolio mix</p>
           </div>
-
-          <div className={`${cardClass}`}>
-            <div className="mb-3 flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-white">Recent Trades</h2>
-              <p className="text-xs text-[#9ca3af]">Last 5</p>
-            </div>
-            <div className="space-y-2">
-              {recentTrades.length === 0 ? (
-                <div className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-4 text-center text-sm text-[#9ca3af]">
-                  <p>No trades yet. Start with your first order.</p>
-                  <Link href="/trade" className="mt-2 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
-                    Go to Trade →
-                  </Link>
-                </div>
-              ) : (
-                recentTrades.map((trade) => (
-                  <div key={trade.id} className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] px-3 py-2">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-bold text-white">{trade.stock}</p>
-                      <span
-                        className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
-                          trade.type.toLowerCase() === "buy"
-                            ? "bg-[#14532d] text-[#22c55e]"
-                            : "bg-[#7f1d1d] text-[#ef4444]"
-                        }`}
-                      >
-                        {trade.type.toUpperCase()}
-                      </span>
-                    </div>
-                    <div className="mt-1 flex items-center justify-between text-xs">
-                      <p className="text-[#9ca3af]">
-                        ₹{trade.price.toFixed(2)} x {trade.quantity}
-                      </p>
-                      <p className={`inline-flex items-center gap-1 ${(trade.pnl ?? 0) >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                        {(trade.pnl ?? 0) >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
-                        {trade.pnl === null ? "-" : `₹${trade.pnl.toFixed(2)}`}
-                      </p>
-                    </div>
-                    <p className="mt-1 text-[11px] uppercase tracking-wide text-[#6b7280]">{timeAgo(trade.createdAt)}</p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <Link href="/history" className="mt-3 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
-              View full history →
-            </Link>
+          <div className="h-[220px] w-full">
+            <ResponsiveContainer>
+              <PieChart>
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#0d1117", border: "1px solid #1a2744", color: "#fff" }}
+                  formatter={(value, name, props) => [`₹${Number(value).toFixed(2)}`, `${String(name)} (${(props.payload as SectorPoint).percentage.toFixed(1)}%)`]}
+                />
+                <Pie data={sectorData?.sectors || []} dataKey="value" nameKey="sector" outerRadius={compactMode ? 64 : 80} label={!compactMode}>
+                  {(sectorData?.sectors || []).map((entry, index) => (
+                    <Cell key={entry.sector} fill={SECTOR_COLORS[index % SECTOR_COLORS.length]} />
+                  ))}
+                </Pie>
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+          <div className="mt-2 rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-3">
+            <p className="text-sm font-semibold text-white">Diversification Score: {sectorData?.diversification?.score ?? 1}/10</p>
+            <p className="mt-1 text-xs text-[#9ca3af]">{sectorData?.diversification?.label || "Highly Concentrated ⚠️"}</p>
+            <p className="mt-1 text-xs text-[#9ca3af]">{sectorData?.diversification?.tip || "Add more sectors to reduce concentration risk."}</p>
           </div>
         </div>
+      </div>
+
+      <div className={cardClass}>
+        <div className="mb-3 flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-white">Recent Trades</h2>
+          <p className="text-xs text-[#9ca3af]">Last 5</p>
+        </div>
+        <div className="space-y-2">
+          {recentTrades.length === 0 ? (
+            <div className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] p-4 text-center text-sm text-[#9ca3af]">
+              <p>No trades yet. Start with your first order.</p>
+              <Link href="/trade" className="mt-2 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
+                Go to Trade →
+              </Link>
+            </div>
+          ) : (
+            recentTrades.map((trade) => (
+              <div key={trade.id} className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] px-3 py-2">
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-bold text-white">{trade.stock}</p>
+                  <span
+                    className={`rounded px-2 py-0.5 text-[10px] font-semibold ${
+                      trade.type.toLowerCase() === "buy"
+                        ? "bg-[#14532d] text-[#22c55e]"
+                        : "bg-[#7f1d1d] text-[#ef4444]"
+                    }`}
+                  >
+                    {trade.type.toUpperCase()}
+                  </span>
+                </div>
+                <div className="mt-1 flex items-center justify-between text-xs">
+                  <p className="text-[#9ca3af]">
+                    ₹{trade.price.toFixed(2)} x {trade.quantity}
+                  </p>
+                  <p className={`inline-flex items-center gap-1 ${(trade.pnl ?? 0) >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
+                    {(trade.pnl ?? 0) >= 0 ? <ArrowUp size={12} /> : <ArrowDown size={12} />}
+                    {trade.pnl === null ? "-" : `₹${trade.pnl.toFixed(2)}`}
+                  </p>
+                </div>
+                <p className="mt-1 text-[11px] uppercase tracking-wide text-[#6b7280]">{timeAgo(trade.createdAt)}</p>
+              </div>
+            ))
+          )}
+        </div>
+
+        <Link href="/history" className="mt-3 inline-block text-xs font-semibold text-[#3b82f6] hover:text-[#60a5fa]">
+          View full history →
+        </Link>
       </div>
 
       <div className={cardClass}>
