@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
-import { Globe, Zap, TrendingUp, Brain, Shield, Trophy, BarChart2, type LucideIcon } from "lucide-react";
+import { Globe, Trophy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import HeroAnimation from "@/components/HeroAnimation";
+import SystemFlow from "@/components/SystemFlow";
 
 // ─── Animated number counter ─────────────────────────────────────────────────
 function AnimatedCounter({ end, prefix = "", suffix = "" }: { end: number; prefix?: string; suffix?: string }) {
@@ -25,53 +26,6 @@ function AnimatedCounter({ end, prefix = "", suffix = "" }: { end: number; prefi
     return () => obs.disconnect();
   }, [end]);
   return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
-}
-
-// ─── Feature card ────────────────────────────────────────────────────────────
-function FeatureCard({
-  icon: Icon,
-  title,
-  desc,
-  gradient,
-  delay,
-}: {
-  icon: LucideIcon;
-  title: string;
-  desc: string;
-  gradient: string;
-  delay: number;
-}) {
-  const [hovered, setHovered] = useState(false);
-  return (
-    <article
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      style={{
-        background: hovered
-          ? "linear-gradient(145deg, rgba(15,25,50,0.95), rgba(10,18,38,0.95))"
-          : "linear-gradient(145deg, rgba(13,20,35,0.9), rgba(8,14,26,0.9))",
-        border: hovered ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(26,39,68,0.7)",
-        borderRadius: "20px",
-        padding: "28px 24px",
-        transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)",
-        transform: hovered ? "translateY(-6px) scale(1.02)" : "translateY(0) scale(1)",
-        boxShadow: hovered
-          ? "0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(59,130,246,0.1)"
-          : "0 4px 20px rgba(0,0,0,0.3)",
-        animationDelay: `${delay}ms`,
-        backdropFilter: "blur(12px)",
-      }}
-    >
-      <div
-        className="inline-flex h-12 w-12 items-center justify-center rounded-xl mb-5"
-        style={{ background: gradient, boxShadow: hovered ? `0 0 20px ${gradient.includes("22c55e") ? "rgba(34,197,94,0.3)" : "rgba(59,130,246,0.3)"}` : "none", transition: "box-shadow 0.3s ease" }}
-      >
-        <Icon size={22} className="text-white" />
-      </div>
-      <h3 className="text-base font-semibold text-white mb-2">{title}</h3>
-      <p className="text-sm leading-relaxed text-slate-400">{desc}</p>
-    </article>
-  );
 }
 
 // ─── Pricing card ─────────────────────────────────────────────────────────────
@@ -159,33 +113,6 @@ function PricingCard({
   );
 }
 
-// ─── Step card ────────────────────────────────────────────────────────────────
-function StepCard({ num, title, desc, delay }: { num: string; title: string; desc: string; delay: number }) {
-  return (
-    <div
-      className="relative flex flex-col gap-4 rounded-2xl p-6"
-      style={{
-        background: "linear-gradient(145deg, rgba(13,20,35,0.85), rgba(8,14,26,0.85))",
-        border: "1px solid rgba(26,39,68,0.7)",
-        backdropFilter: "blur(12px)",
-        animationDelay: `${delay}ms`,
-      }}
-    >
-      <div
-        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
-        style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", color: "white" }}
-      >
-        {num}
-      </div>
-      <div>
-        <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
-        <p className="text-sm text-slate-400">{desc}</p>
-      </div>
-      {/* Connector line (hidden on last) */}
-    </div>
-  );
-}
-
 // ─── Main page ───────────────────────────────────────────────────────────────
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
@@ -197,44 +124,6 @@ export default function Home() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  const features = [
-    {
-      icon: Brain,
-      title: "AI Behavioral Coach",
-      desc: "Get personalized weekly reports based on your actual trades, entry patterns, and emotional state at time of trade.",
-      gradient: "linear-gradient(135deg, #6366f1, #3b82f6)",
-    },
-    {
-      icon: Zap,
-      title: "Emotion Journal",
-      desc: "Log your mood before every trade and visualize how emotions directly impact your P&L and decision quality.",
-      gradient: "linear-gradient(135deg, #f59e0b, #ef4444)",
-    },
-    {
-      icon: Shield,
-      title: "Mistake Detector",
-      desc: "Automatically identifies panic selling, revenge trading, FOMO entries, and over-leverage in real time.",
-      gradient: "linear-gradient(135deg, #ec4899, #8b5cf6)",
-    },
-    {
-      icon: TrendingUp,
-      title: "Live Market Data",
-      desc: "Real NSE & BSE prices streamed with full candlestick charts, volume indicators, and multi-timeframe analysis.",
-      gradient: "linear-gradient(135deg, #06b6d4, #22c55e)",
-    },
-    {
-      icon: Trophy,
-      title: "Weekly Competitions",
-      desc: "Compete with traders across India in skill-based weekly tournaments with live leaderboard rankings.",
-      gradient: "linear-gradient(135deg, #f97316, #eab308)",
-    },
-    {
-      icon: BarChart2,
-      title: "Deep Analytics",
-      desc: "Win rate, risk-reward score, streak analysis, loss breakdown, and behavioral pattern insights — all in one place.",
-      gradient: "linear-gradient(135deg, #3b82f6, #06b6d4)",
-    },
-  ];
 
   return (
     <main
@@ -386,57 +275,10 @@ export default function Home() {
         </div>
       </section>
 
-      {/* ── FEATURES ─────────────────────────────────────────────────────────── */}
-      <section id="features" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-600/8 px-4 py-1.5 text-xs font-medium text-blue-400 mb-5"
-            style={{ backdropFilter: "blur(8px)", boxShadow: "0 0 20px rgba(59,130,246,0.1)" }}>
-            <Zap size={12} /> Platform Features
-          </div>
-          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
-            Everything you need to become
-            <br />
-            <span style={{ background: "linear-gradient(135deg, #60a5fa, #a78bfa, #38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
-              a better trader
-            </span>
-          </h2>
-          <p className="mt-5 max-w-2xl mx-auto text-slate-400 text-base sm:text-lg">
-            Built for serious traders who want to understand their psychology, improve consistently, and grow their edge.
-          </p>
-        </div>
-
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {features.map((f, i) => (
-            <FeatureCard key={f.title} {...f} delay={i * 80} />
-          ))}
-        </div>
-      </section>
-
-      {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
-      <section id="how-it-works" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="text-center mb-14">
-          <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-600/8 px-4 py-1.5 text-xs font-medium text-violet-400 mb-5"
-            style={{ backdropFilter: "blur(8px)" }}>
-            <Shield size={12} /> How It Works
-          </div>
-          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
-            Start in minutes. Improve for months.
-          </h2>
-        </div>
-
-        <div className="relative grid gap-4 md:grid-cols-3">
-          {/* Connecting line */}
-          <div
-            className="absolute top-8 left-1/4 right-1/4 h-px hidden md:block"
-            style={{ background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.5) 20%, rgba(124,58,237,0.5) 80%, transparent)" }}
-          />
-          {[
-            { num: "01", title: "Sign Up & Get ₹1,00,000", desc: "Create your free account and receive ₹1 lakh in virtual capital to start trading real markets with zero risk.", delay: 0 },
-            { num: "02", title: "Trade Real NSE/BSE Stocks", desc: "Execute trades on live market prices with full candlestick charts, technical indicators, and order management.", delay: 100 },
-            { num: "03", title: "Get AI Insights & Improve", desc: "Your AI coach analyzes every trade, detects emotional patterns, and delivers weekly personalized improvement reports.", delay: 200 },
-          ].map((s) => <StepCard key={s.num} {...s} />)}
-        </div>
-      </section>
+      {/* ── SYSTEM FLOW (Formerly Features & How it Works) ──────────────────── */}
+      <div id="features">
+        <SystemFlow />
+      </div>
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
       <section id="pricing" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
