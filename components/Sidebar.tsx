@@ -49,7 +49,7 @@ export default function Sidebar({
 
   return (
     <aside
-      className={`fixed inset-y-0 left-0 z-40 flex h-screen border-r border-[#1a2744] bg-[#0a0f1a] transition-all duration-300 ${
+      className={`fixed inset-y-0 left-0 z-40 flex h-screen flex-col border-r border-[#1a2744] bg-[#0a0f1a] transition-all duration-300 ${
         collapsed ? "w-[84px]" : "w-[220px]"
       } ${mobileOpen ? "translate-x-0" : "-translate-x-full"} md:translate-x-0`}
     >
