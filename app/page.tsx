@@ -1,167 +1,604 @@
-import Link from "next/link";
-import { Globe } from "lucide-react";
-import ThemeToggle from "@/components/ThemeToggle";
+"use client";
 
-export default function Home() {
+import Link from "next/link";
+import { Globe, Zap, TrendingUp, Brain, Shield, Trophy, BarChart2, type LucideIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import HeroAnimation from "@/components/HeroAnimation";
+
+// ─── Animated number counter ─────────────────────────────────────────────────
+function AnimatedCounter({ end, prefix = "", suffix = "" }: { end: number; prefix?: string; suffix?: string }) {
+  const [count, setCount] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  useEffect(() => {
+    const obs = new IntersectionObserver(([entry]) => {
+      if (!entry.isIntersecting) return;
+      obs.disconnect();
+      let start = 0;
+      const step = Math.ceil(end / 60);
+      const t = setInterval(() => {
+        start += step;
+        if (start >= end) { setCount(end); clearInterval(t); }
+        else setCount(start);
+      }, 20);
+    });
+    if (ref.current) obs.observe(ref.current);
+    return () => obs.disconnect();
+  }, [end]);
+  return <span ref={ref}>{prefix}{count.toLocaleString()}{suffix}</span>;
+}
+
+// ─── Feature card ────────────────────────────────────────────────────────────
+function FeatureCard({
+  icon: Icon,
+  title,
+  desc,
+  gradient,
+  delay,
+}: {
+  icon: LucideIcon;
+  title: string;
+  desc: string;
+  gradient: string;
+  delay: number;
+}) {
+  const [hovered, setHovered] = useState(false);
   return (
-    <main className="min-h-screen bg-[#060b14] text-white">
-      <header className="sticky top-0 z-50 border-b border-[#1a2744] bg-[#060b14]/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-3 sm:px-6 lg:px-8">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#0d1421] text-[#3b82f6]">
-              <Globe size={18} />
+    <article
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: hovered
+          ? "linear-gradient(145deg, rgba(15,25,50,0.95), rgba(10,18,38,0.95))"
+          : "linear-gradient(145deg, rgba(13,20,35,0.9), rgba(8,14,26,0.9))",
+        border: hovered ? "1px solid rgba(59,130,246,0.3)" : "1px solid rgba(26,39,68,0.7)",
+        borderRadius: "20px",
+        padding: "28px 24px",
+        transition: "all 0.35s cubic-bezier(0.22,1,0.36,1)",
+        transform: hovered ? "translateY(-6px) scale(1.02)" : "translateY(0) scale(1)",
+        boxShadow: hovered
+          ? "0 20px 60px rgba(0,0,0,0.5), 0 0 30px rgba(59,130,246,0.1)"
+          : "0 4px 20px rgba(0,0,0,0.3)",
+        animationDelay: `${delay}ms`,
+        backdropFilter: "blur(12px)",
+      }}
+    >
+      <div
+        className="inline-flex h-12 w-12 items-center justify-center rounded-xl mb-5"
+        style={{ background: gradient, boxShadow: hovered ? `0 0 20px ${gradient.includes("22c55e") ? "rgba(34,197,94,0.3)" : "rgba(59,130,246,0.3)"}` : "none", transition: "box-shadow 0.3s ease" }}
+      >
+        <Icon size={22} className="text-white" />
+      </div>
+      <h3 className="text-base font-semibold text-white mb-2">{title}</h3>
+      <p className="text-sm leading-relaxed text-slate-400">{desc}</p>
+    </article>
+  );
+}
+
+// ─── Pricing card ─────────────────────────────────────────────────────────────
+function PricingCard({
+  name,
+  price,
+  features,
+  isPro,
+  href,
+}: {
+  name: string;
+  price: string;
+  features: string[];
+  isPro?: boolean;
+  href: string;
+}) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="relative rounded-2xl p-px overflow-hidden"
+      style={{
+        background: isPro
+          ? `linear-gradient(135deg, ${hovered ? "rgba(99,102,241,0.8)" : "rgba(59,130,246,0.6)"}, rgba(124,58,237,0.6))`
+          : "linear-gradient(135deg, rgba(26,39,68,0.5), rgba(15,23,42,0.5))",
+        transition: "all 0.3s ease",
+        transform: hovered ? "scale(1.02)" : "scale(1)",
+        boxShadow: isPro && hovered ? "0 0 60px rgba(59,130,246,0.25)" : "none",
+      }}
+    >
+      {isPro && (
+        <div
+          className="absolute top-0 left-0 right-0 h-px"
+          style={{ background: "linear-gradient(90deg, transparent, rgba(99,102,241,0.8), transparent)" }}
+        />
+      )}
+      <div
+        className="relative rounded-2xl p-8 h-full"
+        style={{ background: isPro ? "rgba(10,15,30,0.95)" : "rgba(13,20,35,0.95)" }}
+      >
+        {isPro && (
+          <span
+            className="absolute -top-px right-6 rounded-b-lg px-4 py-1 text-[10px] font-bold uppercase tracking-widest"
+            style={{ background: "linear-gradient(135deg, #6366f1, #3b82f6)", color: "white" }}
+          >
+            Most Popular
+          </span>
+        )}
+        <div className="mb-6">
+          <p className="text-sm font-medium text-slate-400 mb-2">{name}</p>
+          <p className="text-4xl font-extrabold text-white">{price}</p>
+        </div>
+        <ul className="space-y-3 mb-8">
+          {features.map((f) => (
+            <li key={f} className="flex items-start gap-3 text-sm text-slate-300">
+              <svg className="h-4 w-4 mt-0.5 shrink-0" style={{ color: isPro ? "#6366f1" : "#22c55e" }} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
+              </svg>
+              {f}
+            </li>
+          ))}
+        </ul>
+        <Link
+          href={href}
+          className="block w-full rounded-xl py-3 text-center text-sm font-semibold transition-all duration-300"
+          style={
+            isPro
+              ? {
+                  background: "linear-gradient(135deg, #6366f1, #3b82f6)",
+                  color: "white",
+                  boxShadow: hovered ? "0 0 30px rgba(99,102,241,0.5)" : "none",
+                }
+              : {
+                  border: "1px solid rgba(255,255,255,0.12)",
+                  background: hovered ? "rgba(255,255,255,0.06)" : "transparent",
+                  color: "white",
+                }
+          }
+        >
+          {isPro ? "Upgrade to Pro" : "Get Started Free"}
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ─── Step card ────────────────────────────────────────────────────────────────
+function StepCard({ num, title, desc, delay }: { num: string; title: string; desc: string; delay: number }) {
+  return (
+    <div
+      className="relative flex flex-col gap-4 rounded-2xl p-6"
+      style={{
+        background: "linear-gradient(145deg, rgba(13,20,35,0.85), rgba(8,14,26,0.85))",
+        border: "1px solid rgba(26,39,68,0.7)",
+        backdropFilter: "blur(12px)",
+        animationDelay: `${delay}ms`,
+      }}
+    >
+      <div
+        className="inline-flex h-10 w-10 items-center justify-center rounded-full text-sm font-bold"
+        style={{ background: "linear-gradient(135deg, #2563eb, #7c3aed)", color: "white" }}
+      >
+        {num}
+      </div>
+      <div>
+        <h3 className="text-base font-semibold text-white mb-1">{title}</h3>
+        <p className="text-sm text-slate-400">{desc}</p>
+      </div>
+      {/* Connector line (hidden on last) */}
+    </div>
+  );
+}
+
+// ─── Main page ───────────────────────────────────────────────────────────────
+export default function Home() {
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 20);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const features = [
+    {
+      icon: Brain,
+      title: "AI Behavioral Coach",
+      desc: "Get personalized weekly reports based on your actual trades, entry patterns, and emotional state at time of trade.",
+      gradient: "linear-gradient(135deg, #6366f1, #3b82f6)",
+    },
+    {
+      icon: Zap,
+      title: "Emotion Journal",
+      desc: "Log your mood before every trade and visualize how emotions directly impact your P&L and decision quality.",
+      gradient: "linear-gradient(135deg, #f59e0b, #ef4444)",
+    },
+    {
+      icon: Shield,
+      title: "Mistake Detector",
+      desc: "Automatically identifies panic selling, revenge trading, FOMO entries, and over-leverage in real time.",
+      gradient: "linear-gradient(135deg, #ec4899, #8b5cf6)",
+    },
+    {
+      icon: TrendingUp,
+      title: "Live Market Data",
+      desc: "Real NSE & BSE prices streamed with full candlestick charts, volume indicators, and multi-timeframe analysis.",
+      gradient: "linear-gradient(135deg, #06b6d4, #22c55e)",
+    },
+    {
+      icon: Trophy,
+      title: "Weekly Competitions",
+      desc: "Compete with traders across India in skill-based weekly tournaments with live leaderboard rankings.",
+      gradient: "linear-gradient(135deg, #f97316, #eab308)",
+    },
+    {
+      icon: BarChart2,
+      title: "Deep Analytics",
+      desc: "Win rate, risk-reward score, streak analysis, loss breakdown, and behavioral pattern insights — all in one place.",
+      gradient: "linear-gradient(135deg, #3b82f6, #06b6d4)",
+    },
+  ];
+
+  return (
+    <main
+      className="min-h-screen text-white overflow-x-hidden"
+      style={{ background: "#050912", fontFamily: "'Inter', system-ui, -apple-system, sans-serif" }}
+    >
+      {/* ── HEADER ──────────────────────────────────────────────────────────── */}
+      <header
+        className="fixed top-0 left-0 right-0 z-50 transition-all duration-500"
+        style={{
+          background: scrolled ? "rgba(5,9,18,0.92)" : "transparent",
+          backdropFilter: scrolled ? "blur(20px)" : "none",
+          borderBottom: scrolled ? "1px solid rgba(26,39,68,0.6)" : "1px solid transparent",
+          boxShadow: scrolled ? "0 4px 30px rgba(0,0,0,0.4)" : "none",
+        }}
+      >
+        <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 group">
+            <div
+              className="flex h-9 w-9 items-center justify-center rounded-xl transition-all duration-300 group-hover:scale-110"
+              style={{
+                background: "linear-gradient(135deg, #1d4ed8, #7c3aed)",
+                boxShadow: "0 0 20px rgba(29,78,216,0.4)",
+              }}
+            >
+              <Globe size={16} className="text-white" />
             </div>
             <div>
-              <p className="text-lg font-bold tracking-wide">TradeSphere</p>
-              <p className="text-xs text-[#9ca3af]">Trading Terminal</p>
+              <p className="text-sm font-bold tracking-wide text-white leading-none">TradeSphere</p>
+              <p className="text-[10px] text-slate-500 leading-none mt-0.5">Trading Terminal</p>
             </div>
-          </div>
+          </Link>
 
-          <nav className="hidden items-center gap-6 text-sm text-[#d1d5db] md:flex">
-            <a href="#features" className="hover:text-white">Features</a>
-            <a href="#pricing" className="hover:text-white">Pricing</a>
-            <Link href="/leaderboard" className="hover:text-white">Leaderboard</Link>
+          {/* Desktop nav */}
+          <nav className="hidden items-center gap-1 md:flex">
+            {[
+              { label: "Features", href: "#features" },
+              { label: "How It Works", href: "#how-it-works" },
+              { label: "Pricing", href: "#pricing" },
+              { label: "Leaderboard", href: "/leaderboard" },
+            ].map(({ label, href }) => (
+              <a
+                key={label}
+                href={href}
+                className="rounded-lg px-4 py-2 text-sm font-medium text-slate-400 transition-all duration-200 hover:bg-white/5 hover:text-white"
+              >
+                {label}
+              </a>
+            ))}
           </nav>
 
-          <div className="flex items-center gap-2 sm:gap-3">
-            <ThemeToggle />
-            <Link href="/login" className="rounded-lg border border-[#1a2744] bg-transparent px-3 py-2 text-sm font-semibold text-white hover:bg-[#0d1421] sm:px-4">
+          {/* CTA group */}
+          <div className="hidden items-center gap-2 md:flex">
+            <Link
+              href="/login"
+              className="rounded-xl border border-white/10 bg-transparent px-4 py-2 text-sm font-semibold text-slate-300 transition-all duration-200 hover:border-white/20 hover:bg-white/5 hover:text-white"
+            >
               Login
             </Link>
-            <Link href="/signup" className="rounded-lg bg-[#3b82f6] px-3 py-2 text-sm font-semibold text-white hover:bg-[#2563eb] sm:px-4">
-              Start Free
+            <Link
+              href="/signup"
+              className="rounded-xl px-5 py-2 text-sm font-semibold text-white transition-all duration-300 hover:scale-105"
+              style={{
+                background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                boxShadow: "0 0 20px rgba(37,99,235,0.4)",
+              }}
+            >
+              Start Free →
             </Link>
           </div>
+
+          {/* Mobile hamburger */}
+          <button
+            className="flex flex-col gap-1.5 md:hidden p-2"
+            onClick={() => setMenuOpen(!menuOpen)}
+            aria-label="Toggle menu"
+          >
+            <span className={`block h-0.5 w-5 bg-white transition-all duration-300 ${menuOpen ? "rotate-45 translate-y-2" : ""}`} />
+            <span className={`block h-0.5 w-5 bg-white transition-all duration-200 ${menuOpen ? "opacity-0" : ""}`} />
+            <span className={`block h-0.5 w-5 bg-white transition-all duration-300 ${menuOpen ? "-rotate-45 -translate-y-2" : ""}`} />
+          </button>
         </div>
+
+        {/* Mobile menu */}
+        {menuOpen && (
+          <div
+            className="md:hidden border-t px-4 py-4 flex flex-col gap-3"
+            style={{ background: "rgba(5,9,18,0.98)", borderColor: "rgba(26,39,68,0.6)" }}
+          >
+            {["Features", "How It Works", "Pricing"].map((item) => (
+              <a key={item} href={`#${item.toLowerCase().replace(" ", "-")}`} className="text-sm text-slate-300 hover:text-white py-2" onClick={() => setMenuOpen(false)}>
+                {item}
+              </a>
+            ))}
+            <div className="flex gap-2 pt-2">
+              <Link href="/login" className="flex-1 rounded-xl border border-white/10 py-2 text-center text-sm font-semibold text-white">Login</Link>
+              <Link href="/signup" className="flex-1 rounded-xl py-2 text-center text-sm font-semibold text-white" style={{ background: "linear-gradient(135deg, #2563eb, #1d4ed8)" }}>Start Free</Link>
+            </div>
+          </div>
+        )}
       </header>
 
-      <section className="mx-auto w-full max-w-7xl px-4 pb-14 pt-12 sm:px-6 lg:px-8 lg:pt-16">
-        <div className="rounded-3xl border border-[#1a2744] bg-gradient-to-br from-[#0d1421] via-[#0b1320] to-[#0a111b] p-6 sm:p-8 lg:p-12">
-          <h1 className="max-w-4xl text-4xl font-bold leading-tight sm:text-5xl lg:text-6xl">Trade Smarter. Learn Faster. Lose Less.</h1>
-          <p className="mt-5 max-w-3xl text-base text-[#9ca3af] sm:text-lg">
-            India&apos;s only paper trading app with AI behavioral coaching, emotion tracking, and personalized mistake detection.
-          </p>
+      {/* ── HERO ─────────────────────────────────────────────────────────────── */}
+      <HeroAnimation />
 
-          <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <Link href="/signup" className="inline-flex items-center justify-center rounded-lg bg-[#3b82f6] px-6 py-3 text-sm font-semibold text-white hover:bg-[#2563eb]">
-              Start Trading Free
-            </Link>
-            <a href="#how-it-works" className="inline-flex items-center justify-center rounded-lg border border-[#1a2744] px-6 py-3 text-sm font-semibold text-white hover:bg-[#0f1929]">
-              See How It Works
-            </a>
-          </div>
-
-          <div className="mt-8 grid grid-cols-1 gap-3 text-sm sm:grid-cols-2 xl:grid-cols-4">
-            {[
-              "🧠 AI-Powered Coaching",
-              "📊 Real NSE/BSE Prices",
-              "😤 Emotion Tracking",
-              "🏆 Weekly Competitions",
-            ].map((item) => (
-              <div key={item} className="rounded-lg border border-[#1a2744] bg-[#0a0f1a] px-4 py-3 text-[#d1d5db]">
+      {/* ── SOCIAL PROOF STRIP ──────────────────────────────────────────────── */}
+      <div
+        className="border-y py-4"
+        style={{ borderColor: "rgba(26,39,68,0.5)", background: "rgba(8,14,26,0.6)", backdropFilter: "blur(8px)" }}
+      >
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center justify-center gap-8 text-sm">
+            <span className="text-slate-600 text-xs uppercase tracking-widest font-medium">Trusted by traders from</span>
+            {["NSE Certified", "₹1L Virtual Capital", "Real-time BSE Prices", "Zero Risk Trading", "AI-Powered Insights"].map((item) => (
+              <span key={item} className="flex items-center gap-2 text-slate-400 font-medium text-xs">
+                <span className="h-1 w-1 rounded-full bg-blue-500" />
                 {item}
+              </span>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── KEY METRICS ─────────────────────────────────────────────────────── */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div
+          className="grid grid-cols-2 gap-4 lg:grid-cols-4 rounded-2xl p-px overflow-hidden"
+          style={{ background: "linear-gradient(135deg, rgba(37,99,235,0.3), rgba(124,58,237,0.2))" }}
+        >
+          <div
+            className="col-span-2 grid grid-cols-2 gap-4 lg:col-span-4 lg:grid-cols-4 rounded-2xl p-6 sm:p-8"
+            style={{ background: "rgba(8,14,26,0.95)" }}
+          >
+            {[
+              { label: "Active Traders", value: 12400, suffix: "+", prefix: "" },
+              { label: "Virtual Capital Deployed", value: 10, suffix: "Cr+", prefix: "₹" },
+              { label: "AI Reports Generated", value: 48000, suffix: "+", prefix: "" },
+              { label: "Avg. Improvement Rate", value: 67, suffix: "%", prefix: "" },
+            ].map((m) => (
+              <div key={m.label} className="text-center py-2">
+                <div className="text-3xl font-extrabold text-white sm:text-4xl">
+                  <AnimatedCounter end={m.value} prefix={m.prefix} suffix={m.suffix} />
+                </div>
+                <div className="mt-1.5 text-xs text-slate-500 font-medium">{m.label}</div>
               </div>
             ))}
           </div>
         </div>
       </section>
 
-      <section id="features" className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="mb-6">
-          <h2 className="text-3xl font-bold sm:text-4xl">Everything you need to become a better trader</h2>
+      {/* ── FEATURES ─────────────────────────────────────────────────────────── */}
+      <section id="features" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full border border-blue-500/20 bg-blue-600/8 px-4 py-1.5 text-xs font-medium text-blue-400 mb-5"
+            style={{ backdropFilter: "blur(8px)", boxShadow: "0 0 20px rgba(59,130,246,0.1)" }}>
+            <Zap size={12} /> Platform Features
+          </div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-white sm:text-4xl lg:text-5xl">
+            Everything you need to become
+            <br />
+            <span style={{ background: "linear-gradient(135deg, #60a5fa, #a78bfa, #38bdf8)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}>
+              a better trader
+            </span>
+          </h2>
+          <p className="mt-5 max-w-2xl mx-auto text-slate-400 text-base sm:text-lg">
+            Built for serious traders who want to understand their psychology, improve consistently, and grow their edge.
+          </p>
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {[
-            { title: "🧠 AI Coach", desc: "Get personalized weekly reports based on your actual trades" },
-            { title: "😤 Emotion Journal", desc: "Track your mood before every trade and see how it affects P&L" },
-            { title: "🚨 Mistake Detector", desc: "Auto-detect panic selling, revenge trading, and FOMO entries" },
-            { title: "📈 Live Market Data", desc: "Real NSE/BSE prices with candlestick charts and indicators" },
-            { title: "🏆 Leaderboard", desc: "Compete with traders across India in weekly competitions" },
-            { title: "📊 Deep Analytics", desc: "Win rate, risk score, loss breakdown and behavioral insights" },
-          ].map((feature) => (
-            <article key={feature.title} className="rounded-2xl border border-[#1a2744] bg-[#0d1421] p-5">
-              <h3 className="text-lg font-semibold">{feature.title}</h3>
-              <p className="mt-2 text-sm text-[#9ca3af]">{feature.desc}</p>
-            </article>
+          {features.map((f, i) => (
+            <FeatureCard key={f.title} {...f} delay={i * 80} />
           ))}
         </div>
       </section>
 
-      <section id="how-it-works" className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <div className="rounded-2xl border border-[#1a2744] bg-[#0d1421] p-6 sm:p-8">
-          <h2 className="text-3xl font-bold">How TradeSphere works</h2>
-          <div className="mt-6 grid gap-4 md:grid-cols-3">
-            {[
-              "Step 1: Sign up + get ₹1,00,000 virtual cash",
-              "Step 2: Trade real NSE/BSE stocks with live prices",
-              "Step 3: Get AI insights and improve every week",
-            ].map((step) => (
-              <div key={step} className="rounded-xl border border-[#1a2744] bg-[#0a0f1a] p-4 text-sm text-[#d1d5db]">
-                {step}
+      {/* ── HOW IT WORKS ─────────────────────────────────────────────────────── */}
+      <section id="how-it-works" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-600/8 px-4 py-1.5 text-xs font-medium text-violet-400 mb-5"
+            style={{ backdropFilter: "blur(8px)" }}>
+            <Shield size={12} /> How It Works
+          </div>
+          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">
+            Start in minutes. Improve for months.
+          </h2>
+        </div>
+
+        <div className="relative grid gap-4 md:grid-cols-3">
+          {/* Connecting line */}
+          <div
+            className="absolute top-8 left-1/4 right-1/4 h-px hidden md:block"
+            style={{ background: "linear-gradient(90deg, transparent, rgba(37,99,235,0.5) 20%, rgba(124,58,237,0.5) 80%, transparent)" }}
+          />
+          {[
+            { num: "01", title: "Sign Up & Get ₹1,00,000", desc: "Create your free account and receive ₹1 lakh in virtual capital to start trading real markets with zero risk.", delay: 0 },
+            { num: "02", title: "Trade Real NSE/BSE Stocks", desc: "Execute trades on live market prices with full candlestick charts, technical indicators, and order management.", delay: 100 },
+            { num: "03", title: "Get AI Insights & Improve", desc: "Your AI coach analyzes every trade, detects emotional patterns, and delivers weekly personalized improvement reports.", delay: 200 },
+          ].map((s) => <StepCard key={s.num} {...s} />)}
+        </div>
+      </section>
+
+      {/* ── PRICING ──────────────────────────────────────────────────────────── */}
+      <section id="pricing" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+        <div className="text-center mb-14">
+          <div className="inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-600/8 px-4 py-1.5 text-xs font-medium text-emerald-400 mb-5"
+            style={{ backdropFilter: "blur(8px)" }}>
+            <Trophy size={12} /> Pricing
+          </div>
+          <h2 className="text-3xl font-extrabold text-white sm:text-4xl">Simple, transparent pricing</h2>
+          <p className="mt-4 text-slate-400 text-base">Start free, upgrade when you&apos;re ready to unlock your full edge.</p>
+        </div>
+
+        <div className="grid gap-6 lg:grid-cols-2 max-w-4xl mx-auto">
+          <PricingCard
+            name="Free"
+            price="₹0"
+            href="/signup"
+            features={[
+              "Virtual ₹1,00,000 capital",
+              "Live NSE/BSE market data",
+              "Basic portfolio tracking",
+              "Trade history & P&L",
+              "1 AI report per month",
+              "Leaderboard access",
+            ]}
+          />
+          <PricingCard
+            name="Pro"
+            price="₹299/mo"
+            href="/signup"
+            isPro
+            features={[
+              "Everything in Free",
+              "Unlimited AI coaching reports",
+              "Full behavioral insight breakdown",
+              "Emotion tracking dashboard",
+              "Mistake detection — real-time",
+              "Weekly personalized email report",
+              "Advanced analytics & win rate",
+              "Export CSV, Pro badge",
+            ]}
+          />
+        </div>
+      </section>
+
+      {/* ── CTA BANNER ───────────────────────────────────────────────────────── */}
+      <section className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
+        <div
+          className="relative overflow-hidden rounded-3xl p-10 text-center sm:p-14"
+          style={{
+            background: "linear-gradient(135deg, rgba(29,78,216,0.25) 0%, rgba(124,58,237,0.25) 50%, rgba(6,182,212,0.15) 100%)",
+            border: "1px solid rgba(59,130,246,0.25)",
+            backdropFilter: "blur(20px)",
+          }}
+        >
+          {/* Glow orb */}
+          <div
+            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 rounded-full pointer-events-none"
+            style={{ background: "radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%)", filter: "blur(60px)" }}
+          />
+          <div className="relative z-10">
+            <h2 className="text-3xl font-extrabold text-white sm:text-4xl lg:text-5xl">
+              Ready to trade smarter?
+            </h2>
+            <p className="mt-4 text-slate-300 text-base sm:text-lg max-w-xl mx-auto">
+              Join thousands of Indian traders building real edge — without the real risk.
+            </p>
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
+              <Link
+                href="/signup"
+                className="inline-flex items-center gap-2 rounded-xl px-8 py-3.5 text-sm font-semibold text-white transition-all duration-300 hover:scale-105"
+                style={{
+                  background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
+                  boxShadow: "0 0 40px rgba(37,99,235,0.5), inset 0 1px 0 rgba(255,255,255,0.15)",
+                }}
+              >
+                Start Trading Free
+                <span>→</span>
+              </Link>
+              <Link href="/leaderboard" className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/5 px-8 py-3.5 text-sm font-semibold text-white backdrop-blur transition-all duration-200 hover:bg-white/10">
+                View Leaderboard
+              </Link>
+            </div>
+            <p className="mt-5 text-xs text-slate-500">No credit card required · Free forever plan available · Built for Indian markets 🇮🇳</p>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ───────────────────────────────────────────────────────────── */}
+      <footer className="border-t mt-8" style={{ borderColor: "rgba(26,39,68,0.5)", background: "rgba(5,9,18,0.95)" }}>
+        <div className="mx-auto w-full max-w-7xl px-4 py-12 sm:px-6 lg:px-8">
+          <div className="grid gap-10 md:grid-cols-4">
+            {/* Brand */}
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-3 mb-4">
+                <div
+                  className="flex h-9 w-9 items-center justify-center rounded-xl"
+                  style={{ background: "linear-gradient(135deg, #1d4ed8, #7c3aed)" }}
+                >
+                  <Globe size={16} className="text-white" />
+                </div>
+                <span className="text-sm font-bold text-white">TradeSphere</span>
               </div>
-            ))}
-          </div>
-        </div>
-      </section>
+              <p className="text-sm text-slate-500 max-w-xs leading-relaxed">
+                India&apos;s most advanced paper trading platform with AI behavioral coaching. Built for the next generation of traders.
+              </p>
+              <div className="mt-4 flex items-center gap-2 text-xs text-slate-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-green-500 animate-pulse" />
+                All systems operational
+              </div>
+            </div>
 
-      <section id="pricing" className="mx-auto w-full max-w-7xl px-4 py-10 sm:px-6 lg:px-8">
-        <h2 className="text-3xl font-bold sm:text-4xl">Simple, transparent pricing</h2>
+            {/* Links */}
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4">Platform</p>
+              <ul className="space-y-3">
+                {[
+                  { label: "Dashboard", href: "/dashboard" },
+                  { label: "Trade", href: "/trade" },
+                  { label: "Leaderboard", href: "/leaderboard" },
+                  { label: "Analytics", href: "/analytics" },
+                ].map(({ label, href }) => (
+                  <li key={label}>
+                    <Link href={href} className="text-sm text-slate-400 hover:text-white transition-colors">{label}</Link>
+                  </li>
+                ))}
+              </ul>
+            </div>
 
-        <div className="mt-6 grid gap-4 lg:grid-cols-2">
-          <div className="rounded-2xl border border-[#1a2744] bg-[#0d1421] p-6">
-            <h3 className="text-2xl font-bold">Free</h3>
-            <ul className="mt-4 space-y-2 text-sm text-[#d1d5db]">
-              <li>Virtual ₹1,00,000</li>
-              <li>Basic portfolio tracking</li>
-              <li>Trade history</li>
-              <li>1 AI report/month</li>
-              <li>Leaderboard access</li>
-            </ul>
-            <Link href="/signup" className="mt-6 inline-flex rounded-lg border border-[#1a2744] px-4 py-2 text-sm font-semibold hover:bg-[#0f1929]">
-              Get Started Free
-            </Link>
-          </div>
-
-          <div className="relative rounded-2xl border border-[#3b82f6] bg-[#0d1421] p-6 shadow-[0_0_0_1px_rgba(59,130,246,0.25)]">
-            <span className="absolute right-4 top-4 rounded-full bg-[#3b82f6] px-3 py-1 text-[11px] font-bold uppercase tracking-wide text-white">Most Popular</span>
-            <h3 className="text-2xl font-bold">Pro ₹299/month</h3>
-            <ul className="mt-4 space-y-2 text-sm text-[#d1d5db]">
-              <li>Everything in Free</li>
-              <li>Unlimited AI reports</li>
-              <li>Full insight breakdown</li>
-              <li>Weekly email report</li>
-              <li>Export CSV</li>
-              <li>Pro badge</li>
-              <li>Advanced analytics</li>
-            </ul>
-            <Link href="/signup" className="mt-6 inline-flex rounded-lg bg-[#3b82f6] px-4 py-2 text-sm font-semibold text-white hover:bg-[#2563eb]">
-              Upgrade to Pro
-            </Link>
-          </div>
-        </div>
-      </section>
-
-      <footer className="border-t border-[#1a2744] bg-[#060b14]">
-        <div className="mx-auto flex w-full max-w-7xl flex-col gap-4 px-4 py-8 text-sm sm:px-6 lg:px-8 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-2 text-white">
-            <Globe size={16} className="text-[#3b82f6]" />
-            <span className="font-semibold">TradeSphere</span>
+            <div>
+              <p className="text-xs font-semibold uppercase tracking-widest text-slate-500 mb-4">Company</p>
+              <ul className="space-y-3">
+                {[
+                  { label: "Features", href: "#features" },
+                  { label: "Pricing", href: "#pricing" },
+                  { label: "Login", href: "/login" },
+                  { label: "Sign Up", href: "/signup" },
+                ].map(({ label, href }) => (
+                  <li key={label}>
+                    <a href={href} className="text-sm text-slate-400 hover:text-white transition-colors">{label}</a>
+                  </li>
+                ))}
+              </ul>
+            </div>
           </div>
 
-          <div className="flex items-center gap-4 text-[#9ca3af]">
-            <Link href="/dashboard" className="hover:text-white">Dashboard</Link>
-            <a href="#features" className="hover:text-white">Features</a>
-            <a href="#pricing" className="hover:text-white">Pricing</a>
+          <div
+            className="mt-10 flex flex-col items-center justify-between gap-4 border-t pt-8 text-xs text-slate-600 sm:flex-row"
+            style={{ borderColor: "rgba(26,39,68,0.5)" }}
+          >
+            <span>© {new Date().getFullYear()} TradeSphere. All rights reserved.</span>
+            <span>Built with ❤️ for Indian traders 🇮🇳</span>
           </div>
-
-          <div className="text-[#9ca3af]">Built for Indian traders 🇮🇳</div>
-        </div>
-
-        <div className="border-t border-[#1a2744] px-4 py-4 text-center text-xs text-[#6b7280] sm:px-6 lg:px-8">
-          © {new Date().getFullYear()} TradeSphere. All rights reserved.
         </div>
       </footer>
+
+      {/* ── Global animations ────────────────────────────────────────────────── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+        html { scroll-behavior: smooth; }
+        * { -webkit-font-smoothing: antialiased; }
+      `}</style>
     </main>
   );
 }
