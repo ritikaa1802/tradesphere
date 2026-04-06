@@ -5,8 +5,6 @@ import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 type Side = "buy" | "sell";
 type OrderType = "market" | "limit" | "stoploss";
 
-type FlashState = "up" | "down" | null;
-
 interface StockOption {
   symbol: string;
   name: string;
@@ -157,21 +155,9 @@ export default function TradePage() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
-  const [flashMap, setFlashMap] = useState<Record<string, FlashState>>({});
   const [priceHistory, setPriceHistory] = useState<Record<string, number[]>>({});
 
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
-
-  function triggerFlash(symbol: string, direction: FlashState) {
-    if (!direction) {
-      return;
-    }
-
-    setFlashMap((prev) => ({ ...prev, [symbol]: direction }));
-    window.setTimeout(() => {
-      setFlashMap((prev) => ({ ...prev, [symbol]: null }));
-    }, 260);
-  }
 
   function pushHistory(symbol: string, value: number) {
     setPriceHistory((prev) => {
@@ -274,10 +260,6 @@ export default function TradePage() {
             return { ...item, loading: false };
           }
 
-          if (item.price !== null && quote.price !== item.price) {
-            triggerFlash(item.symbol, quote.price > item.price ? "up" : "down");
-          }
-
           pushHistory(item.symbol, quote.price);
 
           return {
@@ -316,7 +298,6 @@ export default function TradePage() {
             return item;
           }
 
-          triggerFlash(item.symbol, delta > 0 ? "up" : "down");
           pushHistory(item.symbol, nextPrice);
 
           const changePercent = ((nextPrice - item.basePrice) / item.basePrice) * 100;
@@ -513,7 +494,6 @@ export default function TradePage() {
                 const hasChange = item.changePercent !== null;
                 const change = item.changePercent ?? 0;
                 const up = change >= 0;
-                const flash = flashMap[item.symbol];
 
                 return (
                   <button
@@ -522,12 +502,6 @@ export default function TradePage() {
                     onClick={() => setSelectedSymbol(item.symbol)}
                     className={`grid w-full grid-cols-[1fr_auto] items-center border-b border-slate-800 px-2 py-1.5 text-left transition ${
                       isSelected ? "bg-blue-500/15" : "hover:bg-slate-800/40"
-                    } ${
-                      flash === "up"
-                        ? "bg-emerald-500/10"
-                        : flash === "down"
-                          ? "bg-rose-500/10"
-                          : ""
                     }`}
                   >
                     <div>
