@@ -1,7 +1,7 @@
 "use client";
 
 import { PlayCircle } from "lucide-react";
-import { useMemo } from "react";
+import { useEffect, useState } from "react";
 
 type CardItem = {
   id: number;
@@ -107,7 +107,36 @@ const cardData: CardItem[] = [
 ];
 
 export default function LanguageVideoCards() {
-  const items = useMemo(() => [...cardData, ...cardData], []);
+  const total = cardData.length;
+  const [offset, setOffset] = useState(0);
+  const [paused, setPaused] = useState(false);
+
+  useEffect(() => {
+    let frameId = 0;
+    let last = performance.now();
+
+    const animate = (now: number) => {
+      const dt = now - last;
+      last = now;
+
+      if (!paused) {
+        setOffset((prev) => (prev + dt * 0.00042) % total);
+      }
+
+      frameId = window.requestAnimationFrame(animate);
+    };
+
+    frameId = window.requestAnimationFrame(animate);
+
+    return () => window.cancelAnimationFrame(frameId);
+  }, [paused, total]);
+
+  const normalizeDistance = (index: number) => {
+    let distance = index - offset;
+    if (distance > total / 2) distance -= total;
+    if (distance < -total / 2) distance += total;
+    return distance;
+  };
 
   return (
     <section className="relative overflow-hidden py-16 sm:py-20">
@@ -136,20 +165,40 @@ export default function LanguageVideoCards() {
           </a>
         </div>
 
-        <div className="relative [perspective:1600px]">
+        <div className="relative [perspective:1800px]">
           <div className="pointer-events-none absolute inset-y-0 left-0 z-10 w-24 bg-gradient-to-r from-[#050912] to-transparent" />
           <div className="pointer-events-none absolute inset-y-0 right-0 z-10 w-24 bg-gradient-to-l from-[#050912] to-transparent" />
 
-          <div className="video-track flex w-max items-center gap-6 py-4 will-change-transform hover:[animation-play-state:paused]">
-            {items.map((card, index) => (
+          <div
+            className="relative mx-auto hidden h-[500px] max-w-[1220px] md:block"
+            onMouseEnter={() => setPaused(true)}
+            onMouseLeave={() => setPaused(false)}
+          >
+            {cardData.map((card, index) => {
+              const distance = normalizeDistance(index);
+              const abs = Math.abs(distance);
+              const x = distance * 192;
+              const z = 240 - abs * 145;
+              const y = abs * 18;
+              const rotateY = distance * -17;
+              const scale = Math.max(0.74, 1 - abs * 0.08);
+              const opacity = Math.max(0.2, 1 - abs * 0.14);
+              const blur = abs > 2.2 ? 1.4 : abs > 1.5 ? 0.8 : 0;
+              const zIndex = Math.max(2, Math.round(140 - abs * 12));
+
+              return (
               <article
                 key={`${card.id}-${index}`}
-                className="group relative h-[420px] w-[270px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 p-5"
+                className="group absolute left-1/2 top-1/2 h-[420px] w-[270px] shrink-0 overflow-hidden rounded-[28px] border border-white/10 p-5 transition-shadow duration-300"
                 style={{
                   background: card.bg,
                   boxShadow: `0 16px 40px rgba(0,0,0,0.45), 0 0 24px ${card.glow}`,
-                  transform: `rotateY(${index % 2 === 0 ? -7 : 7}deg) translateZ(${8 + (index % 4) * 3}px)`,
+                  transform: `translate3d(calc(-50% + ${x}px), calc(-50% + ${y}px), ${z}px) rotateY(${rotateY}deg) scale(${scale})`,
                   transformStyle: "preserve-3d",
+                  zIndex,
+                  opacity,
+                  filter: `blur(${blur}px)`,
+                  transition: "transform 120ms linear, opacity 120ms linear, filter 120ms linear",
                 }}
               >
                 <div
@@ -193,31 +242,65 @@ export default function LanguageVideoCards() {
                   </div>
                 </div>
               </article>
+              );
+            })}
+          </div>
+
+          <div className="flex gap-4 overflow-x-auto px-1 pb-2 pt-3 md:hidden">
+            {cardData.map((card) => (
+              <article
+                key={`mobile-${card.id}`}
+                className="group relative h-[390px] w-[260px] shrink-0 overflow-hidden rounded-[24px] border border-white/10 p-4"
+                style={{
+                  background: card.bg,
+                  boxShadow: `0 16px 40px rgba(0,0,0,0.45), 0 0 20px ${card.glow}`,
+                }}
+              >
+                <div
+                  className="absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  style={{
+                    background: `radial-gradient(circle at 35% 18%, ${card.glow}, rgba(0,0,0,0) 55%)`,
+                  }}
+                />
+
+                <div className="relative z-10 flex h-full flex-col justify-between">
+                  <div>
+                    <p className="mb-2 text-sm font-medium uppercase tracking-[0.22em] text-slate-400">
+                      {card.language}
+                    </p>
+                    <h3 className="text-[1.9rem] font-bold leading-[1.04]" style={{ color: card.accent }}>
+                      {card.title}
+                    </h3>
+                    <p className="mt-4 max-w-[19ch] text-sm leading-relaxed text-slate-300/85">
+                      {card.subtitle}
+                    </p>
+                  </div>
+
+                  <div className="relative mt-8 overflow-hidden rounded-2xl border border-white/15 bg-black/30 px-4 py-5 backdrop-blur-xl">
+                    <div
+                      className="absolute -bottom-7 right-0 h-24 w-24 rounded-full blur-2xl"
+                      style={{ background: card.glow }}
+                    />
+                    <p className="relative text-xs font-semibold uppercase tracking-[0.22em] text-slate-400">
+                      TradeSphere Originals
+                    </p>
+                    <p className="relative mt-2 text-sm font-medium text-slate-100">{card.videoTitle}</p>
+                    <a
+                      href={card.videoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="relative mt-4 inline-flex items-center gap-2 rounded-full border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition-all duration-300 hover:scale-105 hover:border-red-300 hover:bg-red-500/20"
+                    >
+                      <PlayCircle size={14} className="text-red-400" />
+                      Watch Lesson
+                    </a>
+                  </div>
+                </div>
+              </article>
             ))}
           </div>
         </div>
       </div>
-
-      <style jsx>{`
-        .video-track {
-          animation: marquee3d 42s linear infinite;
-        }
-
-        @keyframes marquee3d {
-          0% {
-            transform: translateX(0);
-          }
-          100% {
-            transform: translateX(-50%);
-          }
-        }
-
-        @media (max-width: 1024px) {
-          .video-track {
-            animation-duration: 32s;
-          }
-        }
-      `}</style>
     </section>
   );
 }
