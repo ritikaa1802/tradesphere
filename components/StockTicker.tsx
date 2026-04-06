@@ -3,8 +3,16 @@
 import React, { useEffect, useState } from "react";
 import { TrendingUp, TrendingDown, Sparkles } from "lucide-react";
 
+type StockData = {
+  symbol: string;
+  price: number;
+  change: number;
+  isTopGainer?: boolean;
+  flash?: 'up' | 'down';
+};
+
 // Mock initial data
-const INITIAL_STOCKS = [
+const INITIAL_STOCKS: StockData[] = [
   { symbol: "RELIANCE", price: 2892.50, change: 1.2, isTopGainer: true },
   { symbol: "TCS", price: 3441.20, change: 0.8 },
   { symbol: "HDFCBANK", price: 1654.10, change: -0.4 },
