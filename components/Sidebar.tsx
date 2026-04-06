@@ -13,6 +13,7 @@ import {
   ListOrdered,
   LogOut,
   Settings as SettingsIcon,
+  Sparkles,
   Trophy,
   TrendingUp,
 } from "lucide-react";
@@ -27,6 +28,7 @@ const primaryNavItems = [
 
 const secondaryNavItems = [
   { label: "Insights",       href: "/insights",      icon: Brain },
+  { label: "AI Coach",       href: "/ai-coach",      icon: Sparkles },
   { label: "Alerts",         href: "/alerts",        icon: Bell },
   { label: "Leaderboard",    href: "/leaderboard",   icon: Trophy },
 ];
