@@ -15,7 +15,7 @@ type Feature = {
   id: string;
   title: string;
   desc: string;
-  icon: React.ComponentType<{ size?: number; className?: string }>;
+  icon: React.ComponentType<{ size?: string | number; className?: string }>;
   color: string;
   glow: string;
   desktopPos: { x: number; y: number };
@@ -334,7 +334,7 @@ export default function NeuralEngine() {
 
             {features.map((feature, i) => {
               const isHovered = hoveredNode === feature.id;
-              const icon = feature.icon;
+              const Icon = feature.icon;
               const glowStrength =
                 hoveredNode === null || isHovered
                   ? `0 10px 38px rgba(0,0,0,0.4), 0 0 26px ${feature.glow}`
@@ -393,10 +393,7 @@ export default function NeuralEngine() {
                     className="relative z-10 mb-3 inline-flex rounded-xl border p-2.5"
                     style={{ borderColor: `${feature.color}80`, backgroundColor: "rgba(2,6,23,0.75)" }}
                   >
-                    {icon({
-                      size: 20,
-                      className: "text-white",
-                    })}
+                    <Icon size={20} className="text-white" />
                   </div>
                   <h3 className="relative z-10 text-sm font-semibold tracking-wide text-white">{feature.title}</h3>
                   <p className="relative z-10 mt-2 text-xs leading-relaxed text-slate-300/90">{feature.desc}</p>
@@ -451,7 +448,7 @@ export default function NeuralEngine() {
             </motion.div>
 
             {features.map((feature, i) => {
-              const icon = feature.icon;
+              const Icon = feature.icon;
               const isHovered = hoveredNode === feature.id;
               return (
                 <motion.button
@@ -490,7 +487,7 @@ export default function NeuralEngine() {
                     />
                   ))}
                   <div className="mb-2 inline-flex rounded-xl border p-2" style={{ borderColor: `${feature.color}80` }}>
-                    {icon({ size: 18, className: "text-white" })}
+                    <Icon size={18} className="text-white" />
                   </div>
                   <h3 className="text-xs font-semibold text-white">{feature.title}</h3>
                   <p className="mt-1 text-[11px] leading-relaxed text-slate-300/90">{feature.desc}</p>
@@ -521,7 +518,7 @@ export default function NeuralEngine() {
           </motion.div>
 
           {features.map((feature, i) => {
-            const icon = feature.icon;
+            const Icon = feature.icon;
             const isHovered = hoveredNode === feature.id;
 
             return (
@@ -558,7 +555,7 @@ export default function NeuralEngine() {
                   />
                 ))}
                 <div className="mb-2 inline-flex rounded-xl border p-2" style={{ borderColor: `${feature.color}80` }}>
-                  {icon({ size: 18, className: "text-white" })}
+                  <Icon size={18} className="text-white" />
                 </div>
                 <h3 className="text-sm font-semibold text-white">{feature.title}</h3>
                 <p className="mt-1 text-xs leading-relaxed text-slate-300/90">{feature.desc}</p>
