@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 import HeroAnimation from "@/components/HeroAnimation";
 import NeuralEngine from "@/components/NeuralEngine";
 import JourneyTimeline from "@/components/JourneyTimeline";
+import StockTicker from "@/components/StockTicker";
 
 // ─── Animated number counter ─────────────────────────────────────────────────
 function AnimatedCounter({ end, prefix = "", suffix = "" }: { end: number; prefix?: string; suffix?: string }) {
@@ -141,6 +142,7 @@ export default function Home() {
           boxShadow: scrolled ? "0 4px 30px rgba(0,0,0,0.4)" : "none",
         }}
       >
+        <StockTicker />
         <div className="mx-auto flex w-full max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
