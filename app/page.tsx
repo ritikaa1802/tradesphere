@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Globe, Trophy } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import HeroAnimation from "@/components/HeroAnimation";
+import LanguageVideoCards from "@/components/LanguageVideoCards";
 import NeuralEngine from "@/components/NeuralEngine";
 import JourneyTimeline from "@/components/JourneyTimeline";
 import StockTicker from "@/components/StockTicker";
@@ -232,6 +233,9 @@ export default function Home() {
 
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <HeroAnimation />
+
+      {/* ── LANGUAGE VIDEO CARDS ─────────────────────────────────────────────── */}
+      <LanguageVideoCards />
 
       {/* ── SOCIAL PROOF STRIP ──────────────────────────────────────────────── */}
       <div
