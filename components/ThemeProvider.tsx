@@ -11,7 +11,13 @@ interface ThemeContextValue {
 
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-export function ThemeProvider({ children }: { children: React.ReactNode }) {
+export function ThemeProvider({
+  children,
+  forceDark = false,
+}: {
+  children: React.ReactNode;
+  forceDark?: boolean;
+}) {
   const [theme, setTheme] = useState<Theme>("dark");
 
   useEffect(() => {
@@ -26,10 +32,11 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    document.documentElement.setAttribute("data-theme", theme);
-    document.documentElement.style.colorScheme = theme;
+    const effectiveTheme: Theme = forceDark ? "dark" : theme;
+    document.documentElement.setAttribute("data-theme", effectiveTheme);
+    document.documentElement.style.colorScheme = effectiveTheme;
     localStorage.setItem("tradesphere-theme", theme);
-  }, [theme]);
+  }, [theme, forceDark]);
 
   const value = useMemo<ThemeContextValue>(() => ({
     theme,
