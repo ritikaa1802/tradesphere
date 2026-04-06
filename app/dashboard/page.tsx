@@ -325,6 +325,33 @@ export default function DashboardPage() {
     return Math.max(0, Math.min(100, normalized));
   }, [trades]);
 
+  const dayPnl = useMemo(() => {
+    if (history.length < 2) return 0;
+    const latest = history[history.length - 1]?.portfolioValue ?? 0;
+    const prev = history[history.length - 2]?.portfolioValue ?? latest;
+    return latest - prev;
+  }, [history]);
+
+  const bestPerformer = useMemo(() => {
+    const holdings = summary?.holdings ?? [];
+    if (!holdings.length) return null;
+    return [...holdings].sort((a, b) => {
+      const aPct = a.invested > 0 ? (a.pnl / a.invested) * 100 : 0;
+      const bPct = b.invested > 0 ? (b.pnl / b.invested) * 100 : 0;
+      return bPct - aPct;
+    })[0];
+  }, [summary?.holdings]);
+
+  const worstPerformer = useMemo(() => {
+    const holdings = summary?.holdings ?? [];
+    if (!holdings.length) return null;
+    return [...holdings].sort((a, b) => {
+      const aPct = a.invested > 0 ? (a.pnl / a.invested) * 100 : 0;
+      const bPct = b.invested > 0 ? (b.pnl / b.invested) * 100 : 0;
+      return aPct - bPct;
+    })[0];
+  }, [summary?.holdings]);
+
   if (loading) {
     return (
       <section className="space-y-3 text-white">
@@ -346,7 +373,7 @@ export default function DashboardPage() {
   return (
     <section className="space-y-3 text-white">
       <div className="border-b border-[#1a2744] pb-3">
-        <div className="grid grid-cols-2 gap-3 text-right md:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 text-right md:grid-cols-5">
           <div className="text-left md:text-right">
             <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Balance</p>
             <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatMoney(summary.balance)}</p>
@@ -356,7 +383,13 @@ export default function DashboardPage() {
             <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatMoney(summary.invested)}</p>
           </div>
           <div className="text-left md:text-right">
-            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">P&amp;L</p>
+            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Day P&amp;L</p>
+            <p className={`mt-0.5 text-xl font-semibold tabular-nums ${changeColor(dayPnl)}`}>
+              {dayPnl >= 0 ? "+" : "-"}{formatMoney(dayPnl)}
+            </p>
+          </div>
+          <div className="text-left md:text-right">
+            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Total P&amp;L</p>
             <p className={`mt-0.5 text-xl font-semibold tabular-nums ${changeColor(summary.pnl)}`}>
               {summary.pnl >= 0 ? formatMoney(summary.pnl) : `-${formatMoney(summary.pnl)}`}
               <span className="ml-2 text-sm">({summary.pnlPercentage.toFixed(2)}%)</span>
@@ -366,6 +399,25 @@ export default function DashboardPage() {
             <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Win Rate</p>
             <p className="mt-0.5 text-xl font-semibold tabular-nums">{(analytics?.winRate ?? 0).toFixed(1)}%</p>
           </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2 border-b border-[#1a2744] pb-2 text-xs md:grid-cols-2">
+        <div className="grid grid-cols-[1fr_auto] items-center border-b border-[#1a2744] py-1">
+          <span className="text-[#9ca3af]">Best Performer</span>
+          <span className="text-right tabular-nums text-emerald-400 font-semibold">
+            {bestPerformer
+              ? `${bestPerformer.stock} (${((bestPerformer.pnl / Math.max(bestPerformer.invested, 1)) * 100).toFixed(2)}%)`
+              : "--"}
+          </span>
+        </div>
+        <div className="grid grid-cols-[1fr_auto] items-center border-b border-[#1a2744] py-1">
+          <span className="text-[#9ca3af]">Worst Performer</span>
+          <span className="text-right tabular-nums text-rose-400 font-semibold">
+            {worstPerformer
+              ? `${worstPerformer.stock} (${((worstPerformer.pnl / Math.max(worstPerformer.invested, 1)) * 100).toFixed(2)}%)`
+              : "--"}
+          </span>
         </div>
       </div>
 
@@ -384,6 +436,7 @@ export default function DashboardPage() {
                 <th className="py-1 text-left font-medium">Stock</th>
                 <th className="py-1 text-right font-medium">Qty</th>
                 <th className="py-1 text-right font-medium">Avg Price</th>
+                <th className="py-1 text-right font-medium">Alloc %</th>
                 <th className="py-1 text-right font-medium">
                   <button
                     type="button"
@@ -411,18 +464,20 @@ export default function DashboardPage() {
                     P&amp;L % <span className="text-[10px]">{getSortArrow("pnlPercent")}</span>
                   </button>
                 </th>
+                <th className="py-1 text-right font-medium">Action</th>
               </tr>
             </thead>
             <tbody>
               {sortedHoldingsPreview.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="py-3 text-center text-[#9ca3af]">
+                  <td colSpan={8} className="py-3 text-center text-[#9ca3af]">
                     No holdings yet. Place your first trade.
                   </td>
                 </tr>
               ) : (
                 sortedHoldingsPreview.map((holding, index) => {
                   const pnlPercent = holding.invested > 0 ? (holding.pnl / holding.invested) * 100 : 0;
+                  const allocationPercent = summary.invested > 0 ? (holding.invested / summary.invested) * 100 : 0;
                   const isSelected = selectedHoldingSymbol === holding.stock;
                   return (
                     <tr
@@ -439,12 +494,37 @@ export default function DashboardPage() {
                       <td className="py-1.5 font-semibold text-[#e5e7eb]">{holding.stock}</td>
                       <td className="py-1.5 text-right tabular-nums text-[#d1d5db]">{holding.quantity}</td>
                       <td className="py-1.5 text-right tabular-nums text-[#d1d5db]">₹{holding.avgBuyPrice.toFixed(2)}</td>
+                      <td className="py-1.5 text-right tabular-nums text-[#d1d5db]">{allocationPercent.toFixed(2)}%</td>
                       <td className="py-1.5 text-right tabular-nums text-[#e5e7eb]">₹{holding.currentPrice.toFixed(2)}</td>
                       <td className={`py-1.5 text-right tabular-nums font-semibold ${changeColor(holding.pnl)}`}>
                         {holding.pnl >= 0 ? "+" : ""}₹{holding.pnl.toFixed(2)}
                       </td>
                       <td className={`py-1.5 text-right tabular-nums font-semibold ${changeColor(pnlPercent)}`}>
                         {pnlPercent >= 0 ? "+" : ""}{pnlPercent.toFixed(2)}%
+                      </td>
+                      <td className="py-1.5 text-right">
+                        <div className="inline-flex items-center gap-1">
+                          <button
+                            type="button"
+                            className="border border-emerald-700/70 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-300 hover:bg-emerald-900/20"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              router.push(`/trade?symbol=${encodeURIComponent(holding.stock.toUpperCase())}&side=buy`);
+                            }}
+                          >
+                            Buy
+                          </button>
+                          <button
+                            type="button"
+                            className="border border-rose-700/70 px-1.5 py-0.5 text-[10px] font-semibold text-rose-300 hover:bg-rose-900/20"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              router.push(`/trade?symbol=${encodeURIComponent(holding.stock.toUpperCase())}&side=sell`);
+                            }}
+                          >
+                            Sell
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

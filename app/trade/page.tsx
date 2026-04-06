@@ -1,9 +1,19 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 
 type Side = "buy" | "sell";
 type OrderType = "market" | "limit" | "stoploss";
+type Timeframe = "1D" | "1W" | "1M";
 
 interface StockOption {
   symbol: string;
@@ -48,40 +58,12 @@ function formatINR(value: number) {
   }).format(value);
 }
 
-function Sparkline({ points, positive }: { points: number[]; positive: boolean }) {
-  if (points.length < 2) {
-    return <div className="h-10 w-full rounded bg-[#090f1b]" />;
-  }
-
-  const min = Math.min(...points);
-  const max = Math.max(...points);
-  const range = Math.max(max - min, 0.0001);
-
-  const path = points
-    .map((point, index) => {
-      const x = (index / (points.length - 1)) * 100;
-      const y = 100 - ((point - min) / range) * 100;
-      return `${index === 0 ? "M" : "L"}${x.toFixed(2)} ${y.toFixed(2)}`;
-    })
-    .join(" ");
-
-  const color = positive ? "#34d399" : "#fb7185";
-
-  return (
-    <svg viewBox="0 0 100 100" preserveAspectRatio="none" className="h-10 w-full rounded bg-[#090f1b]">
-      <path d={path} fill="none" stroke={color} strokeWidth="2" />
-    </svg>
-  );
-}
-
 function AnimatedPrice({ value }: { value: number | null }) {
   const [display, setDisplay] = useState(value ?? 0);
   const previousRef = useRef(value ?? 0);
 
   useEffect(() => {
-    if (value === null) {
-      return;
-    }
+    if (value === null) return;
 
     const from = previousRef.current;
     const to = value;
@@ -93,22 +75,15 @@ function AnimatedPrice({ value }: { value: number | null }) {
       const progress = Math.min((time - start) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       setDisplay(from + (to - from) * eased);
-
-      if (progress < 1) {
-        frame = requestAnimationFrame(run);
-      } else {
-        previousRef.current = to;
-      }
+      if (progress < 1) frame = requestAnimationFrame(run);
+      else previousRef.current = to;
     };
 
     frame = requestAnimationFrame(run);
     return () => cancelAnimationFrame(frame);
   }, [value]);
 
-  if (value === null) {
-    return <>--</>;
-  }
-
+  if (value === null) return <>--</>;
   return <>{display.toFixed(2)}</>;
 }
 
@@ -116,9 +91,7 @@ async function fetchQuote(symbol: string): Promise<{ price: number; changePercen
   try {
     const response = await fetch(`/api/stocks/price?symbol=${encodeURIComponent(symbol)}`);
     const data = (await response.json()) as { price?: number; changePercent?: number };
-    if (!response.ok || typeof data.price !== "number") {
-      return null;
-    }
+    if (!response.ok || typeof data.price !== "number") return null;
 
     return {
       price: data.price,
@@ -141,12 +114,13 @@ export default function TradePage() {
   );
 
   const [selectedSymbol, setSelectedSymbol] = useState("RELIANCE");
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const [timeframe, setTimeframe] = useState<Timeframe>("1D");
+
   const [side, setSide] = useState<Side>("buy");
   const [orderType, setOrderType] = useState<OrderType>("market");
   const [quantity, setQuantity] = useState("1");
   const [priceInput, setPriceInput] = useState("");
-  const [note, setNote] = useState("");
-  const [mood, setMood] = useState("");
 
   const [stockQuery, setStockQuery] = useState("");
   const [stockSuggestions, setStockSuggestions] = useState<StockOption[]>([]);
@@ -162,49 +136,77 @@ export default function TradePage() {
   function pushHistory(symbol: string, value: number) {
     setPriceHistory((prev) => {
       const current = prev[symbol] ?? [];
-      const next = [...current, value].slice(-24);
-      return { ...prev, [symbol]: next };
+      return { ...prev, [symbol]: [...current, value].slice(-180) };
     });
   }
 
   useEffect(() => {
-    if (typeof window === "undefined") {
-      return;
-    }
+    if (typeof window === "undefined") return;
 
-    const symbolParam = new URLSearchParams(window.location.search).get("symbol");
+    const params = new URLSearchParams(window.location.search);
+    const symbolParam = params.get("symbol");
+    const sideParam = params.get("side");
     const normalized = symbolParam?.trim().toUpperCase();
-    if (!normalized) {
-      return;
+    if (!normalized) return;
+
+    if (sideParam === "buy" || sideParam === "sell") {
+      setSide(sideParam);
     }
 
     setSelectedSymbol(normalized);
     setWatchlist((prev) => {
-      if (prev.some((item) => item.symbol === normalized)) {
-        return prev;
-      }
-      return [
-        {
-          symbol: normalized,
-          exchange: "NSE" as const,
-          price: null,
-          changePercent: null,
-          basePrice: null,
-          loading: true,
-        },
-        ...prev,
-      ].slice(0, 20);
+      if (prev.some((item) => item.symbol === normalized)) return prev;
+      return [{ symbol: normalized, exchange: "NSE" as const, price: null, changePercent: null, basePrice: null, loading: true }, ...prev].slice(0, 20);
     });
   }, []);
 
   useEffect(() => {
+    const idx = watchlist.findIndex((item) => item.symbol === selectedSymbol);
+    if (idx >= 0 && idx !== selectedIndex) setSelectedIndex(idx);
+  }, [watchlist, selectedSymbol, selectedIndex]);
+
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || target?.isContentEditable) return;
+
+      if (watchlist.length === 0) return;
+
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        setSelectedIndex((prev) => {
+          const next = Math.min(watchlist.length - 1, prev + 1);
+          setSelectedSymbol(watchlist[next].symbol);
+          return next;
+        });
+      }
+
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        setSelectedIndex((prev) => {
+          const next = Math.max(0, prev - 1);
+          setSelectedSymbol(watchlist[next].symbol);
+          return next;
+        });
+      }
+
+      if (event.key === "Enter") {
+        const selected = watchlist[selectedIndex];
+        if (!selected) return;
+        event.preventDefault();
+        setToast(`Selected ${selected.symbol}`);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [watchlist, selectedIndex]);
+
+  useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (!searchContainerRef.current) {
-        return;
-      }
-      if (!searchContainerRef.current.contains(event.target as Node)) {
-        setShowSuggestions(false);
-      }
+      if (!searchContainerRef.current) return;
+      if (!searchContainerRef.current.contains(event.target as Node)) setShowSuggestions(false);
     };
 
     document.addEventListener("mousedown", handleClickOutside);
@@ -223,9 +225,7 @@ export default function TradePage() {
     const timeout = setTimeout(async () => {
       try {
         setIsSearching(true);
-        const response = await fetch(`/api/stocks/search?q=${encodeURIComponent(query)}`, {
-          signal: controller.signal,
-        });
+        const response = await fetch(`/api/stocks/search?q=${encodeURIComponent(query)}`, { signal: controller.signal });
         const data = (await response.json()) as { stocks?: StockOption[] };
         setStockSuggestions(data.stocks || []);
         setShowSuggestions(true);
@@ -248,18 +248,12 @@ export default function TradePage() {
     const refreshWatchlist = async () => {
       const symbols = watchlist.map((item) => item.symbol);
       const quotes = await Promise.all(symbols.map((symbol) => fetchQuote(symbol)));
-
-      if (cancelled) {
-        return;
-      }
+      if (cancelled) return;
 
       setWatchlist((prev) =>
         prev.map((item, index) => {
           const quote = quotes[index];
-          if (!quote) {
-            return { ...item, loading: false };
-          }
-
+          if (!quote) return { ...item, loading: false };
           pushHistory(item.symbol, quote.price);
 
           return {
@@ -274,7 +268,7 @@ export default function TradePage() {
     };
 
     refreshWatchlist();
-    const intervalId = setInterval(refreshWatchlist, 20000);
+    const intervalId = setInterval(refreshWatchlist, 15000);
 
     return () => {
       cancelled = true;
@@ -286,27 +280,17 @@ export default function TradePage() {
     const tick = setInterval(() => {
       setWatchlist((prev) =>
         prev.map((item) => {
-          if (item.price === null || item.basePrice === null) {
-            return item;
-          }
+          if (item.price === null || item.basePrice === null) return item;
 
           const volatility = Math.max(item.price * 0.0007, 0.03);
           const delta = (Math.random() - 0.5) * 2 * volatility;
           const nextPrice = Math.max(0.05, item.price + delta);
-
-          if (Math.abs(delta) < 0.0001) {
-            return item;
-          }
+          if (Math.abs(delta) < 0.0001) return item;
 
           pushHistory(item.symbol, nextPrice);
-
           const changePercent = ((nextPrice - item.basePrice) / item.basePrice) * 100;
 
-          return {
-            ...item,
-            price: nextPrice,
-            changePercent,
-          };
+          return { ...item, price: nextPrice, changePercent };
         }),
       );
     }, 1200);
@@ -315,9 +299,7 @@ export default function TradePage() {
   }, []);
 
   useEffect(() => {
-    if (!toast) {
-      return;
-    }
+    if (!toast) return;
     const id = setTimeout(() => setToast(""), 1500);
     return () => clearTimeout(id);
   }, [toast]);
@@ -328,16 +310,28 @@ export default function TradePage() {
   );
 
   const selectedPrice = (selectedItem?.price ?? Number(priceInput)) || 0;
+  const selectedChange = selectedItem?.changePercent ?? 0;
+  const selectedPositive = selectedChange >= 0;
 
   useEffect(() => {
-    if (!selectedItem?.price) {
-      return;
-    }
-
-    if (!priceInput || orderType === "market") {
-      setPriceInput(selectedItem.price.toFixed(2));
-    }
+    if (!selectedItem?.price) return;
+    if (!priceInput || orderType === "market") setPriceInput(selectedItem.price.toFixed(2));
   }, [selectedItem?.price, orderType, priceInput]);
+
+  function selectSuggestion(option: StockOption) {
+    const symbol = option.symbol.trim().toUpperCase();
+    if (!symbol) return;
+
+    setSelectedSymbol(symbol);
+    setStockQuery("");
+    setShowSuggestions(false);
+
+    setWatchlist((prev) => {
+      const exists = prev.some((item) => item.symbol === symbol);
+      if (exists) return prev;
+      return [{ symbol, exchange: "NSE" as const, price: null, changePercent: null, basePrice: null, loading: true }, ...prev].slice(0, 20);
+    });
+  }
 
   const quantityNumber = Math.max(0, Number(quantity) || 0);
   const effectivePrice = orderType === "market" ? selectedPrice : Number(priceInput) || 0;
@@ -348,38 +342,32 @@ export default function TradePage() {
   const requiredMargin = side === "buy" ? finalAmount : tradeValue * 0.2;
   const insufficientFunds = requiredMargin > AVAILABLE_BALANCE;
 
-  const selectedChange = selectedItem?.changePercent ?? 0;
-  const selectedPositive = selectedChange >= 0;
+  const chartSeries = useMemo(() => {
+    const raw = priceHistory[selectedSymbol] ?? [];
+    const count = timeframe === "1D" ? 30 : timeframe === "1W" ? 90 : 180;
+    const sliced = raw.slice(-count);
+    return sliced.map((price, idx) => ({
+      t: idx,
+      price,
+    }));
+  }, [priceHistory, selectedSymbol, timeframe]);
 
-  function selectSuggestion(option: StockOption) {
-    const symbol = option.symbol.trim().toUpperCase();
-    if (!symbol) {
-      return;
-    }
+  const orderBook = useMemo(() => {
+    const base = selectedPrice || 100;
+    const bucket = Math.max(0.05, base * 0.0006);
 
-    setSelectedSymbol(symbol);
-    setStockQuery("");
-    setShowSuggestions(false);
+    const sells = Array.from({ length: 4 }, (_, i) => ({
+      price: base + bucket * (i + 1),
+      qty: 40 + ((selectedSymbol.charCodeAt(0) + i * 17) % 180),
+    }));
 
-    setWatchlist((prev) => {
-      const exists = prev.some((item) => item.symbol === symbol);
-      if (exists) {
-        return prev;
-      }
+    const buys = Array.from({ length: 4 }, (_, i) => ({
+      price: Math.max(0.05, base - bucket * (i + 1)),
+      qty: 45 + ((selectedSymbol.charCodeAt(1) + i * 21) % 180),
+    }));
 
-      return [
-        {
-          symbol,
-          exchange: "NSE" as const,
-          price: null,
-          changePercent: null,
-          basePrice: null,
-          loading: true,
-        },
-        ...prev,
-      ].slice(0, 20);
-    });
-  }
+    return { sells, buys };
+  }, [selectedPrice, selectedSymbol]);
 
   function bumpQuantity(by: number) {
     const next = Math.max(0, (Number(quantity) || 0) + by);
@@ -420,8 +408,6 @@ export default function TradePage() {
           targetPrice: orderType === "market" ? null : effectivePrice,
           price: effectivePrice,
           quantity: quantityNumber,
-          note,
-          mood,
         }),
       });
 
@@ -442,30 +428,28 @@ export default function TradePage() {
 
   return (
     <main className="min-h-screen bg-[#050912] px-2 py-2 text-slate-100 sm:px-3 lg:px-4">
-      <div className="mx-auto w-full max-w-[1500px]">
+      <div className="mx-auto w-full max-w-[1600px]">
         <div className="mb-2 flex items-center justify-between border-b border-slate-800 pb-1 text-[11px] text-slate-400">
           <span>Execution Terminal</span>
           <span className="font-medium text-emerald-300">Live Feed</span>
         </div>
 
-        <div className="grid grid-cols-1 gap-2 lg:grid-cols-[minmax(0,1fr)_390px]">
-          <section className="rounded border border-slate-800 bg-[#0b1220]">
-            <div className="border-b border-slate-800 px-2 py-2">
-              <div className="relative w-full max-w-md" ref={searchContainerRef}>
+        <div className="grid grid-cols-1 gap-2 xl:grid-cols-[250px_minmax(0,1fr)_390px]">
+          <section className="border border-slate-800 bg-[#0b1220]">
+            <div className="border-b border-slate-800 px-2 py-1.5">
+              <div className="relative" ref={searchContainerRef}>
                 <input
                   value={stockQuery}
                   onChange={(event) => setStockQuery(event.target.value)}
                   onFocus={() => {
-                    if (stockSuggestions.length > 0) {
-                      setShowSuggestions(true);
-                    }
+                    if (stockSuggestions.length > 0) setShowSuggestions(true);
                   }}
-                  placeholder="Search / add stock"
-                  className="h-8 w-full rounded border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:border-blue-500"
+                  placeholder="Search"
+                  className="h-7 w-full border border-slate-700 bg-[#090f1b] px-2 text-[11px] text-slate-100 outline-none placeholder:text-slate-500 focus:border-blue-500"
                 />
 
                 {showSuggestions && (
-                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded border border-slate-700 bg-[#090f1b] shadow-lg">
+                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto border border-slate-700 bg-[#090f1b] shadow-lg">
                     {isSearching ? (
                       <p className="px-2 py-2 text-xs text-slate-400">Searching...</p>
                     ) : stockSuggestions.length === 0 ? (
@@ -489,7 +473,7 @@ export default function TradePage() {
             </div>
 
             <div>
-              {watchlist.map((item) => {
+              {watchlist.map((item, index) => {
                 const isSelected = item.symbol === selectedSymbol;
                 const hasChange = item.changePercent !== null;
                 const change = item.changePercent ?? 0;
@@ -499,7 +483,14 @@ export default function TradePage() {
                   <button
                     key={item.symbol}
                     type="button"
-                    onClick={() => setSelectedSymbol(item.symbol)}
+                    onClick={() => {
+                      setSelectedSymbol(item.symbol);
+                      setSelectedIndex(index);
+                    }}
+                    onMouseEnter={() => {
+                      setSelectedSymbol(item.symbol);
+                      setSelectedIndex(index);
+                    }}
                     className={`grid w-full grid-cols-[1fr_auto] items-center border-b border-slate-800 px-2 py-1.5 text-left transition ${
                       isSelected ? "bg-blue-500/15" : "hover:bg-slate-800/40"
                     }`}
@@ -509,9 +500,7 @@ export default function TradePage() {
                       <p className="text-[10px] text-slate-500">{item.exchange}</p>
                     </div>
                     <div className="text-right tabular-nums">
-                      <p className="text-xs font-semibold text-slate-100">
-                        ₹<AnimatedPrice value={item.price} />
-                      </p>
+                      <p className="text-xs font-semibold text-slate-100">₹<AnimatedPrice value={item.price} /></p>
                       <p className={`text-[10px] ${up ? "text-emerald-400" : "text-rose-400"}`}>
                         {item.loading && !hasChange ? "--" : `${up ? "+" : ""}${change.toFixed(2)}%`}
                       </p>
@@ -522,19 +511,97 @@ export default function TradePage() {
             </div>
           </section>
 
-          <aside className="rounded border border-slate-800 bg-[#0b1220] lg:sticky lg:top-2 lg:h-[calc(100vh-16px)]">
+          <section className="border border-slate-800 bg-[#0b1220]">
+            <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2">
+              <div>
+                <p className="text-sm font-semibold text-slate-100">{selectedSymbol}</p>
+                <p className={`text-xs tabular-nums ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>
+                  ₹<AnimatedPrice value={selectedItem?.price ?? null} /> ({selectedPositive ? "+" : ""}{selectedChange.toFixed(2)}%)
+                </p>
+              </div>
+              <div className="grid grid-cols-3 gap-1">
+                {(["1D", "1W", "1M"] as const).map((tf) => (
+                  <button
+                    key={tf}
+                    type="button"
+                    onClick={() => setTimeframe(tf)}
+                    className={`h-7 px-2 text-[11px] ${timeframe === tf ? "bg-blue-600 text-white" : "border border-slate-700 text-slate-300 hover:bg-slate-800"}`}
+                  >
+                    {tf}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="h-[430px] w-full px-2 py-2">
+              <ResponsiveContainer>
+                <AreaChart
+                  data={chartSeries}
+                  margin={{ top: 8, right: 8, left: -10, bottom: 0 }}
+                  onClick={(state: any) => {
+                    const payload = state?.activePayload?.[0]?.value;
+                    if (typeof payload === "number" && Number.isFinite(payload)) {
+                      setPriceInput(payload.toFixed(2));
+                      if (orderType === "market") setOrderType("limit");
+                    }
+                  }}
+                >
+                  <defs>
+                    <linearGradient id="tradeChartFill" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={selectedPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.22} />
+                      <stop offset="100%" stopColor={selectedPositive ? "#22c55e" : "#ef4444"} stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid stroke="#1a2744" strokeDasharray="2 2" />
+                  <XAxis dataKey="t" stroke="#9ca3af" tick={{ fontSize: 10 }} tickFormatter={() => ""} />
+                  <YAxis stroke="#9ca3af" tick={{ fontSize: 10 }} width={46} tickFormatter={(v) => `₹${Number(v).toFixed(0)}`} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#0d1117", border: "1px solid #1a2744", color: "#fff" }}
+                    formatter={(value) => {
+                      const n = Number(Array.isArray(value) ? value[0] : value) || 0;
+                      return [`₹${n.toFixed(2)}`, "Price"];
+                    }}
+                  />
+                  <Area type="monotone" dataKey="price" stroke={selectedPositive ? "#22c55e" : "#ef4444"} strokeWidth={1.8} fill="url(#tradeChartFill)" dot={false} />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+          </section>
+
+          <aside className="border border-slate-800 bg-[#0b1220] lg:sticky lg:top-2 lg:h-[calc(100vh-16px)]">
             <form onSubmit={onSubmit} className="flex h-full flex-col">
               <div className="border-b border-slate-800 px-3 py-2">
-                <div className="mb-2 flex items-end justify-between">
+                <div className="mb-1 flex items-end justify-between">
                   <p className="text-base font-bold tracking-wide text-slate-100">{selectedSymbol || "--"}</p>
                   <div className="text-right tabular-nums">
                     <p className="text-sm font-semibold text-slate-100">₹<AnimatedPrice value={selectedItem?.price ?? null} /></p>
-                    <p className={`text-[11px] font-medium ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>
-                      {`${selectedPositive ? "+" : ""}${selectedChange.toFixed(2)}%`}
-                    </p>
+                    <p className={`text-[11px] font-medium ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>{`${selectedPositive ? "+" : ""}${selectedChange.toFixed(2)}%`}</p>
                   </div>
                 </div>
-                <Sparkline points={priceHistory[selectedSymbol] ?? []} positive={selectedPositive} />
+              </div>
+
+              <div className="border-b border-slate-800 px-3 py-2 text-[11px]">
+                <p className="mb-1 font-semibold text-slate-300">Order Book</p>
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <p className="mb-1 text-[10px] font-semibold text-rose-300">SELL</p>
+                    {orderBook.sells.map((row, idx) => (
+                      <div key={`sell-${idx}`} className="grid grid-cols-2 py-0.5 tabular-nums text-[10px]">
+                        <span className="text-rose-300">{row.price.toFixed(2)}</span>
+                        <span className="text-right text-slate-300">{row.qty}</span>
+                      </div>
+                    ))}
+                  </div>
+                  <div>
+                    <p className="mb-1 text-[10px] font-semibold text-emerald-300">BUY</p>
+                    {orderBook.buys.map((row, idx) => (
+                      <div key={`buy-${idx}`} className="grid grid-cols-2 py-0.5 tabular-nums text-[10px]">
+                        <span className="text-emerald-300">{row.price.toFixed(2)}</span>
+                        <span className="text-right text-slate-300">{row.qty}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
 
               <div className="px-3 py-2">
@@ -542,22 +609,14 @@ export default function TradePage() {
                   <button
                     type="button"
                     onClick={() => setSide("buy")}
-                    className={`h-8 rounded text-xs font-bold transition ${
-                      side === "buy"
-                        ? "bg-emerald-600 text-white"
-                        : "border border-emerald-700/60 bg-emerald-900/15 text-emerald-300"
-                    }`}
+                    className={`h-8 text-xs font-bold transition ${side === "buy" ? "bg-emerald-600 text-white" : "border border-emerald-700/60 bg-emerald-900/15 text-emerald-300"}`}
                   >
                     BUY
                   </button>
                   <button
                     type="button"
                     onClick={() => setSide("sell")}
-                    className={`h-8 rounded text-xs font-bold transition ${
-                      side === "sell"
-                        ? "bg-rose-600 text-white"
-                        : "border border-rose-700/60 bg-rose-900/15 text-rose-300"
-                    }`}
+                    className={`h-8 text-xs font-bold transition ${side === "sell" ? "bg-rose-600 text-white" : "border border-rose-700/60 bg-rose-900/15 text-rose-300"}`}
                   >
                     SELL
                   </button>
@@ -566,20 +625,12 @@ export default function TradePage() {
 
               <div className="border-t border-slate-800 px-3 py-2">
                 <div className="grid grid-cols-3 gap-1.5">
-                  {([
-                    ["market", "MKT"],
-                    ["limit", "LMT"],
-                    ["stoploss", "SL"],
-                  ] as const).map(([value, label]) => (
+                  {([ ["market", "MKT"], ["limit", "LMT"], ["stoploss", "SL"] ] as const).map(([value, label]) => (
                     <button
                       key={value}
                       type="button"
                       onClick={() => setOrderType(value)}
-                      className={`h-7 rounded text-[11px] font-semibold transition ${
-                        orderType === value
-                          ? "bg-blue-600 text-white"
-                          : "border border-slate-700 bg-[#090f1b] text-slate-300 hover:bg-slate-800"
-                      }`}
+                      className={`h-7 text-[11px] font-semibold transition ${orderType === value ? "bg-blue-600 text-white" : "border border-slate-700 bg-[#090f1b] text-slate-300 hover:bg-slate-800"}`}
                     >
                       {label}
                     </button>
@@ -589,14 +640,14 @@ export default function TradePage() {
 
               <div className="border-t border-slate-800 px-3 py-2">
                 <div className="grid grid-cols-[1fr_auto] gap-2">
-                  <label className="block">
-                    <span className="mb-1 block text-[10px] text-slate-500">Quantity</span>
+                  <label>
+                    <span className="mb-1 block text-[10px] text-slate-500">Qty</span>
                     <input
                       value={quantity}
                       onChange={(event) => setQuantity(event.target.value)}
                       type="number"
                       min={1}
-                      className="h-8 w-full rounded border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
+                      className="h-8 w-full border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
                     />
                   </label>
                   <div>
@@ -607,7 +658,7 @@ export default function TradePage() {
                           key={step}
                           type="button"
                           onClick={() => bumpQuantity(step)}
-                          className="h-8 rounded border border-slate-700 bg-[#090f1b] px-2 text-[10px] font-semibold text-slate-200 hover:bg-slate-800"
+                          className="h-8 border border-slate-700 bg-[#090f1b] px-2 text-[10px] font-semibold text-slate-200 hover:bg-slate-800"
                         >
                           +{step}
                         </button>
@@ -624,7 +675,7 @@ export default function TradePage() {
                       onChange={(event) => setPriceInput(event.target.value)}
                       type="number"
                       step="0.01"
-                      className="h-8 w-full rounded border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
+                      className="h-8 w-full border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
                     />
                   </div>
                 )}
@@ -632,49 +683,22 @@ export default function TradePage() {
 
               <div className="border-t border-slate-800 px-3 py-2 text-[11px] text-slate-300 tabular-nums">
                 <div className="mb-1 flex items-center justify-between">
-                  <span>Available Balance</span>
+                  <span>Balance</span>
                   <span className="font-semibold text-slate-100">{formatINR(AVAILABLE_BALANCE)}</span>
                 </div>
                 <div className="mb-1 flex items-center justify-between">
-                  <span>Value</span>
+                  <span>Total</span>
                   <span className="font-semibold text-slate-100">{formatINR(tradeValue)}</span>
+                </div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span>Margin</span>
+                  <span className={`font-semibold ${insufficientFunds ? "text-rose-300" : "text-slate-100"}`}>{formatINR(requiredMargin)}</span>
                 </div>
                 <div className="mb-1 flex items-center justify-between">
                   <span>Charges</span>
                   <span className="font-semibold text-slate-100">{formatINR(charges)}</span>
                 </div>
-                <div className="mb-1 flex items-center justify-between">
-                  <span>Required Margin</span>
-                  <span className={`font-semibold ${insufficientFunds ? "text-rose-300" : "text-slate-100"}`}>
-                    {formatINR(requiredMargin)}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between border-t border-slate-700 pt-1 text-xs">
-                  <span className="font-medium">Final</span>
-                  <span className={`font-bold ${side === "buy" ? "text-emerald-300" : "text-rose-300"}`}>
-                    {formatINR(finalAmount)}
-                  </span>
-                </div>
-                {insufficientFunds && (
-                  <p className="mt-1 text-[10px] font-medium text-rose-300">Insufficient funds for this order size.</p>
-                )}
-              </div>
-
-              <div className="border-t border-slate-800 px-3 py-2">
-                <div className="grid grid-cols-2 gap-2">
-                  <input
-                    value={note}
-                    onChange={(event) => setNote(event.target.value)}
-                    placeholder="Note"
-                    className="h-8 rounded border border-slate-700 bg-[#090f1b] px-2 text-[11px] text-slate-200 outline-none placeholder:text-slate-500 focus:border-blue-500"
-                  />
-                  <input
-                    value={mood}
-                    onChange={(event) => setMood(event.target.value)}
-                    placeholder="Mood"
-                    className="h-8 rounded border border-slate-700 bg-[#090f1b] px-2 text-[11px] text-slate-200 outline-none placeholder:text-slate-500 focus:border-blue-500"
-                  />
-                </div>
+                {insufficientFunds && <p className="mt-1 text-[10px] font-medium text-rose-300">Insufficient funds for this order size.</p>}
               </div>
 
               <div className="mt-auto border-t border-slate-800 px-3 py-3">
@@ -682,13 +706,9 @@ export default function TradePage() {
                 <button
                   type="submit"
                   disabled={loading || insufficientFunds}
-                  className={`h-10 w-full rounded text-sm font-bold tracking-wide text-white transition active:scale-[0.99] ${
-                    side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-rose-600 hover:bg-rose-500"
-                  } disabled:cursor-not-allowed disabled:opacity-60`}
+                  className={`h-10 w-full text-sm font-bold tracking-wide text-white transition active:scale-[0.99] ${side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-rose-600 hover:bg-rose-500"} disabled:cursor-not-allowed disabled:opacity-60`}
                 >
-                  {loading
-                    ? "Submitting..."
-                    : `${side === "buy" ? "Buy" : "Sell"} ${selectedSymbol || "STOCK"}`}
+                  {loading ? "Submitting..." : `${side === "buy" ? "Buy" : "Sell"} ${selectedSymbol || "STOCK"}`}
                 </button>
               </div>
             </form>
@@ -696,11 +716,7 @@ export default function TradePage() {
         </div>
       </div>
 
-      {toast && (
-        <div className="fixed bottom-4 right-4 rounded border border-emerald-700 bg-emerald-900/85 px-3 py-2 text-xs text-emerald-100">
-          {toast}
-        </div>
-      )}
+      {toast && <div className="fixed bottom-4 right-4 border border-emerald-700 bg-emerald-900/85 px-3 py-2 text-xs text-emerald-100">{toast}</div>}
     </main>
   );
 }

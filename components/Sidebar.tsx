@@ -4,8 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
-  AlertTriangle,
-  BarChart2,
   Bell,
   Brain,
   Clock,
@@ -15,23 +13,21 @@ import {
   ListOrdered,
   LogOut,
   Settings as SettingsIcon,
-  Sparkles,
   Trophy,
   TrendingUp,
 } from "lucide-react";
 
-const navItems = [
+const primaryNavItems = [
   { label: "Dashboard",      href: "/dashboard",    icon: LayoutDashboard },
   { label: "Trade",          href: "/trade",         icon: TrendingUp },
   { label: "Orders",         href: "/orders",        icon: ListOrdered },
   { label: "Watchlist",      href: "/watchlist",     icon: Eye },
-  { label: "Alerts",         href: "/alerts",        icon: Bell },
   { label: "History",        href: "/history",       icon: Clock },
-  { label: "TradeMind",      href: "/mood",          icon: Brain },
-  { label: "Bad Trades",     href: "/mistakes",      icon: AlertTriangle },
-  { label: "Why I'm Losing", href: "/analytics",     icon: BarChart2 },
-  { label: "My Coach",       href: "/ai-coach",      icon: Sparkles },
-  { label: "Competitions",   href: "/competitions",  icon: Trophy },
+];
+
+const secondaryNavItems = [
+  { label: "Insights",       href: "/insights",      icon: Brain },
+  { label: "Alerts",         href: "/alerts",        icon: Bell },
   { label: "Leaderboard",    href: "/leaderboard",   icon: Trophy },
 ];
 
@@ -79,7 +75,54 @@ export default function Sidebar({
 
       {/* ── Nav items ── */}
       <nav className="flex flex-1 flex-col gap-0.5 p-2 overflow-y-auto">
-        {navItems.map((item) => {
+        {primaryNavItems.map((item) => {
+          const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
+          const Icon = item.icon;
+
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              onClick={onCloseMobile}
+              title={collapsed ? item.label : undefined}
+              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
+                active ? "sidebar-active" : "sidebar-inactive"
+              }`}
+              style={
+                active
+                  ? {
+                      backgroundColor: "var(--bg-active)",
+                      color: "var(--color-blue)",
+                      borderLeft: `3px solid var(--color-blue)`,
+                      paddingLeft: collapsed ? "9px" : "9px",
+                    }
+                  : {
+                      color: "var(--text-secondary)",
+                      borderLeft: "3px solid transparent",
+                    }
+              }
+              onMouseEnter={(e) => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "var(--bg-hover)";
+                  (e.currentTarget as HTMLElement).style.color = "var(--text-primary)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  (e.currentTarget as HTMLElement).style.backgroundColor = "transparent";
+                  (e.currentTarget as HTMLElement).style.color = "var(--text-secondary)";
+                }
+              }}
+            >
+              <Icon size={18} />
+              {!collapsed ? <span>{item.label}</span> : null}
+            </Link>
+          );
+        })}
+
+        <div className="my-2 border-t" style={{ borderColor: "var(--border)" }} />
+
+        {secondaryNavItems.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const Icon = item.icon;
 
