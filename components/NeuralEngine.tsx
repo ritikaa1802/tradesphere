@@ -1,215 +1,580 @@
 "use client";
 
 import { motion, useMotionValue, useSpring } from "framer-motion";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Activity,
   BarChart2,
   Brain,
-  Database,
+  Cpu,
   Globe,
   LineChart,
 } from "lucide-react";
 
-// The outer nodes data
-const features = [
-  { id: "market", title: "Live Market Data", desc: "Real NSE/BSE streaming", icon: Globe, angle: -90, color: "#06b6d4", shadow: "rgba(6,182,212,0.4)" },
-  { id: "emotion", title: "Emotion Journal", desc: "Psychology & mood tracking", icon: Activity, angle: -18, color: "#8b5cf6", shadow: "rgba(139,92,246,0.4)" },
-  { id: "analytics", title: "Deep Analytics", desc: "Win rates & risk profiles", icon: Database, angle: 54, color: "#3b82f6", shadow: "rgba(59,130,246,0.4)" },
-  { id: "coach", title: "Coaching System", desc: "Actionable weekly insights", icon: BarChart2, angle: 126, color: "#f59e0b", shadow: "rgba(245,158,11,0.4)" },
-  { id: "mistake", title: "Mistake Detection", desc: "FOMO & panic alerts", icon: LineChart, angle: 198, color: "#ec4899", shadow: "rgba(236,72,153,0.4)" },
-];
+type Feature = {
+  id: string;
+  title: string;
+  desc: string;
+  icon: React.ComponentType<{ size?: number; className?: string }>;
+  color: string;
+  glow: string;
+  desktopPos: { x: number; y: number };
+  tabletPos: { x: number; y: number };
+};
 
-const RADIUS = 280; // Desktop radius
+const features = [
+  {
+    id: "market",
+    title: "Live Market Data",
+    desc: "Real-time market pulse and liquidity streams.",
+    icon: Globe,
+    color: "#22d3ee",
+    glow: "rgba(34, 211, 238, 0.45)",
+    desktopPos: { x: 20, y: 20 },
+    tabletPos: { x: 14, y: 34 },
+  },
+  {
+    id: "emotion",
+    title: "Emotion Journal",
+    desc: "Capture mindset shifts before and after entries.",
+    icon: Activity,
+    color: "#a78bfa",
+    glow: "rgba(167, 139, 250, 0.45)",
+    desktopPos: { x: 80, y: 18 },
+    tabletPos: { x: 34, y: 16 },
+  },
+  {
+    id: "analytics",
+    title: "Deep Analytics",
+    desc: "Pattern intelligence across risk and execution data.",
+    icon: Cpu,
+    color: "#60a5fa",
+    glow: "rgba(96, 165, 250, 0.45)",
+    desktopPos: { x: 85, y: 58 },
+    tabletPos: { x: 66, y: 16 },
+  },
+  {
+    id: "coach",
+    title: "Coaching System",
+    desc: "Adaptive feedback loops that sharpen decision quality.",
+    icon: BarChart2,
+    color: "#38bdf8",
+    glow: "rgba(56, 189, 248, 0.45)",
+    desktopPos: { x: 30, y: 83 },
+    tabletPos: { x: 86, y: 34 },
+  },
+  {
+    id: "mistake",
+    title: "Mistake Detection",
+    desc: "Flags recurring FOMO and impulse trading signatures.",
+    icon: LineChart,
+    color: "#818cf8",
+    glow: "rgba(129, 140, 248, 0.45)",
+    desktopPos: { x: 10, y: 58 },
+    tabletPos: { x: 50, y: 44 },
+  },
+] satisfies Feature[];
+
+type Ripple = { id: number; x: number; y: number };
+
+function cardPath(feature: Feature, mode: "desktop" | "tablet") {
+  const centerX = 50;
+  const centerY = mode === "desktop" ? 50 : 48;
+  const target = mode === "desktop" ? feature.desktopPos : feature.tabletPos;
+  const controlX = centerX + (target.x - centerX) * 0.45 + (target.y > centerY ? -8 : 8);
+  const controlY = centerY + (target.y - centerY) * 0.45;
+
+  return `M ${centerX} ${centerY} Q ${controlX} ${controlY} ${target.x} ${target.y}`;
+}
 
 export default function NeuralEngine() {
   const [hoveredNode, setHoveredNode] = useState<string | null>(null);
+  const [ripples, setRipples] = useState<Record<string, Ripple[]>>({});
+  const sectionRef = useRef<HTMLElement | null>(null);
+  const [cursor, setCursor] = useState({ x: 0, y: 0, active: false });
 
-  // Parallax logic
   const mouseX = useMotionValue(0);
   const mouseY = useMotionValue(0);
-  const smoothX = useSpring(mouseX, { stiffness: 50, damping: 20 });
-  const smoothY = useSpring(mouseY, { stiffness: 50, damping: 20 });
+  const smoothX = useSpring(mouseX, { stiffness: 60, damping: 18, mass: 0.8 });
+  const smoothY = useSpring(mouseY, { stiffness: 60, damping: 18, mass: 0.8 });
+
+  const particles = useMemo(
+    () =>
+      Array.from({ length: 28 }, (_, index) => ({
+        id: index,
+        left: `${(index * 19.7) % 100}%`,
+        top: `${(index * 11.3 + 9) % 100}%`,
+        size: (index % 4) + 1,
+        delay: (index % 10) * 0.35,
+        duration: 8 + (index % 6) * 2,
+      })),
+    [],
+  );
 
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
-      const { innerWidth, innerHeight } = window;
-      const x = (e.clientX / innerWidth - 0.5) * 40; // max shift 20px
-      const y = (e.clientY / innerHeight - 0.5) * 40;
+      const bounds = sectionRef.current?.getBoundingClientRect();
+      if (!bounds) return;
+
+      const relativeX = e.clientX - bounds.left;
+      const relativeY = e.clientY - bounds.top;
+      const inside =
+        relativeX >= 0 &&
+        relativeY >= 0 &&
+        relativeX <= bounds.width &&
+        relativeY <= bounds.height;
+
+      if (!inside) {
+        setCursor((prev) => (prev.active ? { ...prev, active: false } : prev));
+        mouseX.set(0);
+        mouseY.set(0);
+        return;
+      }
+
+      const x = (relativeX / bounds.width - 0.5) * 36;
+      const y = (relativeY / bounds.height - 0.5) * 36;
       mouseX.set(x);
       mouseY.set(y);
+      setCursor({ x: relativeX, y: relativeY, active: true });
     };
+
+    const handleLeave = () => {
+      setCursor((prev) => ({ ...prev, active: false }));
+      mouseX.set(0);
+      mouseY.set(0);
+    };
+
     window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
+    sectionRef.current?.addEventListener("mouseleave", handleLeave);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      sectionRef.current?.removeEventListener("mouseleave", handleLeave);
+    };
   }, [mouseX, mouseY]);
 
+  const spawnRipple = (featureId: string, event: React.MouseEvent<HTMLButtonElement>) => {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const newRipple: Ripple = {
+      id: Date.now() + Math.floor(Math.random() * 1000),
+      x: event.clientX - rect.left,
+      y: event.clientY - rect.top,
+    };
+
+    setRipples((prev) => ({
+      ...prev,
+      [featureId]: [...(prev[featureId] ?? []), newRipple],
+    }));
+
+    window.setTimeout(() => {
+      setRipples((prev) => ({
+        ...prev,
+        [featureId]: (prev[featureId] ?? []).filter((r) => r.id !== newRipple.id),
+      }));
+    }, 650);
+  };
+
   return (
-    <section className="relative overflow-hidden bg-[#030712] py-24 sm:py-32">
-      {/* Background depth layers */}
-      <div className="absolute inset-0 z-0 bg-[radial-gradient(circle_at_center,_var(--tw-gradient-stops))] from-[#1d4ed8]/10 via-[#030712] to-[#030712]" />
+    <section
+      ref={sectionRef}
+      className="relative overflow-hidden py-24 sm:py-28 lg:py-32"
+      style={{
+        background:
+          "radial-gradient(95% 90% at 50% 48%, rgba(56,189,248,0.12), rgba(5,10,25,0) 55%), linear-gradient(140deg, #02050f 0%, #050b1c 45%, #110b26 100%)",
+      }}
+    >
+      <div className="absolute inset-0 z-0 opacity-[0.3]" style={{
+        backgroundImage:
+          "radial-gradient(circle at 15% 20%, rgba(34,211,238,0.2), transparent 28%), radial-gradient(circle at 85% 18%, rgba(129,140,248,0.22), transparent 30%), radial-gradient(circle at 50% 75%, rgba(96,165,250,0.14), transparent 34%)",
+      }} />
+
       <div
-        className="pointer-events-none absolute inset-0 z-0 opacity-20"
+        className="absolute inset-0 z-0 opacity-[0.14]"
         style={{
-          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          backgroundImage:
+            "linear-gradient(rgba(148,163,184,0.08) 1px, transparent 1px), linear-gradient(90deg, rgba(148,163,184,0.08) 1px, transparent 1px)",
+          backgroundSize: "48px 48px",
+        }}
+      />
+
+      <div className="pointer-events-none absolute inset-0 z-0">
+        {particles.map((particle) => (
+          <motion.span
+            key={particle.id}
+            className="absolute rounded-full bg-cyan-300"
+            style={{
+              left: particle.left,
+              top: particle.top,
+              width: particle.size,
+              height: particle.size,
+              opacity: 0.14,
+              filter: "blur(0.5px)",
+            }}
+            animate={{ y: [0, -14, 0], opacity: [0.08, 0.22, 0.08] }}
+            transition={{
+              duration: particle.duration,
+              repeat: Infinity,
+              ease: "easeInOut",
+              delay: particle.delay,
+            }}
+          />
+        ))}
+      </div>
+
+      {cursor.active && (
+        <motion.div
+          className="pointer-events-none absolute z-[1] h-56 w-56 rounded-full"
+          animate={{
+            x: cursor.x - 112,
+            y: cursor.y - 112,
+            opacity: 1,
+          }}
+          initial={false}
+          transition={{ duration: 0.25, ease: "easeOut" }}
+          style={{
+            background:
+              "radial-gradient(circle, rgba(96,165,250,0.24) 0%, rgba(56,189,248,0.1) 30%, rgba(56,189,248,0) 72%)",
+            filter: "blur(12px)",
+          }}
+        />
+      )}
+
+      <div
+        className="absolute inset-0 z-0"
+        style={{
+          background:
+            "radial-gradient(circle at 50% 50%, rgba(56,189,248,0.17), rgba(56,189,248,0) 45%)",
         }}
       />
 
       <div className="relative z-10 mx-auto max-w-7xl px-6 lg:px-8">
-        <div className="mx-auto max-w-2xl text-center mb-16 lg:mb-24">
-          <h2 className="text-3xl font-light tracking-tight text-white sm:text-5xl">
-            Powered by the <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-indigo-400">TradeSphere AI Engine</span>
+        <div className="mx-auto mb-16 max-w-3xl text-center lg:mb-20">
+          <p className="mb-3 text-[11px] uppercase tracking-[0.24em] text-cyan-200/70">Neural Intelligence Layer</p>
+          <h2 className="text-3xl font-semibold tracking-tight text-white sm:text-5xl">
+            AI Neural Engine System
           </h2>
-          <p className="mt-4 text-base text-slate-400">
-            A fully interconnected neural architecture that monitors every execution, detects psychological flaws, and trains your edge automatically.
+          <p className="mx-auto mt-4 max-w-2xl text-sm text-slate-300/90 sm:text-base">
+            A living intelligence mesh that reads market signals, trader psychology, and execution behavior in one adaptive core.
           </p>
         </div>
 
-        {/* ── Desktop Radial Layout ── */}
-        <div className="hidden lg:flex relative h-[700px] w-full items-center justify-center">
+        <div className="hidden lg:block">
           <motion.div
             style={{ x: smoothX, y: smoothY }}
-            className="relative flex items-center justify-center h-full w-full max-w-[800px]"
+            className="relative mx-auto h-[740px] w-full max-w-[1080px]"
           >
-            {/* Connection Lines (Lines rotating outward from center) */}
-            {features.map((feature, i) => {
-              const rad = (feature.angle * Math.PI) / 180;
-              const isHovered = hoveredNode === feature.id;
-              const isAnyHovered = hoveredNode !== null;
-              const isActive = !isAnyHovered || isHovered;
-
-              return (
-                <motion.div
-                  key={`line-${feature.id}`}
-                  initial={{ width: 0, opacity: 0 }}
-                  whileInView={{ width: RADIUS - 40, opacity: isActive ? 1 : 0.2 }}
-                  viewport={{ once: true }}
-                  transition={{ duration: 1, delay: i * 0.1 }}
-                  className="absolute z-0 origin-left border-t border-dashed"
-                  style={{
-                    left: "50%",
-                    top: "50%",
-                    transform: `rotate(${feature.angle}deg)`,
-                    borderColor: isActive ? feature.color : "#1e293b",
-                    boxShadow: isActive ? `0 -1px 10px ${feature.shadow}` : "none",
-                  }}
-                >
-                  {/* Flowing particle along the line */}
-                  {isActive && (
-                    <motion.div
-                      initial={{ left: 0, opacity: 0 }}
-                      animate={{ left: "100%", opacity: [0, 1, 0] }}
-                      transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: i * 0.2 }}
-                      className="absolute -top-[2px] h-[3px] w-8 rounded-full bg-white blur-[1px]"
-                      style={{ background: `linear-gradient(90deg, transparent, ${feature.color}, transparent)` }}
+            <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {features.map((feature) => {
+                const active = hoveredNode === feature.id || hoveredNode === null;
+                return (
+                  <g key={`desktop-path-${feature.id}`}>
+                    <motion.path
+                      d={cardPath(feature, "desktop")}
+                      fill="none"
+                      stroke={feature.color}
+                      strokeWidth={active ? 0.3 : 0.2}
+                      strokeLinecap="round"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      whileInView={{ pathLength: 1, opacity: active ? 0.6 : 0.2 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1.2, ease: "easeOut" }}
+                      style={{ filter: active ? `drop-shadow(0 0 8px ${feature.glow})` : "none" }}
                     />
-                  )}
-                </motion.div>
-              );
-            })}
+                    <motion.path
+                      d={cardPath(feature, "desktop")}
+                      fill="none"
+                      stroke={feature.color}
+                      strokeWidth={0.12}
+                      strokeLinecap="round"
+                      strokeDasharray="1.6 2.4"
+                      animate={{ strokeDashoffset: [0, -12] }}
+                      transition={{ duration: 1.8, repeat: Infinity, ease: "linear" }}
+                      style={{ opacity: active ? 1 : 0.25 }}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
 
-            {/* Center Brain Node */}
             <motion.div
-              className="relative z-20 flex h-32 w-32 flex-col items-center justify-center rounded-full bg-[#030712]/80 backdrop-blur-xl border border-blue-500 shadow-[0_0_50px_rgba(59,130,246,0.3)] transition-all duration-300"
-              whileHover={{ scale: 1.05, boxShadow: "0 0 80px rgba(59,130,246,0.6)" }}
-              onHoverStart={() => setHoveredNode("center")}
-              onHoverEnd={() => setHoveredNode(null)}
+              className="absolute left-1/2 top-1/2 z-10 h-72 w-72 -translate-x-1/2 -translate-y-1/2 rounded-full"
+              animate={{ rotate: [0, 360] }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              style={{
+                background:
+                  "conic-gradient(from 120deg, rgba(34,211,238,0.24), rgba(99,102,241,0.22), rgba(59,130,246,0.18), rgba(34,211,238,0.24))",
+                filter: "blur(24px)",
+              }}
+            />
+
+            <motion.div
+              className="absolute left-1/2 top-1/2 z-20 flex h-40 w-40 -translate-x-1/2 -translate-y-1/2 flex-col items-center justify-center rounded-full border border-cyan-300/35 bg-slate-950/60 backdrop-blur-2xl"
+              animate={{
+                scale: [1, 1.04, 1],
+                boxShadow: [
+                  "0 0 32px rgba(56,189,248,0.25), inset 0 0 18px rgba(96,165,250,0.22)",
+                  "0 0 58px rgba(56,189,248,0.45), inset 0 0 28px rgba(129,140,248,0.28)",
+                  "0 0 32px rgba(56,189,248,0.25), inset 0 0 18px rgba(96,165,250,0.22)",
+                ],
+              }}
+              transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
             >
-              <div className="absolute inset-0 rounded-full bg-blue-500/10 animate-pulse" />
-              <Brain size={36} className="text-blue-400 mb-1" />
-              <span className="text-[10px] font-bold text-white uppercase tracking-widest text-center leading-tight">
-                AI <br /> Engine
-              </span>
+              <motion.div
+                className="absolute inset-2 rounded-full border border-white/10"
+                animate={{ rotate: [0, -360] }}
+                transition={{ duration: 18, repeat: Infinity, ease: "linear" }}
+              />
+              <motion.div
+                className="absolute inset-5 rounded-full border border-cyan-200/20"
+                animate={{ rotate: [0, 360] }}
+                transition={{ duration: 12, repeat: Infinity, ease: "linear" }}
+              />
+              <Brain size={34} className="text-cyan-200" />
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.2em] text-cyan-100">AI Engine</p>
             </motion.div>
 
-            {/* Satellite Nodes */}
             {features.map((feature, i) => {
-              const rad = (feature.angle * Math.PI) / 180;
-              const isHovered = hoveredNode === feature.id || hoveredNode === "center";
-              const isAnyHovered = hoveredNode !== null;
-              const opacity = (!isAnyHovered || isHovered) ? 1 : 0.3;
+              const isHovered = hoveredNode === feature.id;
+              const icon = feature.icon;
+              const glowStrength =
+                hoveredNode === null || isHovered
+                  ? `0 10px 38px rgba(0,0,0,0.4), 0 0 26px ${feature.glow}`
+                  : "0 8px 26px rgba(0,0,0,0.3)";
 
               return (
-                <motion.div
-                  key={`node-${feature.id}`}
-                  initial={{ opacity: 0, scale: 0.8 }}
-                  whileInView={{ opacity: 1, scale: 1 }}
+                <motion.button
+                  key={`desktop-card-${feature.id}`}
+                  type="button"
+                  onMouseEnter={() => setHoveredNode(feature.id)}
+                  onMouseLeave={() => setHoveredNode(null)}
+                  onClick={(event) => spawnRipple(feature.id, event)}
+                  initial={{ opacity: 0, y: 18, scale: 0.92 }}
+                  whileInView={{ opacity: 1, y: 0, scale: 1 }}
                   viewport={{ once: true }}
-                  transition={{ delay: 0.5 + i * 0.1, duration: 0.6 }}
-                  onHoverStart={() => setHoveredNode(feature.id)}
-                  onHoverEnd={() => setHoveredNode(null)}
-                  className="absolute z-10 flex w-48 flex-col items-center justify-center rounded-2xl bg-[#0a0f1a]/60 p-4 text-center backdrop-blur-md transition-all duration-300 hover:scale-110 cursor-default"
+                  transition={{ duration: 0.65, delay: 0.18 + i * 0.08, ease: "easeOut" }}
+                  whileHover={{ scale: 1.06, rotateX: -5, rotateY: 6, y: -4 }}
+                  className="group absolute z-20 w-[238px] overflow-hidden rounded-2xl border bg-white/[0.07] p-5 text-left backdrop-blur-xl"
                   style={{
-                    left: `calc(50% + ${Math.cos(rad) * RADIUS}px)`,
-                    top: `calc(50% + ${Math.sin(rad) * RADIUS}px)`,
+                    left: `${feature.desktopPos.x}%`,
+                    top: `${feature.desktopPos.y}%`,
                     transform: "translate(-50%, -50%)",
-                    border: `1px solid ${isHovered ? feature.color : "#1e293b"}`,
-                    boxShadow: isHovered ? `0 0 25px ${feature.shadow}, inset 0 0 10px ${feature.shadow}` : "0 4px 6px -1px rgba(0, 0, 0, 0.1)",
-                    opacity,
+                    borderColor:
+                      hoveredNode === null || isHovered ? `${feature.color}55` : "rgba(148,163,184,0.26)",
+                    boxShadow: glowStrength,
+                    transformStyle: "preserve-3d",
+                    animation: `neural-float ${7 + i * 0.8}s ease-in-out infinite`,
+                    animationDelay: `${i * 0.25}s`,
                   }}
                 >
-                  <div className="mb-3 rounded-full border border-slate-700 bg-[#030712] p-2"
-                    style={{ borderColor: isHovered ? feature.color : "#334155", boxShadow: isHovered ? `0 0 15px ${feature.shadow}` : "none" }}>
-                    <feature.icon size={20} className="text-white" />
+                  <div
+                    className="pointer-events-none absolute inset-0 opacity-75"
+                    style={{
+                      background:
+                        "linear-gradient(135deg, rgba(255,255,255,0.08), rgba(255,255,255,0.01) 45%, rgba(255,255,255,0.04))",
+                    }}
+                  />
+
+                  {(ripples[feature.id] ?? []).map((ripple) => (
+                    <motion.span
+                      key={ripple.id}
+                      className="pointer-events-none absolute rounded-full"
+                      style={{
+                        left: ripple.x,
+                        top: ripple.y,
+                        background: `${feature.color}44`,
+                        border: `1px solid ${feature.color}`,
+                      }}
+                      initial={{ width: 0, height: 0, opacity: 0.7, x: "-50%", y: "-50%" }}
+                      animate={{ width: 180, height: 180, opacity: 0 }}
+                      transition={{ duration: 0.62, ease: "easeOut" }}
+                    />
+                  ))}
+
+                  <div
+                    className="relative z-10 mb-3 inline-flex rounded-xl border p-2.5"
+                    style={{ borderColor: `${feature.color}80`, backgroundColor: "rgba(2,6,23,0.75)" }}
+                  >
+                    {icon({
+                      size: 20,
+                      className: "text-white",
+                    })}
                   </div>
-                  <h3 className="text-sm font-semibold text-white tracking-wide">{feature.title}</h3>
-                  <p className="mt-1 text-xs text-slate-400">{feature.desc}</p>
-                </motion.div>
+                  <h3 className="relative z-10 text-sm font-semibold tracking-wide text-white">{feature.title}</h3>
+                  <p className="relative z-10 mt-2 text-xs leading-relaxed text-slate-300/90">{feature.desc}</p>
+                </motion.button>
               );
             })}
           </motion.div>
         </div>
 
-        {/* ── Mobile Structured System Flow ── */}
-        <div className="relative flex flex-col gap-8 lg:hidden mt-8 max-w-sm mx-auto">
-          {/* Vertical connecting line */}
-          <div className="absolute top-10 bottom-10 left-1/2 w-[1px] -translate-x-1/2 bg-gradient-to-b from-blue-500/20 via-blue-500/50 to-purple-500/20" />
-          
-          {/* Center Brain at the top on mobile */}
+        <div className="hidden md:block lg:hidden">
+          <motion.div style={{ x: smoothX, y: smoothY }} className="relative mx-auto h-[560px] w-full max-w-3xl">
+            <svg className="pointer-events-none absolute inset-0 h-full w-full" viewBox="0 0 100 100" preserveAspectRatio="none">
+              {features.map((feature) => {
+                const active = hoveredNode === feature.id || hoveredNode === null;
+                return (
+                  <g key={`tablet-path-${feature.id}`}>
+                    <motion.path
+                      d={cardPath(feature, "tablet")}
+                      fill="none"
+                      stroke={feature.color}
+                      strokeWidth={active ? 0.45 : 0.3}
+                      strokeLinecap="round"
+                      initial={{ pathLength: 0, opacity: 0 }}
+                      whileInView={{ pathLength: 1, opacity: active ? 0.62 : 0.2 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 1.05, ease: "easeOut" }}
+                    />
+                    <motion.path
+                      d={cardPath(feature, "tablet")}
+                      fill="none"
+                      stroke={feature.color}
+                      strokeWidth={0.18}
+                      strokeDasharray="2 3"
+                      animate={{ strokeDashoffset: [0, -10] }}
+                      transition={{ duration: 1.7, repeat: Infinity, ease: "linear" }}
+                      style={{ opacity: active ? 0.95 : 0.25 }}
+                    />
+                  </g>
+                );
+              })}
+            </svg>
+
+            <motion.div
+              className="absolute left-1/2 top-[48%] z-20 h-32 w-32 -translate-x-1/2 -translate-y-1/2 rounded-full border border-cyan-300/35 bg-slate-950/70"
+              animate={{ scale: [1, 1.05, 1], boxShadow: ["0 0 26px rgba(56,189,248,0.28)", "0 0 42px rgba(129,140,248,0.42)", "0 0 26px rgba(56,189,248,0.28)"] }}
+              transition={{ duration: 3.4, repeat: Infinity, ease: "easeInOut" }}
+            >
+              <div className="flex h-full w-full flex-col items-center justify-center">
+                <Brain size={28} className="text-cyan-200" />
+                <p className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100">AI Engine</p>
+              </div>
+            </motion.div>
+
+            {features.map((feature, i) => {
+              const icon = feature.icon;
+              const isHovered = hoveredNode === feature.id;
+              return (
+                <motion.button
+                  key={`tablet-card-${feature.id}`}
+                  type="button"
+                  onMouseEnter={() => setHoveredNode(feature.id)}
+                  onMouseLeave={() => setHoveredNode(null)}
+                  onClick={(event) => spawnRipple(feature.id, event)}
+                  initial={{ opacity: 0, y: 14 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.55, delay: i * 0.08 }}
+                  whileHover={{ scale: 1.04, y: -2 }}
+                  className="absolute z-20 w-[185px] overflow-hidden rounded-2xl border bg-white/[0.07] p-4 text-left backdrop-blur-xl"
+                  style={{
+                    left: `${feature.tabletPos.x}%`,
+                    top: `${feature.tabletPos.y}%`,
+                    transform: "translate(-50%, -50%)",
+                    borderColor: isHovered ? `${feature.color}88` : "rgba(148,163,184,0.25)",
+                    boxShadow: isHovered ? `0 0 22px ${feature.glow}` : "0 8px 18px rgba(0,0,0,0.26)",
+                  }}
+                >
+                  {(ripples[feature.id] ?? []).map((ripple) => (
+                    <motion.span
+                      key={ripple.id}
+                      className="pointer-events-none absolute rounded-full"
+                      style={{
+                        left: ripple.x,
+                        top: ripple.y,
+                        background: `${feature.color}44`,
+                        border: `1px solid ${feature.color}`,
+                      }}
+                      initial={{ width: 0, height: 0, opacity: 0.7, x: "-50%", y: "-50%" }}
+                      animate={{ width: 130, height: 130, opacity: 0 }}
+                      transition={{ duration: 0.58, ease: "easeOut" }}
+                    />
+                  ))}
+                  <div className="mb-2 inline-flex rounded-xl border p-2" style={{ borderColor: `${feature.color}80` }}>
+                    {icon({ size: 18, className: "text-white" })}
+                  </div>
+                  <h3 className="text-xs font-semibold text-white">{feature.title}</h3>
+                  <p className="mt-1 text-[11px] leading-relaxed text-slate-300/90">{feature.desc}</p>
+                </motion.button>
+              );
+            })}
+          </motion.div>
+        </div>
+
+        <div className="mx-auto mt-4 max-w-sm md:hidden">
           <motion.div
             initial={{ opacity: 0, scale: 0.9 }}
             whileInView={{ opacity: 1, scale: 1 }}
             viewport={{ once: true }}
-            className="relative z-10 mx-auto flex h-32 w-32 flex-col items-center justify-center rounded-full bg-[#030712]/90 backdrop-blur border border-blue-500 shadow-[0_0_30px_rgba(59,130,246,0.3)] mb-4"
+            className="relative z-10 mx-auto mb-6 flex h-32 w-32 flex-col items-center justify-center rounded-full border border-cyan-300/35 bg-slate-950/70 backdrop-blur-2xl"
+            animate={{
+              scale: [1, 1.05, 1],
+              boxShadow: [
+                "0 0 26px rgba(56,189,248,0.28), inset 0 0 16px rgba(56,189,248,0.22)",
+                "0 0 40px rgba(129,140,248,0.45), inset 0 0 20px rgba(129,140,248,0.26)",
+                "0 0 26px rgba(56,189,248,0.28), inset 0 0 16px rgba(56,189,248,0.22)",
+              ],
+            }}
+            transition={{ duration: 3.2, repeat: Infinity, ease: "easeInOut" }}
           >
-            <Brain size={32} className="text-blue-400 mb-1" />
-            <span className="text-xs font-bold text-white uppercase tracking-widest text-center leading-tight">
-              AI Component
-            </span>
+            <Brain size={28} className="text-cyan-200" />
+            <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.16em] text-cyan-100">AI Engine</span>
           </motion.div>
 
-          {/* Staggered Zig-Zag nodes */}
           {features.map((feature, i) => {
-            const isLeft = i % 2 === 0;
+            const icon = feature.icon;
+            const isHovered = hoveredNode === feature.id;
+
             return (
-              <motion.div
-                key={`mob-node-${feature.id}`}
-                initial={{ opacity: 0, x: isLeft ? -50 : 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
-                viewport={{ once: true, margin: "-50px" }}
-                transition={{ duration: 0.5 }}
-                className={`relative z-10 flex w-[85%] flex-col rounded-2xl bg-[#0a0f1a]/80 p-5 backdrop-blur-md border border-[#1e293b] ${
-                  isLeft ? "mr-auto text-right items-end" : "ml-auto text-left items-start"
-                }`}
+              <motion.button
+                key={`mobile-card-${feature.id}`}
+                type="button"
+                initial={{ opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, margin: "-40px" }}
+                transition={{ duration: 0.55, delay: i * 0.06 }}
+                whileHover={{ scale: 1.02 }}
+                onMouseEnter={() => setHoveredNode(feature.id)}
+                onMouseLeave={() => setHoveredNode(null)}
+                onClick={(event) => spawnRipple(feature.id, event)}
+                className="relative mb-3 w-full overflow-hidden rounded-2xl border bg-white/[0.07] p-4 text-left backdrop-blur-xl"
                 style={{
-                  borderLeftColor: !isLeft ? feature.color : "#1e293b",
-                  borderRightColor: isLeft ? feature.color : "#1e293b",
+                  borderColor: isHovered ? `${feature.color}88` : "rgba(148,163,184,0.26)",
+                  boxShadow: isHovered ? `0 0 22px ${feature.glow}` : "0 6px 16px rgba(0,0,0,0.2)",
                 }}
               >
-                {/* Connection dot to center line */}
-                <div className={`absolute top-1/2 h-3 w-3 -translate-y-1/2 rounded-full border-2 border-[#030712] ${isLeft ? "-right-9" : "-left-9"}`}
-                  style={{ backgroundColor: feature.color, boxShadow: `0 0 10px ${feature.color}` }} />
-                  
-                <div className="mb-2 rounded-full border border-slate-700 bg-[#030712] p-2 inline-flex"
-                  style={{ borderColor: feature.color }}>
-                  <feature.icon size={18} className="text-white" />
+                {(ripples[feature.id] ?? []).map((ripple) => (
+                  <motion.span
+                    key={ripple.id}
+                    className="pointer-events-none absolute rounded-full"
+                    style={{
+                      left: ripple.x,
+                      top: ripple.y,
+                      background: `${feature.color}44`,
+                      border: `1px solid ${feature.color}`,
+                    }}
+                    initial={{ width: 0, height: 0, opacity: 0.7, x: "-50%", y: "-50%" }}
+                    animate={{ width: 160, height: 160, opacity: 0 }}
+                    transition={{ duration: 0.58, ease: "easeOut" }}
+                  />
+                ))}
+                <div className="mb-2 inline-flex rounded-xl border p-2" style={{ borderColor: `${feature.color}80` }}>
+                  {icon({ size: 18, className: "text-white" })}
                 </div>
-                <h3 className="text-sm font-semibold text-white tracking-wide uppercase">{feature.title}</h3>
-                <p className="mt-1 text-xs text-slate-400">{feature.desc}</p>
-              </motion.div>
+                <h3 className="text-sm font-semibold text-white">{feature.title}</h3>
+                <p className="mt-1 text-xs leading-relaxed text-slate-300/90">{feature.desc}</p>
+              </motion.button>
             );
           })}
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes neural-float {
+          0% { transform: translate(-50%, -50%) translateY(0px); }
+          50% { transform: translate(-50%, -50%) translateY(-8px); }
+          100% { transform: translate(-50%, -50%) translateY(0px); }
+        }
+      `}</style>
     </section>
   );
 }
