@@ -234,9 +234,6 @@ export default function Home() {
       {/* ── HERO ─────────────────────────────────────────────────────────────── */}
       <HeroAnimation />
 
-      {/* ── LANGUAGE VIDEO CARDS ─────────────────────────────────────────────── */}
-      <LanguageVideoCards />
-
       {/* ── SOCIAL PROOF STRIP ──────────────────────────────────────────────── */}
       <div
         className="border-y py-4"
@@ -291,6 +288,9 @@ export default function Home() {
       <div id="how-it-works">
         <JourneyTimeline />
       </div>
+
+      {/* ── LANGUAGE VIDEO CARDS ─────────────────────────────────────────────── */}
+      <LanguageVideoCards />
 
       {/* ── PRICING ──────────────────────────────────────────────────────────── */}
       <section id="pricing" className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">

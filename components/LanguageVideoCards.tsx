@@ -1,6 +1,6 @@
 "use client";
 
-import { Youtube } from "lucide-react";
+import { PlayCircle } from "lucide-react";
 import { useMemo } from "react";
 
 type CardItem = {
@@ -131,7 +131,7 @@ export default function LanguageVideoCards() {
             className="mt-6 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/5 px-6 py-3 text-lg font-semibold text-slate-100 backdrop-blur-xl transition-all duration-300 hover:scale-105 hover:border-red-400/60 hover:bg-red-500/10"
             style={{ boxShadow: "0 0 20px rgba(239,68,68,0.16)" }}
           >
-            <Youtube size={21} className="text-red-500" />
+            <PlayCircle size={21} className="text-red-500" />
             Watch
           </a>
         </div>
@@ -187,7 +187,7 @@ export default function LanguageVideoCards() {
                       rel="noreferrer"
                       className="relative mt-4 inline-flex items-center gap-2 rounded-full border border-red-400/40 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-200 transition-all duration-300 hover:scale-105 hover:border-red-300 hover:bg-red-500/20"
                     >
-                      <Youtube size={14} className="text-red-400" />
+                      <PlayCircle size={14} className="text-red-400" />
                       Watch Lesson
                     </a>
                   </div>
