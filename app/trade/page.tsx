@@ -731,19 +731,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                {["Indicators", timeframe === "1D" ? "1 day" : timeframe, "Candles", "Draw"].map((item) => (
-                  <button
-                    key={item}
-                    type="button"
-                    className="rounded-md border border-white/10 bg-[#090f1b] px-2.5 py-1.5 transition duration-200 hover:bg-slate-800/60"
-                  >
-                    {item}
-                  </button>
-                ))}
-              </div>
-
-              <div className="h-[68vh] min-h-[430px] w-full rounded-lg border border-white/5 bg-[#0a101b] p-2">
+              <div className="h-[52vh] min-h-[320px] w-full rounded-lg border border-white/5 bg-[#0a101b] p-2">
               {chartLoading ? (
                 <div className="flex h-full items-center justify-center text-xs text-slate-500">Loading chart...</div>
               ) : candles.length === 0 ? (

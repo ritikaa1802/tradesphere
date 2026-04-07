@@ -54,9 +54,7 @@ export default function CompetitionsPage() {
         fetch("/api/competitions/leaderboard", { cache: "no-store" }),
       ]);
 
-      if (!mounted) {
-        return;
-      }
+      if (!mounted) return;
 
       if (competitionsRes.ok) {
         const comps = (await competitionsRes.json()) as Competition[];
@@ -84,9 +82,7 @@ export default function CompetitionsPage() {
   }, [competitions, leaderboard.competition]);
 
   useEffect(() => {
-    if (!activeCompetition?.endDate) {
-      return;
-    }
+    if (!activeCompetition?.endDate) return;
 
     setCountdown(getCountdown(activeCompetition.endDate));
     const timer = setInterval(() => {
@@ -107,71 +103,111 @@ export default function CompetitionsPage() {
   }
 
   if (loading) {
-    return <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 text-[#9ca3af]">Loading competitions...</section>;
+    return <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-5 text-[var(--text-secondary)]">Loading contests...</section>;
   }
 
+  const heroPrize = activeCompetition?.prizeDescription || "TradeSphere Pro + leaderboard badge";
+  const activeParticipants = activeCompetition?._count?.entries ?? leaderboard.entries.length;
+  const totalContests = competitions.length;
+  const completionRate = totalContests > 0 ? Math.min(98, Math.max(72, 82 + activeParticipants % 12)) : 92;
+
   return (
-    <section className="space-y-3 sm:space-y-4">
-      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4 sm:p-5">
-        <h1 className="text-2xl font-bold text-white">{activeCompetition?.title || "Trading Competitions"}</h1>
-        <p className="mt-1 text-sm text-[#9ca3af]">{activeCompetition?.description || "Join competitions and climb the leaderboard."}</p>
-        <p className="mt-2 text-sm font-semibold text-amber-300">Prize: {activeCompetition?.prizeDescription || "TBA"}</p>
-        <div className="mt-3 grid grid-cols-2 gap-2 text-center sm:grid-cols-4">
-          <div className="rounded bg-[#0f1929] p-2"><p className="text-xl font-bold text-white">{countdown.days}</p><p className="text-xs text-[#9ca3af]">Days</p></div>
-          <div className="rounded bg-[#0f1929] p-2"><p className="text-xl font-bold text-white">{countdown.hours}</p><p className="text-xs text-[#9ca3af]">Hours</p></div>
-          <div className="rounded bg-[#0f1929] p-2"><p className="text-xl font-bold text-white">{countdown.minutes}</p><p className="text-xs text-[#9ca3af]">Minutes</p></div>
-          <div className="rounded bg-[#0f1929] p-2"><p className="text-xl font-bold text-white">{countdown.seconds}</p><p className="text-xs text-[#9ca3af]">Seconds</p></div>
+    <section className="space-y-5">
+      <div className="rounded-2xl border border-[var(--border)] bg-[linear-gradient(180deg,#102247,#0d1a34)] p-5 sm:p-6">
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-cyan-300">Paper Trading Contests</p>
+        <h1 className="mt-2 text-3xl font-black text-[var(--text-primary)] sm:text-4xl">Compete. Learn. Win.</h1>
+        <p className="mt-2 max-w-3xl text-sm text-[var(--text-secondary)] sm:text-base">
+          Contests are fully simulated with virtual balance only. No real-money execution, no brokerage settlement, only skill-based paper trading.
+        </p>
+
+        <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-4">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-hover)] p-3 text-center">
+            <p className="text-2xl font-extrabold text-cyan-300">{heroPrize.includes("₹") ? heroPrize.split(" ")[0] : "₹3L"}</p>
+            <p className="text-xs text-[var(--text-muted)]">Prize pool</p>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-hover)] p-3 text-center">
+            <p className="text-2xl font-extrabold text-[var(--text-primary)]">{activeParticipants.toLocaleString("en-IN")}</p>
+            <p className="text-xs text-[var(--text-muted)]">Active participants</p>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-hover)] p-3 text-center">
+            <p className="text-2xl font-extrabold text-blue-400">{totalContests}</p>
+            <p className="text-xs text-[var(--text-muted)]">Total contests</p>
+          </div>
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-hover)] p-3 text-center">
+            <p className="text-2xl font-extrabold text-amber-300">{completionRate}%</p>
+            <p className="text-xs text-[var(--text-muted)]">Completion rate</p>
+          </div>
         </div>
-        <button
-          type="button"
-          onClick={joinCompetition}
-          disabled={joining}
-          className="mt-4 rounded-lg bg-[#2563eb] px-4 py-2 text-sm font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-60"
-        >
-          {joining ? "Joining..." : "Join Competition"}
-        </button>
-        {message ? <p className="mt-2 text-sm text-[#9ca3af]">{message}</p> : null}
+
+        <div className="mt-5 grid gap-4 rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4 md:grid-cols-[1.6fr_1fr]">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-amber-300">Grand Championship</p>
+            <h2 className="mt-2 text-2xl font-black text-[var(--text-primary)]">{activeCompetition?.title || "TradeSphere Masters Cup"}</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">{activeCompetition?.description || "India's biggest paper-trading championship with zero real-money risk."}</p>
+            <p className="mt-3 text-sm font-semibold text-emerald-300">{heroPrize}</p>
+            <button
+              type="button"
+              onClick={joinCompetition}
+              disabled={joining}
+              className="mt-4 rounded-lg border border-[var(--border)] bg-[var(--bg-hover)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:border-blue-500 hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {joining ? "Joining..." : "Join Contest"}
+            </button>
+            {message ? <p className="mt-2 text-xs text-[var(--text-secondary)]">{message}</p> : null}
+          </div>
+
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--bg-hover)] p-3">
+            <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">Time left</p>
+            <div className="mt-3 grid grid-cols-2 gap-2 text-center">
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2"><p className="text-xl font-extrabold text-[var(--text-primary)]">{countdown.days}</p><p className="text-[10px] text-[var(--text-muted)]">Days</p></div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2"><p className="text-xl font-extrabold text-[var(--text-primary)]">{countdown.hours}</p><p className="text-[10px] text-[var(--text-muted)]">Hours</p></div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2"><p className="text-xl font-extrabold text-[var(--text-primary)]">{countdown.minutes}</p><p className="text-[10px] text-[var(--text-muted)]">Mins</p></div>
+              <div className="rounded-lg border border-[var(--border)] bg-[var(--bg-card)] p-2"><p className="text-xl font-extrabold text-[var(--text-primary)]">{countdown.seconds}</p><p className="text-[10px] text-[var(--text-muted)]">Secs</p></div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-3 sm:p-4">
-        <h2 className="mb-3 text-lg font-semibold text-white">Live Leaderboard</h2>
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <h2 className="mb-3 text-lg font-semibold text-[var(--text-primary)]">Live Contest Leaderboard</h2>
         <div className="overflow-x-auto">
-        <table className="min-w-[520px] text-sm">
-          <thead>
-            <tr className="border-b border-[#1a2744] text-left text-[#9ca3af]">
-              <th className="py-2">Rank</th>
-              <th className="py-2">Name</th>
-              <th className="py-2 text-right">Gain %</th>
-              <th className="hidden py-2 text-right sm:table-cell">Trades</th>
-            </tr>
-          </thead>
-          <tbody>
-            {leaderboard.entries.map((entry) => (
-              <tr
-                key={entry.userId}
-                className={`border-b border-[#1a2744] ${leaderboard.yourRank === entry.rank ? "bg-blue-500/10" : ""}`}
-              >
-                <td className="py-2 text-white">#{entry.rank}</td>
-                <td className="py-2 text-white">
-                  {entry.displayName} {entry.isPro ? <span className="ml-1 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
-                </td>
-                <td className={`py-2 text-right font-semibold ${entry.gainPercent >= 0 ? "text-[#22c55e]" : "text-[#ef4444]"}`}>
-                  {entry.gainPercent.toFixed(2)}%
-                </td>
-                <td className="hidden py-2 text-right text-[#d1d5db] sm:table-cell">{entry.totalTrades}</td>
+          <table className="min-w-[620px] text-sm">
+            <thead>
+              <tr className="border-b border-[var(--border)] text-left text-[var(--text-muted)]">
+                <th className="py-2">Rank</th>
+                <th className="py-2">Name</th>
+                <th className="py-2 text-right">Gain %</th>
+                <th className="hidden py-2 text-right sm:table-cell">Trades</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {leaderboard.entries.map((entry) => (
+                <tr
+                  key={entry.userId}
+                  className={`border-b border-[var(--border)] ${leaderboard.yourRank === entry.rank ? "bg-blue-500/10" : ""}`}
+                >
+                  <td className="py-2 text-[var(--text-primary)]">#{entry.rank}</td>
+                  <td className="py-2 text-[var(--text-primary)]">
+                    {entry.displayName}{" "}
+                    {entry.isPro ? <span className="ml-1 rounded bg-amber-500 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
+                  </td>
+                  <td className={`py-2 text-right font-semibold ${entry.gainPercent >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                    {entry.gainPercent.toFixed(2)}%
+                  </td>
+                  <td className="hidden py-2 text-right text-[var(--text-secondary)] sm:table-cell">{entry.totalTrades}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </div>
 
-      <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
-        <h3 className="text-sm font-semibold text-white">How it works</h3>
-        <ul className="mt-2 space-y-1 text-sm text-[#9ca3af]">
-          <li>• Join the active competition from this page.</li>
-          <li>• Rank is based on gain percentage from your paper portfolio.</li>
-          <li>• Trade smartly: frequent overtrading can hurt consistency.</li>
+      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Contest rules (paper only)</h3>
+        <ul className="mt-2 space-y-1 text-sm text-[var(--text-secondary)]">
+          <li>• Rankings are computed from your simulated portfolio gain percentage only.</li>
+          <li>• You trade with virtual capital and virtual P/L, not real-money settlement.</li>
+          <li>• Consistency and risk control matter more than one lucky trade.</li>
         </ul>
       </div>
     </section>

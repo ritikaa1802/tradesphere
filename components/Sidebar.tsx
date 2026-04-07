@@ -7,6 +7,7 @@ import {
   Bell,
   Brain,
   Clock,
+  Flag,
   Eye,
   Globe,
   LayoutDashboard,
@@ -31,16 +32,17 @@ const secondaryNavItems = [
   { label: "AI Coach",       href: "/ai-coach",      icon: Sparkles },
   { label: "Alerts",         href: "/alerts",        icon: Bell },
   { label: "Leaderboard",    href: "/leaderboard",   icon: Trophy },
+  { label: "Contests",       href: "/competitions",  icon: Flag },
 ];
 
 export default function Sidebar({
   mobileOpen,
   collapsed,
-  onCloseMobile,
+  onCloseMobileAction,
 }: {
   mobileOpen: boolean;
   collapsed: boolean;
-  onCloseMobile: () => void;
+  onCloseMobileAction: () => void;
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
@@ -85,7 +87,7 @@ export default function Sidebar({
             <Link
               key={item.href}
               href={item.href}
-              onClick={onCloseMobile}
+              onClick={onCloseMobileAction}
               title={collapsed ? item.label : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
                 active ? "sidebar-active" : "sidebar-inactive"
@@ -132,7 +134,7 @@ export default function Sidebar({
             <Link
               key={item.href}
               href={item.href}
-              onClick={onCloseMobile}
+              onClick={onCloseMobileAction}
               title={collapsed ? item.label : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150 ${
                 active ? "sidebar-active" : "sidebar-inactive"
@@ -197,7 +199,7 @@ export default function Sidebar({
         {session && !session.user?.isPro ? (
           <Link
             href="/pricing"
-            onClick={onCloseMobile}
+            onClick={onCloseMobileAction}
             title={collapsed ? "Upgrade to Pro" : undefined}
             className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-semibold text-black transition hover:opacity-90"
             style={{ background: "linear-gradient(135deg, #fbbf24, #f59e0b)" }}
@@ -208,7 +210,7 @@ export default function Sidebar({
 
         <Link
           href="/settings"
-          onClick={onCloseMobile}
+          onClick={onCloseMobileAction}
           title={collapsed ? "Settings" : undefined}
           className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-all duration-150"
           style={{ color: "var(--text-secondary)" }}
@@ -246,7 +248,7 @@ export default function Sidebar({
         ) : (
           <Link
             href="/login"
-            onClick={onCloseMobile}
+            onClick={onCloseMobileAction}
             title={collapsed ? "Login" : undefined}
             className="flex w-full items-center justify-center rounded-lg px-3 py-2 text-sm font-medium transition-all"
             style={{ color: "var(--text-secondary)" }}

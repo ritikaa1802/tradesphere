@@ -26,7 +26,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
       <Sidebar
         mobileOpen={mobileSidebarOpen}
         collapsed={sidebarCollapsed}
-        onCloseMobile={() => setMobileSidebarOpen(false)}
+        onCloseMobileAction={() => setMobileSidebarOpen(false)}
       />
 
       {mobileSidebarOpen ? (
