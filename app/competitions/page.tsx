@@ -368,7 +368,7 @@ export default function CompetitionsPage() {
 
             <button
               type="button"
-              onClick={joinCompetition}
+              onClick={() => joinCompetition(activeCompetition?.id)}
               disabled={joining}
               className="mt-4 flex w-full items-center justify-center gap-2 rounded-xl border border-[#2f5ea6] bg-[#16305e] px-4 py-2.5 text-sm font-bold text-white transition hover:bg-[#1d3c77] disabled:cursor-not-allowed disabled:opacity-60"
             >
