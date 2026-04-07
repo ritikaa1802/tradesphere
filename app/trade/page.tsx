@@ -1,15 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
+import TradeCandlestickChart from "@/components/TradeCandlestickChart";
 
 type Side = "buy" | "sell";
 type OrderType = "market" | "limit" | "stoploss";
@@ -72,6 +64,14 @@ interface TradeHistoryItem {
   orderType: string;
   status: string;
   createdAt: string;
+}
+
+interface CandlePoint {
+  time: number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
 }
 
 const DEFAULT_WATCHLIST: Array<{ symbol: string; exchange: "NSE" | "BSE" }> = [
@@ -183,22 +183,16 @@ export default function TradePage() {
   const [showSuggestions, setShowSuggestions] = useState(false);
   const [isSearching, setIsSearching] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [chartLoading, setChartLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
-  const [priceHistory, setPriceHistory] = useState<Record<string, number[]>>({});
+  const [candles, setCandles] = useState<CandlePoint[]>([]);
   const [panelTab, setPanelTab] = useState<OrderPanelTab>("active");
   const [holdings, setHoldings] = useState<HoldingItem[]>([]);
   const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
   const [recentTrades, setRecentTrades] = useState<TradeHistoryItem[]>([]);
 
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
-
-  function pushHistory(symbol: string, value: number) {
-    setPriceHistory((prev) => {
-      const current = prev[symbol] ?? [];
-      return { ...prev, [symbol]: [...current, value].slice(-180) };
-    });
-  }
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -314,7 +308,6 @@ export default function TradePage() {
         prev.map((item, index) => {
           const quote = quotes[index];
           if (!quote) return { ...item, loading: false };
-          pushHistory(item.symbol, quote.price);
 
           return {
             ...item,
@@ -346,8 +339,6 @@ export default function TradePage() {
           const delta = (Math.random() - 0.5) * 2 * volatility;
           const nextPrice = Math.max(0.05, item.price + delta);
           if (Math.abs(delta) < 0.0001) return item;
-
-          pushHistory(item.symbol, nextPrice);
           const changePercent = ((nextPrice - item.basePrice) / item.basePrice) * 100;
 
           return { ...item, price: nextPrice, changePercent };
@@ -357,6 +348,47 @@ export default function TradePage() {
 
     return () => clearInterval(tick);
   }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadCandles() {
+      setChartLoading(true);
+      try {
+        const response = await fetch(
+          `/api/stocks/history?symbol=${encodeURIComponent(selectedSymbol)}&view=${encodeURIComponent(timeframe)}`,
+          { cache: "no-store" },
+        );
+
+        if (!response.ok) {
+          if (!cancelled) {
+            setCandles([]);
+          }
+          return;
+        }
+
+        const data = (await response.json()) as { candles?: CandlePoint[] };
+        if (!cancelled) {
+          setCandles(data.candles || []);
+        }
+      } catch {
+        if (!cancelled) {
+          setCandles([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setChartLoading(false);
+        }
+      }
+    }
+
+    loadCandles();
+    const intervalId = setInterval(loadCandles, 30000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, [selectedSymbol, timeframe]);
 
   useEffect(() => {
     let cancelled = false;
@@ -538,16 +570,6 @@ export default function TradePage() {
     }));
   }, [panelTab, pendingOrders, positionsRows, recentTrades, setStopLoss, setTarget, stopLossValue, targetValue]);
 
-  const chartSeries = useMemo(() => {
-    const raw = priceHistory[selectedSymbol] ?? [];
-    const count = timeframe === "1D" ? 30 : timeframe === "1W" ? 90 : 180;
-    const sliced = raw.slice(-count);
-    return sliced.map((price, idx) => ({
-      t: idx,
-      price,
-    }));
-  }, [priceHistory, selectedSymbol, timeframe]);
-
   function bumpQuantity(by: number) {
     const next = Math.max(0, (Number(quantity) || 0) + by);
     setQuantity(String(next));
@@ -713,38 +735,33 @@ export default function TradePage() {
               </div>
             </div>
 
+            <div className="border-t border-slate-800 px-2 py-1 text-xs text-slate-300">
+              <div className="flex flex-wrap items-center gap-1.5">
+                {[
+                  "Indicators",
+                  timeframe === "1D" ? "1 day" : timeframe,
+                  "Candles",
+                  "Draw",
+                ].map((item) => (
+                  <button
+                    key={item}
+                    type="button"
+                    className="rounded-sm border border-slate-700 bg-[#090f1b] px-2 py-1 hover:bg-slate-800"
+                  >
+                    {item}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             <div className="h-[360px] w-full px-2 py-2">
-              <ResponsiveContainer>
-                <AreaChart
-                  data={chartSeries}
-                  margin={{ top: 8, right: 8, left: -10, bottom: 0 }}
-                  onClick={(state: any) => {
-                    const payload = state?.activePayload?.[0]?.value;
-                    if (typeof payload === "number" && Number.isFinite(payload)) {
-                      setPriceInput(payload.toFixed(2));
-                      if (orderType === "market") setOrderType("limit");
-                    }
-                  }}
-                >
-                  <defs>
-                    <linearGradient id="tradeChartFill" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor={selectedPositive ? "#22c55e" : "#ef4444"} stopOpacity={0.22} />
-                      <stop offset="100%" stopColor={selectedPositive ? "#22c55e" : "#ef4444"} stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid stroke="#1a2744" strokeDasharray="2 2" />
-                  <XAxis dataKey="t" stroke="#9ca3af" tick={{ fontSize: 10 }} tickFormatter={() => ""} />
-                  <YAxis stroke="#9ca3af" tick={{ fontSize: 10 }} width={46} tickFormatter={(v) => `₹${Number(v).toFixed(0)}`} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#0d1117", border: "1px solid #1a2744", color: "#fff" }}
-                    formatter={(value) => {
-                      const n = Number(Array.isArray(value) ? value[0] : value) || 0;
-                      return [`₹${n.toFixed(2)}`, "Price"];
-                    }}
-                  />
-                  <Area type="monotone" dataKey="price" stroke={selectedPositive ? "#22c55e" : "#ef4444"} strokeWidth={1.8} fill="url(#tradeChartFill)" dot={false} />
-                </AreaChart>
-              </ResponsiveContainer>
+              {chartLoading ? (
+                <div className="flex h-full items-center justify-center text-xs text-slate-500">Loading chart...</div>
+              ) : candles.length === 0 ? (
+                <div className="flex h-full items-center justify-center text-xs text-slate-500">No candlestick data available for this symbol.</div>
+              ) : (
+                <TradeCandlestickChart candles={candles} />
+              )}
             </div>
 
             <div className="border-t border-slate-800">
