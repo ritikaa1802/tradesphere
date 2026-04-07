@@ -211,7 +211,11 @@ export default function CompetitionsPage() {
     return allCards.filter((card) => card.category === activeFilter || card.level === activeFilter);
   }, [activeFilter, allCards]);
 
-  const participants = activeCompetition?._count?.entries ?? leaderboard.entries.length * 80 || 8240;
+  const computedParticipants =
+    activeCompetition?._count?.entries !== undefined && activeCompetition?._count?.entries !== null
+      ? activeCompetition._count.entries
+      : leaderboard.entries.length * 80;
+  const participants = computedParticipants || 8240;
   const totalContests = Math.max(competitions.length, 47);
 
   if (loading) {
