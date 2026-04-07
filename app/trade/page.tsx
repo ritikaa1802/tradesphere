@@ -103,6 +103,10 @@ function formatINR(value: number) {
   }).format(value);
 }
 
+function changeColor(value: number) {
+  return value >= 0 ? "text-emerald-400" : "text-rose-400";
+}
+
 function AnimatedPrice({ value }: { value: number | null }) {
   const [display, setDisplay] = useState(value ?? 0);
   const previousRef = useRef(value ?? 0);
@@ -469,6 +473,71 @@ export default function TradePage() {
     });
   }, [holdings, watchlist]);
 
+  const activePositionsPnl = useMemo(() => {
+    return positionsRows.reduce((sum, row) => sum + row.pnl, 0);
+  }, [positionsRows]);
+
+  const todaysPnl = useMemo(() => {
+    const today = new Date().toISOString().slice(0, 10);
+    return recentTrades
+      .filter((trade) => trade.createdAt.slice(0, 10) === today)
+      .reduce((sum, trade) => sum + (trade.pnl ?? 0), 0);
+  }, [recentTrades]);
+
+  const panelRows = useMemo(() => {
+    if (panelTab === "active") {
+      return positionsRows.map((row) => ({
+        key: `active-${row.stock}`,
+        date: "--",
+        instrument: row.stock,
+        orderType: "position",
+        quantity: row.quantity,
+        entryPrice: row.avgBuyPrice,
+        investment: row.invested,
+        target: setTarget && targetValue ? Number(targetValue) : null,
+        stopLoss: setStopLoss && stopLossValue ? Number(stopLossValue) : null,
+        ltp: row.ltp,
+        charges: 0,
+        pnl: row.pnl,
+        status: "Active",
+      }));
+    }
+
+    if (panelTab === "pending") {
+      return pendingOrders.map((row) => ({
+        key: `pending-${row.id}`,
+        date: new Date(row.createdAt).toLocaleDateString(),
+        instrument: row.stock,
+        orderType: row.orderType,
+        quantity: row.quantity,
+        entryPrice: row.price,
+        investment: row.price * row.quantity,
+        target: row.orderType.toLowerCase().includes("limit") ? row.targetPrice : null,
+        stopLoss: row.orderType.toLowerCase().includes("stop") ? row.targetPrice : null,
+        ltp: row.currentPrice,
+        charges: 0,
+        pnl: 0,
+        status: row.status,
+      }));
+    }
+
+    return recentTrades.map((row) => ({
+      key: `history-${row.id}`,
+      date: new Date(row.createdAt).toLocaleDateString(),
+      instrument: row.stock,
+      orderType: row.orderType,
+      quantity: row.quantity,
+      entryPrice: row.price,
+      investment: row.price * row.quantity,
+      target: null,
+      stopLoss: null,
+      ltp: row.price,
+      charges: 0,
+      pnl: row.pnl ?? 0,
+      status: row.status,
+    }));
+  }, [panelTab, pendingOrders, positionsRows, recentTrades, setStopLoss, setTarget, stopLossValue, targetValue]);
+
   const chartSeries = useMemo(() => {
     const raw = priceHistory[selectedSymbol] ?? [];
     const count = timeframe === "1D" ? 30 : timeframe === "1W" ? 90 : 180;
@@ -478,23 +547,6 @@ export default function TradePage() {
       price,
     }));
   }, [priceHistory, selectedSymbol, timeframe]);
-
-  const orderBook = useMemo(() => {
-    const base = selectedPrice || 100;
-    const bucket = Math.max(0.05, base * 0.0006);
-
-    const sells = Array.from({ length: 4 }, (_, i) => ({
-      price: base + bucket * (i + 1),
-      qty: 40 + ((selectedSymbol.charCodeAt(0) + i * 17) % 180),
-    }));
-
-    const buys = Array.from({ length: 4 }, (_, i) => ({
-      price: Math.max(0.05, base - bucket * (i + 1)),
-      qty: 45 + ((selectedSymbol.charCodeAt(1) + i * 21) % 180),
-    }));
-
-    return { sells, buys };
-  }, [selectedPrice, selectedSymbol]);
 
   function bumpQuantity(by: number) {
     const next = Math.max(0, (Number(quantity) || 0) + by);
@@ -535,6 +587,7 @@ export default function TradePage() {
           targetPrice: orderType === "market" ? null : effectivePrice,
           price: effectivePrice,
           quantity: quantityNumber,
+          note: orderContextNote,
         }),
       });
 
@@ -660,7 +713,7 @@ export default function TradePage() {
               </div>
             </div>
 
-            <div className="h-[430px] w-full px-2 py-2">
+            <div className="h-[360px] w-full px-2 py-2">
               <ResponsiveContainer>
                 <AreaChart
                   data={chartSeries}
@@ -693,6 +746,81 @@ export default function TradePage() {
                 </AreaChart>
               </ResponsiveContainer>
             </div>
+
+            <div className="border-t border-slate-800">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 bg-[#0a101b] px-2 py-1.5">
+                <div className="flex items-center gap-1.5 text-xs">
+                  {([
+                    ["active", "Active Positions"],
+                    ["pending", "Pending Orders"],
+                    ["history", "Day's History"],
+                  ] as const).map(([value, label]) => (
+                    <button
+                      key={value}
+                      type="button"
+                      onClick={() => setPanelTab(value)}
+                      className={`rounded-sm px-2.5 py-1 ${panelTab === value ? "bg-emerald-600 text-white" : "text-slate-300 hover:bg-slate-800"}`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="flex items-center gap-4 text-xs tabular-nums text-slate-300">
+                  <span>P/L (Today): <span className={changeColor(todaysPnl)}>{todaysPnl >= 0 ? "+" : ""}{todaysPnl.toFixed(2)}</span></span>
+                  <span>P/L (Active Positions): <span className={changeColor(activePositionsPnl)}>{activePositionsPnl >= 0 ? "+" : ""}{activePositionsPnl.toFixed(2)}</span></span>
+                </div>
+              </div>
+
+              <div className="max-h-[220px] overflow-auto">
+                <table className="min-w-[980px] w-full text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-800 bg-[#0f1625] text-slate-400">
+                      <th className="px-2 py-1.5 text-left font-medium">Order Date</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Instrument</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Order Type</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Quantity</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Entry Price</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Investment</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Target</th>
+                      <th className="px-2 py-1.5 text-right font-medium">StopLoss</th>
+                      <th className="px-2 py-1.5 text-right font-medium">LTP</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Fee/Taxes</th>
+                      <th className="px-2 py-1.5 text-right font-medium">Profit/Loss</th>
+                      <th className="px-2 py-1.5 text-left font-medium">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {panelRows.length === 0 ? (
+                      <tr>
+                        <td colSpan={12} className="px-2 py-3 text-center text-slate-500">No rows available for this tab.</td>
+                      </tr>
+                    ) : (
+                      panelRows.map((row) => (
+                        <tr key={row.key} className="border-b border-slate-800/80">
+                          <td className="px-2 py-1.5 text-slate-300">{row.date}</td>
+                          <td className="px-2 py-1.5 font-semibold text-slate-100">{row.instrument}</td>
+                          <td className="px-2 py-1.5 uppercase text-slate-300">{row.orderType}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.quantity}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">₹{row.entryPrice.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">₹{row.investment.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.target ? `₹${row.target.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.stopLoss ? `₹${row.stopLoss.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">{typeof row.ltp === "number" ? `₹${row.ltp.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">₹{row.charges.toFixed(2)}</td>
+                          <td className={`px-2 py-1.5 text-right tabular-nums font-semibold ${changeColor(row.pnl)}`}>{row.pnl >= 0 ? "+" : ""}₹{row.pnl.toFixed(2)}</td>
+                          <td className="px-2 py-1.5">
+                            <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${row.status.toLowerCase() === "active" ? "bg-blue-900/40 text-blue-300" : row.status.toLowerCase() === "pending" ? "bg-amber-900/40 text-amber-300" : "bg-slate-800 text-slate-300"}`}>
+                              {row.status}
+                            </span>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </section>
 
           <aside className="border border-slate-800 bg-[#0b1220] lg:sticky lg:top-2 lg:h-[calc(100vh-16px)]">
@@ -703,30 +831,6 @@ export default function TradePage() {
                   <div className="text-right tabular-nums">
                     <p className="text-sm font-semibold text-slate-100">₹<AnimatedPrice value={selectedItem?.price ?? null} /></p>
                     <p className={`text-[11px] font-medium ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>{`${selectedPositive ? "+" : ""}${selectedChange.toFixed(2)}%`}</p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-b border-slate-800 px-3 py-2 text-[11px]">
-                <p className="mb-1 font-semibold text-slate-300">Order Book</p>
-                <div className="grid grid-cols-2 gap-2">
-                  <div>
-                    <p className="mb-1 text-[10px] font-semibold text-rose-300">SELL</p>
-                    {orderBook.sells.map((row, idx) => (
-                      <div key={`sell-${idx}`} className="grid grid-cols-2 py-0.5 tabular-nums text-[10px]">
-                        <span className="text-rose-300">{row.price.toFixed(2)}</span>
-                        <span className="text-right text-slate-300">{row.qty}</span>
-                      </div>
-                    ))}
-                  </div>
-                  <div>
-                    <p className="mb-1 text-[10px] font-semibold text-emerald-300">BUY</p>
-                    {orderBook.buys.map((row, idx) => (
-                      <div key={`buy-${idx}`} className="grid grid-cols-2 py-0.5 tabular-nums text-[10px]">
-                        <span className="text-emerald-300">{row.price.toFixed(2)}</span>
-                        <span className="text-right text-slate-300">{row.qty}</span>
-                      </div>
-                    ))}
                   </div>
                 </div>
               </div>
@@ -751,13 +855,54 @@ export default function TradePage() {
               </div>
 
               <div className="border-t border-slate-800 px-3 py-2">
-                <div className="grid grid-cols-3 gap-1.5">
-                  {([ ["market", "MKT"], ["limit", "LMT"], ["stoploss", "SL"] ] as const).map(([value, label]) => (
+                <div className="grid grid-cols-2 gap-2 text-xs text-slate-300">
+                  <button
+                    type="button"
+                    onClick={() => setOrderMode("intraday")}
+                    className={`h-8 rounded-sm border ${orderMode === "intraday" ? "border-emerald-500 bg-emerald-900/30 text-emerald-300" : "border-slate-700 bg-[#090f1b] hover:bg-slate-800"}`}
+                  >
+                    Intraday (MIS)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOrderMode("overnight")}
+                    className={`h-8 rounded-sm border ${orderMode === "overnight" ? "border-emerald-500 bg-emerald-900/30 text-emerald-300" : "border-slate-700 bg-[#090f1b] hover:bg-slate-800"}`}
+                  >
+                    Overnight (NRML)
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-slate-800 px-3 py-2">
+                <div className="grid grid-cols-2 gap-1.5 text-[11px]">
+                  {([
+                    ["market", "Market Order"],
+                    ["limit", "Limit Order (Auto)"],
+                    ["limit-manual", "Limit Order (Manual)"],
+                    ["stoploss", "Stop Limit Order"],
+                  ] as const).map(([value, label]) => (
                     <button
                       key={value}
                       type="button"
-                      onClick={() => setOrderType(value)}
-                      className={`h-7 text-[11px] font-semibold transition ${orderType === value ? "bg-blue-600 text-white" : "border border-slate-700 bg-[#090f1b] text-slate-300 hover:bg-slate-800"}`}
+                      onClick={() => {
+                        if (value === "limit-manual") {
+                          setOrderType("limit");
+                          setLimitMode("manual");
+                        } else if (value === "limit") {
+                          setOrderType("limit");
+                          setLimitMode("auto");
+                        } else {
+                          setOrderType(value as OrderType);
+                        }
+                      }}
+                      className={`h-8 rounded-sm border px-2 text-left font-medium transition ${
+                        (value === "market" && orderType === "market") ||
+                        (value === "limit" && orderType === "limit" && limitMode === "auto") ||
+                        (value === "limit-manual" && orderType === "limit" && limitMode === "manual") ||
+                        (value === "stoploss" && orderType === "stoploss")
+                          ? "border-emerald-500 bg-emerald-900/30 text-emerald-300"
+                          : "border-slate-700 bg-[#090f1b] text-slate-300 hover:bg-slate-800"
+                      }`}
                     >
                       {label}
                     </button>
@@ -766,35 +911,77 @@ export default function TradePage() {
               </div>
 
               <div className="border-t border-slate-800 px-3 py-2">
-                <div className="grid grid-cols-[1fr_auto] gap-2">
-                  <label>
-                    <span className="mb-1 block text-[10px] text-slate-500">Qty</span>
-                    <input
-                      value={quantity}
-                      onChange={(event) => setQuantity(event.target.value)}
-                      type="number"
-                      min={1}
-                      className="h-8 w-full border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
-                    />
+                <div className="grid gap-2 text-xs">
+                  <label className="flex items-center gap-2 text-slate-300">
+                    <input type="checkbox" checked={setTarget} onChange={(event) => setSetTarget(event.target.checked)} className="h-3.5 w-3.5 accent-emerald-500" />
+                    Set Target
                   </label>
-                  <div>
-                    <span className="mb-1 block text-[10px] text-slate-500">Quick</span>
-                    <div className="grid grid-cols-3 gap-1">
-                      {[1, 5, 10].map((step) => (
-                        <button
-                          key={step}
-                          type="button"
-                          onClick={() => bumpQuantity(step)}
-                          className="h-8 border border-slate-700 bg-[#090f1b] px-2 text-[10px] font-semibold text-slate-200 hover:bg-slate-800"
-                        >
-                          +{step}
-                        </button>
-                      ))}
-                    </div>
+                  {setTarget ? (
+                    <input
+                      value={targetValue}
+                      onChange={(event) => setTargetValue(event.target.value)}
+                      type="number"
+                      step="0.01"
+                      placeholder="Target price"
+                      className="h-8 w-full rounded-sm border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
+                    />
+                  ) : null}
+
+                  <label className="flex items-center gap-2 text-slate-300">
+                    <input type="checkbox" checked={setStopLoss} onChange={(event) => setSetStopLoss(event.target.checked)} className="h-3.5 w-3.5 accent-emerald-500" />
+                    Set StopLoss
+                  </label>
+                  {setStopLoss ? (
+                    <input
+                      value={stopLossValue}
+                      onChange={(event) => setStopLossValue(event.target.value)}
+                      type="number"
+                      step="0.01"
+                      placeholder="Stop loss price"
+                      className="h-8 w-full rounded-sm border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
+                    />
+                  ) : null}
+                </div>
+              </div>
+
+              <div className="border-t border-slate-800 px-3 py-2">
+                <div className="mb-2 flex items-center justify-between text-xs text-slate-300">
+                  <span>Quantity</span>
+                  <div className="grid grid-cols-2 gap-1">
+                    <button
+                      type="button"
+                      onClick={() => setQuantityMode("fixed")}
+                      className={`rounded-sm border px-2 py-1 ${quantityMode === "fixed" ? "border-emerald-500 bg-emerald-900/30 text-emerald-300" : "border-slate-700 bg-[#090f1b]"}`}
+                    >
+                      Fixed
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setQuantityMode("auto")}
+                      className={`rounded-sm border px-2 py-1 ${quantityMode === "auto" ? "border-emerald-500 bg-emerald-900/30 text-emerald-300" : "border-slate-700 bg-[#090f1b]"}`}
+                    >
+                      Auto
+                    </button>
                   </div>
                 </div>
 
-                {orderType !== "market" && (
+                <div className="grid grid-cols-[auto_1fr_auto_auto] gap-1">
+                  <button type="button" onClick={() => bumpQuantity(-1)} className="h-8 rounded-sm border border-slate-700 bg-[#090f1b] px-2">-</button>
+                  <label>
+                    <input
+                      value={quantityMode === "auto" ? String(autoCalculatedQty) : quantity}
+                      onChange={(event) => setQuantity(event.target.value.replace(/[^0-9]/g, ""))}
+                      type="number"
+                      min={1}
+                      disabled={quantityMode === "auto"}
+                      className="h-8 w-full rounded-sm border border-slate-700 bg-[#090f1b] px-2 text-center text-xs text-slate-100 outline-none focus:border-blue-500 disabled:opacity-60"
+                    />
+                  </label>
+                  <button type="button" onClick={() => bumpQuantity(1)} className="h-8 rounded-sm border border-slate-700 bg-[#090f1b] px-2">+</button>
+                  <div className="flex h-8 items-center rounded-sm border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-300">Qty</div>
+                </div>
+
+                {orderType !== "market" && (orderType !== "limit" || limitMode === "manual") ? (
                   <div className="mt-2">
                     <span className="mb-1 block text-[10px] text-slate-500">Price</span>
                     <input
@@ -805,7 +992,7 @@ export default function TradePage() {
                       className="h-8 w-full border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-100 outline-none focus:border-blue-500"
                     />
                   </div>
-                )}
+                ) : null}
               </div>
 
               <div className="border-t border-slate-800 px-3 py-2 text-[11px] text-slate-300 tabular-nums">
@@ -816,6 +1003,10 @@ export default function TradePage() {
                 <div className="mb-1 flex items-center justify-between">
                   <span>Total</span>
                   <span className="font-semibold text-slate-100">{formatINR(tradeValue)}</span>
+                </div>
+                <div className="mb-1 flex items-center justify-between">
+                  <span>Quantity</span>
+                  <span className="font-semibold text-slate-100">{quantityNumber} @ ₹{effectivePrice.toFixed(2)}</span>
                 </div>
                 <div className="mb-1 flex items-center justify-between">
                   <span>Margin</span>
@@ -835,7 +1026,7 @@ export default function TradePage() {
                   disabled={loading || insufficientFunds}
                   className={`h-10 w-full text-sm font-bold tracking-wide text-white transition active:scale-[0.99] ${side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-rose-600 hover:bg-rose-500"} disabled:cursor-not-allowed disabled:opacity-60`}
                 >
-                  {loading ? "Submitting..." : `${side === "buy" ? "Buy" : "Sell"} ${selectedSymbol || "STOCK"}`}
+                  {loading ? "Submitting..." : `${orderType === "market" ? "MARKET" : orderType.toUpperCase()} ${side.toUpperCase()} ${quantityNumber} CONTRACT${quantityNumber > 1 ? "S" : ""}`}
                 </button>
               </div>
             </form>
