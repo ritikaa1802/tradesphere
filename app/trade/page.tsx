@@ -702,7 +702,7 @@ export default function TradePage() {
                       <p className="text-[10px] text-slate-500">{item.exchange}</p>
                     </div>
                     <div className="text-right tabular-nums">
-                      <p className="text-xs font-semibold text-slate-100">â‚¹<AnimatedPrice value={item.price} /></p>
+                      <p className="text-xs font-semibold text-slate-100">Gé¦<AnimatedPrice value={item.price} /></p>
                       <p className={`text-[10px] ${up ? "text-emerald-400" : "text-rose-400"}`}>
                         {item.loading && !hasChange ? "--" : `${up ? "+" : ""}${change.toFixed(2)}%`}
                       </p>
@@ -718,7 +718,7 @@ export default function TradePage() {
               <div>
                 <p className="text-sm font-semibold text-slate-100">{selectedSymbol}</p>
                 <p className={`text-xs tabular-nums ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>
-                  â‚¹<AnimatedPrice value={selectedItem?.price ?? null} /> ({selectedPositive ? "+" : ""}{selectedChange.toFixed(2)}%)
+                  Gé¦<AnimatedPrice value={selectedItem?.price ?? null} /> ({selectedPositive ? "+" : ""}{selectedChange.toFixed(2)}%)
                 </p>
               </div>
               <div className="grid grid-cols-3 gap-1">
@@ -819,13 +819,13 @@ export default function TradePage() {
                           <td className="px-2 py-1.5 font-semibold text-slate-100">{row.instrument}</td>
                           <td className="px-2 py-1.5 uppercase text-slate-300">{row.orderType}</td>
                           <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.quantity}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">â‚¹{row.entryPrice.toFixed(2)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">â‚¹{row.investment.toFixed(2)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.target ? `â‚¹${row.target.toFixed(2)}` : "-"}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.stopLoss ? `â‚¹${row.stopLoss.toFixed(2)}` : "-"}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">{typeof row.ltp === "number" ? `â‚¹${row.ltp.toFixed(2)}` : "-"}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">â‚¹{row.charges.toFixed(2)}</td>
-                          <td className={`px-2 py-1.5 text-right tabular-nums font-semibold ${changeColor(row.pnl)}`}>{row.pnl >= 0 ? "+" : ""}â‚¹{row.pnl.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">Gé¦{row.entryPrice.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">Gé¦{row.investment.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.target ? `Gé¦${row.target.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.stopLoss ? `Gé¦${row.stopLoss.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">{typeof row.ltp === "number" ? `Gé¦${row.ltp.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">Gé¦{row.charges.toFixed(2)}</td>
+                          <td className={`px-2 py-1.5 text-right tabular-nums font-semibold ${changeColor(row.pnl)}`}>{row.pnl >= 0 ? "+" : ""}Gé¦{row.pnl.toFixed(2)}</td>
                           <td className="px-2 py-1.5">
                             <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${row.status.toLowerCase() === "active" ? "bg-blue-900/40 text-blue-300" : row.status.toLowerCase() === "pending" ? "bg-amber-900/40 text-amber-300" : "bg-slate-800 text-slate-300"}`}>
                               {row.status}
@@ -846,7 +846,7 @@ export default function TradePage() {
                 <div className="mb-1 flex items-end justify-between">
                   <p className="text-base font-bold tracking-wide text-slate-100">{selectedSymbol || "--"}</p>
                   <div className="text-right tabular-nums">
-                    <p className="text-sm font-semibold text-slate-100">â‚¹<AnimatedPrice value={selectedItem?.price ?? null} /></p>
+                    <p className="text-sm font-semibold text-slate-100">Gé¦<AnimatedPrice value={selectedItem?.price ?? null} /></p>
                     <p className={`text-[11px] font-medium ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>{`${selectedPositive ? "+" : ""}${selectedChange.toFixed(2)}%`}</p>
                   </div>
                 </div>
@@ -1023,7 +1023,7 @@ export default function TradePage() {
                 </div>
                 <div className="mb-1 flex items-center justify-between">
                   <span>Quantity</span>
-                  <span className="font-semibold text-slate-100">{quantityNumber} @ â‚¹{effectivePrice.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-100">{quantityNumber} @ Gé¦{effectivePrice.toFixed(2)}</span>
                 </div>
                 <div className="mb-1 flex items-center justify-between">
                   <span>Margin</span>
