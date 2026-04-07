@@ -629,15 +629,10 @@ export default function TradePage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#050912] px-2 py-2 text-slate-100 sm:px-3 lg:px-4">
-      <div className="mx-auto w-full max-w-[1600px]">
-        <div className="mb-2 flex items-center justify-between border-b border-slate-800 pb-1 text-[11px] text-slate-400">
-          <span>Execution Terminal</span>
-          <span className="font-medium text-emerald-300">Live Feed</span>
-        </div>
-
-        <div className="grid grid-cols-1 gap-2 xl:grid-cols-[250px_minmax(0,1fr)_390px]">
-          <section className="border border-slate-800 bg-[#0b1220]">
+    <main className="min-h-screen bg-[#050912] px-3 py-4 text-slate-100 sm:px-4 lg:px-5">
+      <div className="mx-auto w-full max-w-[1650px]">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
+          <section className="flex max-h-[calc(100vh-130px)] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
             <div className="border-b border-slate-800 px-2 py-1.5">
               <div className="relative" ref={searchContainerRef}>
                 <input
@@ -702,7 +697,7 @@ export default function TradePage() {
                       <p className="text-[10px] text-slate-500">{item.exchange}</p>
                     </div>
                     <div className="text-right tabular-nums">
-                      <p className="text-xs font-semibold text-slate-100">GÃ©Â¦<AnimatedPrice value={item.price} /></p>
+                      <p className="text-xs font-semibold text-slate-100">Rs. <AnimatedPrice value={item.price} /></p>
                       <p className={`text-[10px] ${up ? "text-emerald-400" : "text-rose-400"}`}>
                         {item.loading && !hasChange ? "--" : `${up ? "+" : ""}${change.toFixed(2)}%`}
                       </p>
@@ -713,48 +708,42 @@ export default function TradePage() {
             </div>
           </section>
 
-          <section className="border border-slate-800 bg-[#0b1220]">
-            <div className="flex items-center justify-between border-b border-slate-800 px-3 py-2">
-              <div>
-                <p className="text-sm font-semibold text-slate-100">{selectedSymbol}</p>
-                <p className={`text-xs tabular-nums ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>
-                  GÃ©Â¦<AnimatedPrice value={selectedItem?.price ?? null} /> ({selectedPositive ? "+" : ""}{selectedChange.toFixed(2)}%)
-                </p>
+          <div className="space-y-4">
+            <section className="rounded-xl border border-white/5 bg-[#0b1220] p-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+              <div className="mb-2 flex items-center justify-between">
+                <div>
+                  <p className="text-lg font-semibold text-slate-100">{selectedSymbol}</p>
+                  <p className={`text-sm tabular-nums ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>
+                    Rs. <AnimatedPrice value={selectedItem?.price ?? null} /> ({selectedPositive ? "+" : ""}{selectedChange.toFixed(2)}%)
+                  </p>
+                </div>
+                <div className="grid grid-cols-3 gap-1">
+                  {(["1D", "1W", "1M"] as const).map((tf) => (
+                    <button
+                      key={tf}
+                      type="button"
+                      onClick={() => setTimeframe(tf)}
+                      className={`h-8 rounded-md px-3 text-xs font-semibold transition duration-200 ${timeframe === tf ? "bg-blue-600 text-white" : "border border-white/10 text-slate-300 hover:bg-slate-800/60"}`}
+                    >
+                      {tf}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="grid grid-cols-3 gap-1">
-                {(["1D", "1W", "1M"] as const).map((tf) => (
-                  <button
-                    key={tf}
-                    type="button"
-                    onClick={() => setTimeframe(tf)}
-                    className={`h-7 px-2 text-[11px] ${timeframe === tf ? "bg-blue-600 text-white" : "border border-slate-700 text-slate-300 hover:bg-slate-800"}`}
-                  >
-                    {tf}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            <div className="border-t border-slate-800 px-2 py-1 text-xs text-slate-300">
-              <div className="flex flex-wrap items-center gap-1.5">
-                {[
-                  "Indicators",
-                  timeframe === "1D" ? "1 day" : timeframe,
-                  "Candles",
-                  "Draw",
-                ].map((item) => (
+              <div className="mb-2 flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                {["Indicators", timeframe === "1D" ? "1 day" : timeframe, "Candles", "Draw"].map((item) => (
                   <button
                     key={item}
                     type="button"
-                    className="rounded-sm border border-slate-700 bg-[#090f1b] px-2 py-1 hover:bg-slate-800"
+                    className="rounded-md border border-white/10 bg-[#090f1b] px-2.5 py-1.5 transition duration-200 hover:bg-slate-800/60"
                   >
                     {item}
                   </button>
                 ))}
               </div>
-            </div>
 
-            <div className="h-[360px] w-full px-2 py-2">
+              <div className="h-[68vh] min-h-[430px] w-full rounded-lg border border-white/5 bg-[#0a101b] p-2">
               {chartLoading ? (
                 <div className="flex h-full items-center justify-center text-xs text-slate-500">Loading chart...</div>
               ) : candles.length === 0 ? (
@@ -763,9 +752,11 @@ export default function TradePage() {
                 <TradeCandlestickChart candles={candles} />
               )}
             </div>
+            </section>
 
-            <div className="border-t border-slate-800">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800 bg-[#0a101b] px-2 py-1.5">
+            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
+              <section className="overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 bg-[#0a101b] px-3 py-2">
                 <div className="flex items-center gap-1.5 text-xs">
                   {([
                     ["active", "Active Positions"],
@@ -776,7 +767,7 @@ export default function TradePage() {
                       key={value}
                       type="button"
                       onClick={() => setPanelTab(value)}
-                      className={`rounded-sm px-2.5 py-1 ${panelTab === value ? "bg-emerald-600 text-white" : "text-slate-300 hover:bg-slate-800"}`}
+                      className={`rounded-md px-2.5 py-1.5 font-medium transition duration-200 ${panelTab === value ? "bg-emerald-600 text-white" : "text-slate-300 hover:bg-slate-800/60"}`}
                     >
                       {label}
                     </button>
@@ -789,7 +780,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              <div className="max-h-[220px] overflow-auto">
+              <div className="max-h-[290px] overflow-auto">
                 <table className="min-w-[980px] w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-800 bg-[#0f1625] text-slate-400">
@@ -819,13 +810,13 @@ export default function TradePage() {
                           <td className="px-2 py-1.5 font-semibold text-slate-100">{row.instrument}</td>
                           <td className="px-2 py-1.5 uppercase text-slate-300">{row.orderType}</td>
                           <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.quantity}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">GÃ©Â¦{row.entryPrice.toFixed(2)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">GÃ©Â¦{row.investment.toFixed(2)}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.target ? `GÃ©Â¦${row.target.toFixed(2)}` : "-"}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.stopLoss ? `GÃ©Â¦${row.stopLoss.toFixed(2)}` : "-"}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">{typeof row.ltp === "number" ? `GÃ©Â¦${row.ltp.toFixed(2)}` : "-"}</td>
-                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">GÃ©Â¦{row.charges.toFixed(2)}</td>
-                          <td className={`px-2 py-1.5 text-right tabular-nums font-semibold ${changeColor(row.pnl)}`}>{row.pnl >= 0 ? "+" : ""}GÃ©Â¦{row.pnl.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">Rs.{row.entryPrice.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">Rs.{row.investment.toFixed(2)}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.target ? `Rs.${row.target.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">{row.stopLoss ? `Rs.${row.stopLoss.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-200">{typeof row.ltp === "number" ? `Rs.${row.ltp.toFixed(2)}` : "-"}</td>
+                          <td className="px-2 py-1.5 text-right tabular-nums text-slate-300">Rs.{row.charges.toFixed(2)}</td>
+                          <td className={`px-2 py-1.5 text-right tabular-nums font-semibold ${changeColor(row.pnl)}`}>{row.pnl >= 0 ? "+" : ""}Rs.{row.pnl.toFixed(2)}</td>
                           <td className="px-2 py-1.5">
                             <span className={`rounded px-2 py-0.5 text-[10px] font-semibold ${row.status.toLowerCase() === "active" ? "bg-blue-900/40 text-blue-300" : row.status.toLowerCase() === "pending" ? "bg-amber-900/40 text-amber-300" : "bg-slate-800 text-slate-300"}`}>
                               {row.status}
@@ -837,16 +828,15 @@ export default function TradePage() {
                   </tbody>
                 </table>
               </div>
-            </div>
-          </section>
+              </section>
 
-          <aside className="border border-slate-800 bg-[#0b1220] lg:sticky lg:top-2 lg:h-[calc(100vh-16px)]">
-            <form onSubmit={onSubmit} className="flex h-full flex-col">
+              <aside className="rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+            <form onSubmit={onSubmit} className="flex flex-col">
               <div className="border-b border-slate-800 px-3 py-2">
                 <div className="mb-1 flex items-end justify-between">
                   <p className="text-base font-bold tracking-wide text-slate-100">{selectedSymbol || "--"}</p>
                   <div className="text-right tabular-nums">
-                    <p className="text-sm font-semibold text-slate-100">GÃ©Â¦<AnimatedPrice value={selectedItem?.price ?? null} /></p>
+                    <p className="text-sm font-semibold text-slate-100">Rs. <AnimatedPrice value={selectedItem?.price ?? null} /></p>
                     <p className={`text-[11px] font-medium ${selectedPositive ? "text-emerald-400" : "text-rose-400"}`}>{`${selectedPositive ? "+" : ""}${selectedChange.toFixed(2)}%`}</p>
                   </div>
                 </div>
@@ -995,7 +985,7 @@ export default function TradePage() {
                     />
                   </label>
                   <button type="button" onClick={() => bumpQuantity(1)} className="h-8 rounded-sm border border-slate-700 bg-[#090f1b] px-2">+</button>
-                  <div className="flex h-8 items-center rounded-sm border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-300">Qty</div>
+                  <div className="flex h-8 items-center rounded-sm border border-slate-700 bg-[#090f1b] px-2 text-xs text-slate-300">Q</div>
                 </div>
 
                 {orderType !== "market" && (orderType !== "limit" || limitMode === "manual") ? (
@@ -1023,7 +1013,7 @@ export default function TradePage() {
                 </div>
                 <div className="mb-1 flex items-center justify-between">
                   <span>Quantity</span>
-                  <span className="font-semibold text-slate-100">{quantityNumber} @ GÃ©Â¦{effectivePrice.toFixed(2)}</span>
+                  <span className="font-semibold text-slate-100">{quantityNumber} @ Rs.{effectivePrice.toFixed(2)}</span>
                 </div>
                 <div className="mb-1 flex items-center justify-between">
                   <span>Margin</span>
@@ -1041,13 +1031,15 @@ export default function TradePage() {
                 <button
                   type="submit"
                   disabled={loading || insufficientFunds}
-                  className={`h-10 w-full text-sm font-bold tracking-wide text-white transition active:scale-[0.99] ${side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-rose-600 hover:bg-rose-500"} disabled:cursor-not-allowed disabled:opacity-60`}
+                  className={`h-10 w-full rounded-md text-sm font-bold tracking-wide text-white transition duration-200 active:scale-[0.99] ${side === "buy" ? "bg-emerald-600 hover:bg-emerald-500" : "bg-rose-600 hover:bg-rose-500"} disabled:cursor-not-allowed disabled:opacity-60`}
                 >
                   {loading ? "Submitting..." : `${orderType === "market" ? "MARKET" : orderType.toUpperCase()} ${side.toUpperCase()} ${quantityNumber} CONTRACT${quantityNumber > 1 ? "S" : ""}`}
                 </button>
               </div>
             </form>
           </aside>
+            </div>
+          </div>
         </div>
       </div>
 
