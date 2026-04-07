@@ -211,13 +211,17 @@ export default function CompetitionsPage() {
     setMessage("");
 
     try {
+      const targetId = competitionId || activeCompetition?.id;
       const response = await fetch("/api/competitions/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ competitionId }),
+        body: JSON.stringify({ competitionId: targetId }),
       });
       const data = (await response.json()) as { message?: string; error?: string };
       setMessage(data?.message || data?.error || "Updated");
+      if (response.ok && targetId) {
+        router.push(`/competitions/${targetId}`);
+      }
     } catch {
       setMessage("Unable to process join request right now.");
     } finally {

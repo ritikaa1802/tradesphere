@@ -1,176 +1,100 @@
 # TradeSphere
 
-TradeSphere is a full-stack paper-trading and behavioral analytics platform built with Next.js, Prisma, and PostgreSQL.
-It helps traders understand both performance and psychology with portfolio analytics, AI coaching, loss insights, competitions, and premium workflows.
+TradeSphere is a full-stack paper-trading platform for Indian markets built with Next.js, Prisma, and PostgreSQL.
+It combines execution simulation, portfolio analytics, behavioral insights, AI coaching, and contest gameplay.
 
-## Highlights
+## What TradeSphere Offers
 
-- Real-time style paper trading with buy/sell and order type support
-- Portfolio tracking with holdings, P&L, and history curves
-- Behavioral insights (revenge trading, overtrading, mood impact, risk score)
-- Mood and mistakes analytics for self-review
-- AI coaching with weekly-style report generation (Groq)
-- Email workflows via Resend (OTP API + weekly report email)
-- Pro plan gating for premium features
-- CSV export for trade history (Pro)
-- Trading competitions with leaderboard and countdown
+- Paper trading only: no real-money order placement or settlement
+- Real-time style trade terminal with market, limit, and stop-loss flows
+- Portfolio tracking with holdings, PnL, allocation, and history charts
+- Behavioral analytics: mistakes, mood impact, overtrading, and consistency
+- AI coach and AI report generation (Groq)
+- Contest hub with join flow, countdowns, leaderboard, and contest room
+- Pro feature gating (weekly report + CSV export)
+- Authentication with NextAuth credentials + OTP APIs
+
+## Product Features
+
+### 1. Authentication and User Onboarding
+
+- Signup/Login with NextAuth credentials
+- OTP send/verify APIs available
+- Onboarding flow for trading profile setup
+- Protected app routes via middleware
+
+### 2. Trade Terminal (Paper Mode)
+
+- Watchlist-style symbol panel
+- Candlestick chart with timeframe switching
+- Order controls:
+  - Side: Buy / Sell
+  - Type: Market / Limit / Stop Loss
+  - Mode: Intraday (MIS) / Overnight (NRML)
+  - Quantity controls (fixed/auto)
+  - Optional target and stop-loss fields
+- Pending and historical order tables
+
+### 3. Portfolio and Dashboard
+
+- Virtual account balance and holdings
+- Portfolio-level metrics and charts
+- Sector exposure and allocation insights
+- History timeline and PnL trends
+
+### 4. Analytics and Behavioral Intelligence
+
+- Mistake detection and pattern analytics
+- Mood tracking and mood-performance correlation
+- AI-generated coaching and feedback summaries
+
+### 5. Contest System
+
+- Contests page with:
+  - Featured championship card
+  - Live contest cards and filters
+  - Upcoming contests + notify action
+  - Learning tracks and active battles sections
+- Contest APIs:
+  - Seed and list contests
+  - Join by contest ID
+  - Notify registration
+  - Suggest contest ideas
+- Contest Room (`/competitions/[id]`):
+  - Contest status, countdown, participant count
+  - Contest-specific leaderboard view
+  - "Start paper trading" action to Trade page
+
+### 6. Pro Workflows
+
+- Pro upgrade endpoint and UI gating
+- Weekly report generation (email route)
+- CSV export route for history
 
 ## Tech Stack
 
-- Framework: Next.js 14 (App Router)
-- Language: TypeScript
-- Styling: Tailwind CSS
-- Database ORM: Prisma
-- Database: PostgreSQL (Neon-compatible)
-- Auth: NextAuth (Credentials provider)
-- Charts: Recharts + lightweight-charts
-- AI: Groq SDK
-- Email: Resend
+- Next.js 14 (App Router)
+- TypeScript
+- Tailwind CSS
+- Prisma ORM
+- PostgreSQL (Neon-compatible)
+- NextAuth
+- Recharts + lightweight-charts
+- Groq SDK
+- Resend
 
-## Core Product Modules
 
-- Authentication
-  - Direct signup/login flow is active
-  - OTP APIs and verification page are available in the codebase for optional workflows
-- Trading Engine (paper mode)
-  - Places and records simulated trades
-  - Supports market/limit/stop loss style order metadata
-- Portfolio & Dashboard
-  - Balance, invested capital, P&L, win rate, fear/greed meter
-  - Portfolio value timeline and mood-vs-P&L chart
-  - Insights and risk breakdown (with Pro gating where applicable)
-- History & Export
-  - Filterable trade history
-  - CSV export endpoint (Pro gated)
-- Competitions
-  - Active competition, join flow, countdown, leaderboard ranking
-- Pro Plan
-  - Feature gating and upgrade endpoint (mock activation)
 
-## Repository Structure
+## Contest Gameplay Flow
 
-- `app/` -> Pages and API routes (App Router)
-- `components/` -> Shared UI components and app shell
-- `lib/` -> Domain/business logic (auth, analytics, insights, portfolio, email)
-- `prisma/` -> Schema and migration history
-- `types/` -> Type augmentations (including NextAuth session typing)
+1. Open `/competitions`
+2. Click Join on a live contest
+3. Auto-redirect to `/competitions/[id]` Contest Room
+4. Click "Start paper trading"
+5. Place simulated trades in `/trade`
+6. Track rank and leaderboard updates
 
-## Getting Started
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/ritikaa1802/tradesphere.git
-cd tradesphere
-npm install
-```
-
-### 2. Configure environment
-
-Create `.env` with required values:
-
-```env
-DATABASE_URL="postgresql://..."
-NEXTAUTH_URL="http://localhost:3000"
-NEXTAUTH_SECRET="your-secret"
-
-GROQ_API_KEY="gsk_..."
-GROQ_MODEL="llama-3.3-70b-versatile"
-
-RESEND_API_KEY="re_..."
-
-FINNHUB_API_KEY="..."
-```
-
-### 3. Run database migrations
-
-```bash
-npx prisma migrate dev
-```
-
-### 4. Start development server
-
-```bash
-npm run dev
-```
-
-Open http://localhost:3000
-
-## Build and Production
-
-```bash
-npm run build
-npm start
-```
-
-## NPM Scripts
-
-- `npm run dev` -> Start local dev server
-- `npm run build` -> Production build
-- `npm start` -> Start production server
-- `npm run prisma` -> Run Prisma CLI
-
-## Important Environment Notes
-
-- Resend is used for email sending in:
-  - OTP send route
-  - Weekly report email route
-- Weekly report and CSV export are Pro-gated
-- If deploying publicly, set `NEXTAUTH_URL` to your production domain
-
-## Selected API Endpoints
-
-### Auth
-
-- `POST /api/auth/signup` -> Direct account creation
-- `POST /api/auth/send-otp` -> Send OTP email (available)
-- `POST /api/auth/verify-otp` -> Verify OTP (available)
-- `POST /api/auth/[...nextauth]` -> NextAuth credentials login
-
-### Portfolio & Trading
-
-- `GET /api/portfolio`
-- `GET /api/portfolio/history`
-- `GET /api/portfolio/sectors`
-- `POST /api/trade`
-- `GET /api/trades`
-
-### Insights, AI, Reports
-
-- `GET /api/insights`
-- `POST /api/ai/report`
-- `POST /api/ai/chat`
-- `POST /api/email/weekly-report` (Pro)
-
-### Pro & Exports
-
-- `POST /api/pro/upgrade`
-- `GET /api/export/csv` (Pro)
-
-### Competitions
-
-- `GET /api/competitions`
-- `POST /api/competitions/join`
-- `GET /api/competitions/leaderboard`
-
-## Security and Best Practices
-
-- Never commit real API keys/secrets to GitHub
-- Rotate secrets immediately if accidentally exposed
-- Use environment variables in deployment platform settings
-- Validate route access with server-side session checks (already used across protected routes)
-
-## Roadmap Ideas
-
-- Real billing integration (Razorpay/Stripe) for Pro
-- In-app downloadable weekly report (PDF/HTML)
-- Enhanced backtesting and strategy comparison
-- Notification center (email + in-app)
 
 ## License
 
-This project is private unless a license file is added.
-
-## Author
-
-Built by the TradeSphere team.
+Private project unless a license file is added.
