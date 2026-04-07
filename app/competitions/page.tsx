@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import { ArrowRight, Brain, Bolt, Trophy, CandlestickChart } from "lucide-react";
 
 type ContestFilter = "All" | "Beginner" | "Strategy" | "Intraday" | "Sector";
@@ -33,6 +34,7 @@ interface LeaderboardResponse {
 
 interface ContestCard {
   id: string;
+  competitionId?: string;
   level: "Beginner" | "Intermediate" | "Advanced";
   category: Exclude<ContestFilter, "All">;
   title: string;
@@ -77,6 +79,7 @@ function buildContestCards(competitions: Competition[], leaderboard: Leaderboard
 
     return {
       id: competition.id,
+      competitionId: competition.id,
       level: pickLevel(index),
       category,
       title: competition.title,
@@ -138,12 +141,21 @@ function buildContestCards(competitions: Competition[], leaderboard: Leaderboard
 }
 
 export default function CompetitionsPage() {
+  const router = useRouter();
+  const liveContestsRef = useRef<HTMLDivElement | null>(null);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
   const [leaderboard, setLeaderboard] = useState<LeaderboardResponse>({ entries: [], yourRank: null });
   const [countdown, setCountdown] = useState({ days: 0, hours: 0, minutes: 0, seconds: 0 });
   const [loading, setLoading] = useState(true);
   const [joining, setJoining] = useState(false);
+  const [notifyingId, setNotifyingId] = useState<string | null>(null);
+  const [submittingSuggestion, setSubmittingSuggestion] = useState(false);
   const [message, setMessage] = useState("");
+  const [showSuggestForm, setShowSuggestForm] = useState(false);
+  const [suggestTitle, setSuggestTitle] = useState("");
+  const [suggestDescription, setSuggestDescription] = useState("");
+  const [suggestCategory, setSuggestCategory] = useState("Strategy");
+  const [suggestPrize, setSuggestPrize] = useState("Rs.50,000");
   const [activeFilter, setActiveFilter] = useState<ContestFilter>("All");
 
   useEffect(() => {
@@ -194,22 +206,90 @@ export default function CompetitionsPage() {
     return () => clearInterval(timer);
   }, [activeCompetition?.endDate]);
 
-  async function joinCompetition() {
+  async function joinCompetition(competitionId?: string) {
     setJoining(true);
     setMessage("");
 
-    const response = await fetch("/api/competitions/join", { method: "POST" });
-    const data = await response.json();
-    setMessage(data?.message || data?.error || "Updated");
-    setJoining(false);
+    try {
+      const response = await fetch("/api/competitions/join", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitionId }),
+      });
+      const data = (await response.json()) as { message?: string; error?: string };
+      setMessage(data?.message || data?.error || "Updated");
+    } catch {
+      setMessage("Unable to process join request right now.");
+    } finally {
+      setJoining(false);
+    }
+  }
+
+  async function notifyCompetition(competitionId: string) {
+    setNotifyingId(competitionId);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/competitions/notify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ competitionId }),
+      });
+      const data = (await response.json()) as { message?: string; error?: string };
+      setMessage(data?.message || data?.error || "Notification updated");
+    } catch {
+      setMessage("Unable to set notification right now.");
+    } finally {
+      setNotifyingId(null);
+    }
+  }
+
+  async function submitSuggestion() {
+    if (!suggestTitle.trim() || !suggestDescription.trim()) {
+      setMessage("Please add a title and description for your contest idea.");
+      return;
+    }
+
+    setSubmittingSuggestion(true);
+    setMessage("");
+
+    try {
+      const response = await fetch("/api/competitions/suggest", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: suggestTitle.trim(),
+          description: suggestDescription.trim(),
+          category: suggestCategory,
+          prize: suggestPrize,
+        }),
+      });
+      const data = (await response.json()) as { message?: string; error?: string };
+      setMessage(data?.message || data?.error || "Suggestion submitted");
+      if (response.ok) {
+        setSuggestTitle("");
+        setSuggestDescription("");
+        setShowSuggestForm(false);
+      }
+    } catch {
+      setMessage("Unable to submit suggestion right now.");
+    } finally {
+      setSubmittingSuggestion(false);
+    }
   }
 
   const allCards = useMemo(() => buildContestCards(competitions, leaderboard), [competitions, leaderboard]);
+  const liveCards = useMemo(() => allCards.filter((card) => card.status === "Live"), [allCards]);
 
   const filteredCards = useMemo(() => {
-    if (activeFilter === "All") return allCards;
-    return allCards.filter((card) => card.category === activeFilter || card.level === activeFilter);
-  }, [activeFilter, allCards]);
+    if (activeFilter === "All") return liveCards;
+    return liveCards.filter((card) => card.category === activeFilter || card.level === activeFilter);
+  }, [activeFilter, liveCards]);
+
+  const upcomingCompetitions = useMemo(
+    () => competitions.filter((competition) => !competition.isActive || new Date(competition.startDate).getTime() > Date.now()).slice(0, 4),
+    [competitions],
+  );
 
   const computedParticipants =
     activeCompetition?._count?.entries !== undefined && activeCompetition?._count?.entries !== null
@@ -301,7 +381,7 @@ export default function CompetitionsPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <div ref={liveContestsRef} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-2xl font-bold text-[var(--text-primary)]">Live and open to join</h3>
           <div className="flex flex-wrap items-center gap-2">
@@ -350,7 +430,7 @@ export default function CompetitionsPage() {
                 <p className="text-sm text-slate-300">{card.daysLeft} days left</p>
                 <button
                   type="button"
-                  onClick={joinCompetition}
+                  onClick={() => joinCompetition(card.competitionId)}
                   disabled={joining}
                   className="rounded-lg border border-[#3f5f9f] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#173568] disabled:cursor-not-allowed disabled:opacity-60"
                 >
@@ -366,7 +446,13 @@ export default function CompetitionsPage() {
         <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-2xl font-bold text-[var(--text-primary)]">Contest learning paths</h3>
-            <button className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-hover)]">View all tracks</button>
+            <button
+              type="button"
+              onClick={() => router.push("/ai-coach")}
+              className="rounded-lg border border-[var(--border)] px-4 py-2 text-sm font-semibold text-[var(--text-primary)] transition hover:bg-[var(--bg-hover)]"
+            >
+              View all tracks
+            </button>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-3">
@@ -439,27 +525,33 @@ export default function CompetitionsPage() {
       <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
         <h3 className="text-2xl font-bold text-[var(--text-primary)]">Upcoming contests</h3>
         <div className="mt-3 space-y-3">
-          {[
-            { date: "12 APR", title: "Budget Impact Challenge", desc: "Trade reaction to budget updates with macro themes.", prize: "Rs.80,000" },
-            { date: "15 APR", title: "Q4 Earnings Season Cup", desc: "Trade quarterly earnings surprises with disciplined setups.", prize: "Rs.50,000" },
-            { date: "18 APR", title: "Women in Trading Invitational", desc: "Open to all women traders with guided coaching layers.", prize: "Rs.30,000" },
-            { date: "22 APR", title: "Sector Rotation Marathon", desc: "Track 30-day sector rotation across Pharma, IT, FMCG and Banks.", prize: "Rs.120,000" },
-          ].map((item) => (
-            <article key={item.title} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#254171] bg-[#12264a] p-3">
+          {upcomingCompetitions.map((item) => {
+            const start = new Date(item.startDate);
+            const date = `${String(start.getDate()).padStart(2, "0")} ${start.toLocaleString("en-US", { month: "short" }).toUpperCase()}`;
+
+            return (
+            <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#254171] bg-[#12264a] p-3">
               <div className="min-w-[64px] rounded-lg border border-[#315896] bg-[#0d1f42] px-3 py-2 text-center">
-                <p className="text-xl font-black text-white">{item.date.split(" ")[0]}</p>
-                <p className="text-[10px] text-slate-400">{item.date.split(" ")[1]}</p>
+                <p className="text-xl font-black text-white">{date.split(" ")[0]}</p>
+                <p className="text-[10px] text-slate-400">{date.split(" ")[1]}</p>
               </div>
               <div className="flex-1">
                 <p className="text-xl font-bold text-white">{item.title}</p>
-                <p className="text-sm text-slate-300">{item.desc}</p>
+                <p className="text-sm text-slate-300">{item.description}</p>
               </div>
               <div className="text-right">
-                <p className="text-2xl font-black text-cyan-300">{item.prize}</p>
-                <button className="mt-2 rounded-lg border border-[#3f5f9f] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#173568]">Notify me</button>
+                <p className="text-2xl font-black text-cyan-300">{item.prizeDescription}</p>
+                <button
+                  type="button"
+                  onClick={() => notifyCompetition(item.id)}
+                  disabled={notifyingId === item.id}
+                  className="mt-2 rounded-lg border border-[#3f5f9f] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#173568] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {notifyingId === item.id ? "Saving..." : "Notify me"}
+                </button>
               </div>
             </article>
-          ))}
+          )})}
         </div>
       </section>
 
@@ -470,10 +562,69 @@ export default function CompetitionsPage() {
             <p className="mt-2 text-lg text-slate-300">Tell us what challenge format you want and we will launch new paper-trading contests based on demand.</p>
           </div>
           <div className="flex flex-wrap items-center justify-start gap-3 md:justify-end">
-            <button className="rounded-xl border border-[#3f5f9f] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#173568]">Suggest a contest</button>
-            <button className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-500">Browse all {totalContests}</button>
+            <button
+              type="button"
+              onClick={() => setShowSuggestForm((prev) => !prev)}
+              className="rounded-xl border border-[#3f5f9f] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#173568]"
+            >
+              Suggest a contest
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setActiveFilter("All");
+                liveContestsRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+              }}
+              className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-500"
+            >
+              Browse all {totalContests}
+            </button>
           </div>
         </div>
+
+        {showSuggestForm ? (
+          <div className="mt-4 grid gap-3 rounded-xl border border-[#254171] bg-[#0f1f3e] p-4">
+            <input
+              value={suggestTitle}
+              onChange={(event) => setSuggestTitle(event.target.value)}
+              placeholder="Contest title"
+              className="h-10 rounded-lg border border-[#315896] bg-[#0d1f42] px-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400"
+            />
+            <textarea
+              value={suggestDescription}
+              onChange={(event) => setSuggestDescription(event.target.value)}
+              placeholder="Contest description"
+              rows={3}
+              className="rounded-lg border border-[#315896] bg-[#0d1f42] px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400"
+            />
+            <div className="grid gap-3 sm:grid-cols-2">
+              <select
+                value={suggestCategory}
+                onChange={(event) => setSuggestCategory(event.target.value)}
+                className="h-10 rounded-lg border border-[#315896] bg-[#0d1f42] px-3 text-sm text-white outline-none focus:border-blue-400"
+              >
+                <option>Beginner</option>
+                <option>Intraday</option>
+                <option>Strategy</option>
+                <option>Sector</option>
+              </select>
+              <input
+                value={suggestPrize}
+                onChange={(event) => setSuggestPrize(event.target.value)}
+                placeholder="Expected prize pool"
+                className="h-10 rounded-lg border border-[#315896] bg-[#0d1f42] px-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={submitSuggestion}
+              disabled={submittingSuggestion}
+              className="w-fit rounded-lg bg-blue-600 px-4 py-2 text-sm font-bold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submittingSuggestion ? "Submitting..." : "Submit suggestion"}
+            </button>
+          </div>
+        ) : null}
       </section>
 
       <p className="text-center text-xs text-[var(--text-muted)]">Contest rankings are based on simulated paper portfolio performance and are not connected to real-money PnL.</p>
