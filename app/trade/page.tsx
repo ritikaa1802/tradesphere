@@ -14,6 +14,9 @@ import {
 type Side = "buy" | "sell";
 type OrderType = "market" | "limit" | "stoploss";
 type Timeframe = "1D" | "1W" | "1M";
+type OrderMode = "intraday" | "overnight";
+type QuantityMode = "fixed" | "auto";
+type OrderPanelTab = "active" | "pending" | "history";
 
 interface StockOption {
   symbol: string;
@@ -27,6 +30,48 @@ interface WatchlistItem {
   changePercent: number | null;
   basePrice: number | null;
   loading: boolean;
+}
+
+interface HoldingItem {
+  stock: string;
+  quantity: number;
+  avgBuyPrice: number;
+  invested: number;
+  currentPrice: number;
+  pnl: number;
+}
+
+interface PortfolioPayload {
+  holdings: HoldingItem[];
+}
+
+interface PendingOrder {
+  id: string;
+  stock: string;
+  type: string;
+  orderType: string;
+  status: string;
+  targetPrice: number | null;
+  price: number;
+  quantity: number;
+  currentPrice: number | null;
+  createdAt: string;
+}
+
+interface PendingOrdersPayload {
+  orders: PendingOrder[];
+}
+
+interface TradeHistoryItem {
+  id: string;
+  stock: string;
+  type: string;
+  price: number;
+  quantity: number;
+  pnl: number | null;
+  orderType: string;
+  status: string;
+  createdAt: string;
 }
 
 const DEFAULT_WATCHLIST: Array<{ symbol: string; exchange: "NSE" | "BSE" }> = [
@@ -119,6 +164,13 @@ export default function TradePage() {
 
   const [side, setSide] = useState<Side>("buy");
   const [orderType, setOrderType] = useState<OrderType>("market");
+  const [orderMode, setOrderMode] = useState<OrderMode>("overnight");
+  const [quantityMode, setQuantityMode] = useState<QuantityMode>("fixed");
+  const [limitMode, setLimitMode] = useState<"auto" | "manual">("auto");
+  const [setTarget, setSetTarget] = useState(false);
+  const [setStopLoss, setSetStopLoss] = useState(false);
+  const [targetValue, setTargetValue] = useState("");
+  const [stopLossValue, setStopLossValue] = useState("");
   const [quantity, setQuantity] = useState("1");
   const [priceInput, setPriceInput] = useState("");
 
@@ -130,6 +182,10 @@ export default function TradePage() {
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
   const [priceHistory, setPriceHistory] = useState<Record<string, number[]>>({});
+  const [panelTab, setPanelTab] = useState<OrderPanelTab>("active");
+  const [holdings, setHoldings] = useState<HoldingItem[]>([]);
+  const [pendingOrders, setPendingOrders] = useState<PendingOrder[]>([]);
+  const [recentTrades, setRecentTrades] = useState<TradeHistoryItem[]>([]);
 
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
@@ -299,6 +355,46 @@ export default function TradePage() {
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+
+    async function loadPanelData() {
+      try {
+        const [portfolioRes, pendingRes, tradesRes] = await Promise.all([
+          fetch("/api/portfolio", { cache: "no-store" }),
+          fetch("/api/orders/pending", { cache: "no-store" }),
+          fetch("/api/trades", { cache: "no-store" }),
+        ]);
+
+        if (cancelled) return;
+
+        if (portfolioRes.ok) {
+          const portfolioData = (await portfolioRes.json()) as PortfolioPayload;
+          setHoldings(portfolioData.holdings || []);
+        }
+
+        if (pendingRes.ok) {
+          const pendingData = (await pendingRes.json()) as PendingOrdersPayload;
+          setPendingOrders(pendingData.orders || []);
+        }
+
+        if (tradesRes.ok) {
+          const tradesData = (await tradesRes.json()) as TradeHistoryItem[];
+          setRecentTrades(tradesData.slice(0, 10));
+        }
+      } catch {
+        // Keep terminal responsive even if panel data endpoints fail.
+      }
+    }
+
+    loadPanelData();
+    const intervalId = setInterval(loadPanelData, 20000);
+    return () => {
+      cancelled = true;
+      clearInterval(intervalId);
+    };
+  }, []);
+
+  useEffect(() => {
     if (!toast) return;
     const id = setTimeout(() => setToast(""), 1500);
     return () => clearTimeout(id);
@@ -333,14 +429,45 @@ export default function TradePage() {
     });
   }
 
-  const quantityNumber = Math.max(0, Number(quantity) || 0);
-  const effectivePrice = orderType === "market" ? selectedPrice : Number(priceInput) || 0;
+  const manualQuantityNumber = Math.max(0, Number(quantity) || 0);
+  const autoCalculatedQty = selectedPrice > 0 ? Math.max(1, Math.floor((AVAILABLE_BALANCE * 0.25) / selectedPrice)) : 0;
+  const quantityNumber = quantityMode === "auto" ? autoCalculatedQty : manualQuantityNumber;
+
+  const autoLimitPrice = selectedPrice > 0
+    ? selectedPrice + (side === "buy" ? selectedPrice * 0.001 : -selectedPrice * 0.001)
+    : 0;
+  const manualOrStopPrice = Number(priceInput) || 0;
+  const effectivePrice = orderType === "market"
+    ? selectedPrice
+    : orderType === "limit" && limitMode === "auto"
+      ? autoLimitPrice
+      : manualOrStopPrice;
 
   const tradeValue = effectivePrice * quantityNumber;
   const charges = tradeValue > 0 ? 20 + tradeValue * 0.0008 : 0;
   const finalAmount = side === "buy" ? tradeValue + charges : tradeValue - charges;
   const requiredMargin = side === "buy" ? finalAmount : tradeValue * 0.2;
   const insufficientFunds = requiredMargin > AVAILABLE_BALANCE;
+
+  const orderContextNote = [
+    `Mode:${orderMode}`,
+    `QtyMode:${quantityMode}`,
+    setTarget && targetValue ? `Target:${targetValue}` : "",
+    setStopLoss && stopLossValue ? `StopLoss:${stopLossValue}` : "",
+  ].filter(Boolean).join(" | ");
+
+  const positionsRows = useMemo(() => {
+    return holdings.map((holding) => {
+      const watch = watchlist.find((item) => item.symbol === holding.stock);
+      const ltp = typeof watch?.price === "number" ? watch.price : holding.currentPrice;
+      const pnl = (ltp - holding.avgBuyPrice) * holding.quantity;
+      return {
+        ...holding,
+        ltp,
+        pnl,
+      };
+    });
+  }, [holdings, watchlist]);
 
   const chartSeries = useMemo(() => {
     const raw = priceHistory[selectedSymbol] ?? [];
