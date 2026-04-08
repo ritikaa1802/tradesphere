@@ -631,8 +631,8 @@ export default function TradePage() {
   return (
     <main className="min-h-screen bg-[#050912] px-3 py-4 text-slate-100 sm:px-4 lg:px-5">
       <div className="mx-auto w-full max-w-[1650px]">
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[260px_minmax(0,1fr)]">
-          <section className="flex max-h-[calc(100vh-130px)] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[228px_minmax(0,1fr)]">
+          <section className="flex max-h-[calc(100vh-130px)] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)] xl:-mt-1">
             <div className="border-b border-slate-800 px-2 py-1.5">
               <div className="relative" ref={searchContainerRef}>
                 <input
@@ -731,7 +731,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              <div className="h-[52vh] min-h-[320px] w-full rounded-lg border border-white/5 bg-[#0a101b] p-2">
+              <div className="h-[44vh] min-h-[280px] w-full rounded-lg border border-white/5 bg-[#0a101b] p-2">
               {chartLoading ? (
                 <div className="flex h-full items-center justify-center text-xs text-slate-500">Loading chart...</div>
               ) : candles.length === 0 ? (
@@ -742,7 +742,7 @@ export default function TradePage() {
             </div>
             </section>
 
-            <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
+            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.25fr)_368px]">
               <section className="flex min-h-[520px] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 bg-[#0a101b] px-3 py-2">
                 <div className="flex items-center gap-1.5 text-xs">
@@ -768,8 +768,8 @@ export default function TradePage() {
                 </div>
               </div>
 
-              <div className="min-h-[280px] flex-1 overflow-auto">
-                <table className="min-w-[980px] w-full text-xs">
+              <div className="min-h-[300px] flex-1 overflow-auto">
+                <table className="min-w-[920px] w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-800 bg-[#0f1625] text-slate-400">
                       <th className="px-2 py-1.5 text-left font-medium">Order Date</th>
