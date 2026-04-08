@@ -632,7 +632,7 @@ export default function TradePage() {
     <main className="min-h-screen bg-[#050912] px-3 py-4 text-slate-100 sm:px-4 lg:px-5">
       <div className="mx-auto w-full max-w-[1650px]">
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[228px_minmax(0,1fr)]">
-          <section className="flex max-h-[calc(100vh-130px)] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)] xl:-mt-2">
+          <section className="flex h-full flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)] xl:-mt-2">
             <div className="border-b border-slate-800 px-2 py-1.5">
               <div className="relative" ref={searchContainerRef}>
                 <input
@@ -708,8 +708,7 @@ export default function TradePage() {
             </div>
           </section>
 
-          <div className="space-y-4">
-            <section className="rounded-xl border border-white/5 bg-[#0b1220] p-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+          <section className="rounded-xl border border-white/5 bg-[#0b1220] p-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
               <div className="mb-2 flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold text-slate-100">{selectedSymbol}</p>
@@ -742,7 +741,8 @@ export default function TradePage() {
             </div>
             </section>
 
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_368px]">
+            <div className="xl:col-span-2">
+              <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_368px]">
               <section className="flex min-h-[520px] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 bg-[#0a101b] px-3 py-2">
                 <div className="flex items-center gap-1.5 text-xs">
@@ -1026,8 +1026,8 @@ export default function TradePage() {
               </div>
             </form>
           </aside>
+              </div>
             </div>
-          </div>
         </div>
       </div>
 
