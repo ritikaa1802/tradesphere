@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/ThemeProvider";
 
 export default function RootProviders({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const forceDarkTheme = pathname === "/";
+  const forceDarkTheme = true;
   const hideAppShell = pathname === "/" || pathname === "/login" || pathname === "/signup" || pathname === "/verify-otp";
 
   return (
