@@ -708,7 +708,7 @@ export default function TradePage() {
             </div>
           </section>
 
-          <section className="rounded-xl border border-white/5 bg-[#0b1220] p-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+          <section className="flex h-full flex-col rounded-xl border border-white/5 bg-[#0b1220] p-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
               <div className="mb-2 flex items-center justify-between">
                 <div>
                   <p className="text-lg font-semibold text-slate-100">{selectedSymbol}</p>
@@ -730,7 +730,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              <div className="h-[44vh] min-h-[280px] w-full rounded-lg border border-white/5 bg-[#0a101b] p-2">
+              <div className="flex-1 min-h-[280px] w-full rounded-lg border border-white/5 bg-[#0a101b] p-2">
               {chartLoading ? (
                 <div className="flex h-full items-center justify-center text-xs text-slate-500">Loading chart...</div>
               ) : candles.length === 0 ? (
