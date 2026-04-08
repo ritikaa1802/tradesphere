@@ -626,14 +626,6 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        <div className="border-b border-[#1a2744] pb-3 pt-1">
-          <Link
-            href="/insights"
-            className="inline-flex items-center rounded-md border border-[#1a2744] bg-[#0d1421] px-3 py-1.5 text-xs font-semibold text-[#93c5fd] hover:bg-[#0f1929]"
-          >
-            Open Full Insights Dashboard →
-          </Link>
-        </div>
       </ProGate>
     </section>
   );
