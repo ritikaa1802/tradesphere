@@ -743,7 +743,7 @@ export default function TradePage() {
             </section>
 
             <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_390px]">
-              <section className="overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+              <section className="flex min-h-[520px] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 bg-[#0a101b] px-3 py-2">
                 <div className="flex items-center gap-1.5 text-xs">
                   {([
@@ -768,7 +768,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              <div className="max-h-[290px] overflow-auto">
+              <div className="min-h-[280px] flex-1 overflow-auto">
                 <table className="min-w-[980px] w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-800 bg-[#0f1625] text-slate-400">
