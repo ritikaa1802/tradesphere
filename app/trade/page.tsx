@@ -631,84 +631,8 @@ export default function TradePage() {
   return (
     <main className="min-h-screen bg-[#050912] px-3 py-4 text-slate-100 sm:px-4 lg:px-5">
       <div className="mx-auto w-full max-w-[1650px]">
-        <div className="grid grid-cols-1 gap-3 xl:grid-cols-[228px_minmax(0,1fr)]">
-          <section className="flex max-h-[calc(100vh-130px)] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)] xl:-mt-1">
-            <div className="border-b border-slate-800 px-2 py-1.5">
-              <div className="relative" ref={searchContainerRef}>
-                <input
-                  value={stockQuery}
-                  onChange={(event) => setStockQuery(event.target.value)}
-                  onFocus={() => {
-                    if (stockSuggestions.length > 0) setShowSuggestions(true);
-                  }}
-                  placeholder="Search"
-                  className="h-7 w-full border border-slate-700 bg-[#090f1b] px-2 text-[11px] text-slate-100 outline-none placeholder:text-slate-500 focus:border-blue-500"
-                />
-
-                {showSuggestions && (
-                  <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto border border-slate-700 bg-[#090f1b] shadow-lg">
-                    {isSearching ? (
-                      <p className="px-2 py-2 text-xs text-slate-400">Searching...</p>
-                    ) : stockSuggestions.length === 0 ? (
-                      <p className="px-2 py-2 text-xs text-slate-400">No results</p>
-                    ) : (
-                      stockSuggestions.map((option) => (
-                        <button
-                          key={option.symbol}
-                          type="button"
-                          onClick={() => selectSuggestion(option)}
-                          className="flex w-full items-center justify-between border-b border-slate-800 px-2 py-2 text-left text-xs text-slate-200 hover:bg-slate-800/60"
-                        >
-                          <span className="truncate">{option.name}</span>
-                          <span className="ml-2 font-semibold text-blue-300">{option.symbol}</span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div>
-              {watchlist.map((item, index) => {
-                const isSelected = item.symbol === selectedSymbol;
-                const hasChange = item.changePercent !== null;
-                const change = item.changePercent ?? 0;
-                const up = change >= 0;
-
-                return (
-                  <button
-                    key={item.symbol}
-                    type="button"
-                    onClick={() => {
-                      setSelectedSymbol(item.symbol);
-                      setSelectedIndex(index);
-                    }}
-                    onMouseEnter={() => {
-                      setSelectedSymbol(item.symbol);
-                      setSelectedIndex(index);
-                    }}
-                    className={`grid w-full grid-cols-[1fr_auto] items-center border-b border-slate-800 px-2 py-1.5 text-left transition ${
-                      isSelected ? "bg-blue-500/15" : "hover:bg-slate-800/40"
-                    }`}
-                  >
-                    <div>
-                      <p className="text-xs font-semibold tracking-wide text-slate-100">{item.symbol}</p>
-                      <p className="text-[10px] text-slate-500">{item.exchange}</p>
-                    </div>
-                    <div className="text-right tabular-nums">
-                      <p className="text-xs font-semibold text-slate-100">Rs. <AnimatedPrice value={item.price} /></p>
-                      <p className={`text-[10px] ${up ? "text-emerald-400" : "text-rose-400"}`}>
-                        {item.loading && !hasChange ? "--" : `${up ? "+" : ""}${change.toFixed(2)}%`}
-                      </p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          </section>
-
-          <div className="space-y-4">
+        <div className="grid grid-cols-1 gap-4 xl:grid-cols-[minmax(0,1fr)_368px]">
+          <div className="min-w-0 space-y-4">
             <section className="rounded-xl border border-white/5 bg-[#0b1220] p-3 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
               <div className="mb-2 flex items-center justify-between">
                 <div>
@@ -742,8 +666,82 @@ export default function TradePage() {
             </div>
             </section>
 
-            <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1.25fr)_368px]">
-              <section className="flex min-h-[520px] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+            <section className="rounded-xl border border-white/5 bg-[#0b1220] p-4 shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+              <div className="mb-3 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <h3 className="text-sm font-semibold text-slate-100">Watchlist</h3>
+                <div className="relative w-full md:max-w-[260px]" ref={searchContainerRef}>
+                  <input
+                    value={stockQuery}
+                    onChange={(event) => setStockQuery(event.target.value)}
+                    onFocus={() => {
+                      if (stockSuggestions.length > 0) setShowSuggestions(true);
+                    }}
+                    placeholder="Search"
+                    className="h-8 w-full rounded-md border border-slate-700 bg-[#090f1b] px-3 text-xs text-slate-100 outline-none placeholder:text-slate-500 focus:border-blue-500"
+                  />
+
+                  {showSuggestions && (
+                    <div className="absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-slate-700 bg-[#090f1b] shadow-lg">
+                      {isSearching ? (
+                        <p className="px-3 py-2 text-xs text-slate-400">Searching...</p>
+                      ) : stockSuggestions.length === 0 ? (
+                        <p className="px-3 py-2 text-xs text-slate-400">No results</p>
+                      ) : (
+                        stockSuggestions.map((option) => (
+                          <button
+                            key={option.symbol}
+                            type="button"
+                            onClick={() => selectSuggestion(option)}
+                            className="flex w-full items-center justify-between border-b border-slate-800 px-3 py-2 text-left text-xs text-slate-200 hover:bg-slate-800/60"
+                          >
+                            <span className="truncate">{option.name}</span>
+                            <span className="ml-2 font-semibold text-blue-300">{option.symbol}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="overflow-x-auto">
+                <div className="flex min-w-max gap-2 pb-1">
+                  {watchlist.map((item, index) => {
+                    const isSelected = item.symbol === selectedSymbol;
+                    const hasChange = item.changePercent !== null;
+                    const change = item.changePercent ?? 0;
+                    const up = change >= 0;
+
+                    return (
+                      <button
+                        key={item.symbol}
+                        type="button"
+                        onClick={() => {
+                          setSelectedSymbol(item.symbol);
+                          setSelectedIndex(index);
+                        }}
+                        className={`w-[170px] shrink-0 rounded-lg border px-3 py-2 text-left transition ${
+                          isSelected
+                            ? "border-blue-500/60 bg-blue-500/15"
+                            : "border-slate-800 bg-[#0a101b] hover:bg-slate-800/40"
+                        }`}
+                      >
+                        <p className="text-xs font-semibold tracking-wide text-slate-100">{item.symbol}</p>
+                        <p className="text-[10px] text-slate-500">{item.exchange}</p>
+                        <div className="mt-1 text-right tabular-nums">
+                          <p className="text-xs font-semibold text-slate-100">Rs. <AnimatedPrice value={item.price} /></p>
+                          <p className={`text-[10px] ${up ? "text-emerald-400" : "text-rose-400"}`}>
+                            {item.loading && !hasChange ? "--" : `${up ? "+" : ""}${change.toFixed(2)}%`}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            </section>
+
+            <section className="flex min-h-[520px] flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
                 <div className="flex flex-wrap items-center justify-between gap-2 border-b border-white/5 bg-[#0a101b] px-3 py-2">
                 <div className="flex items-center gap-1.5 text-xs">
                   {([
@@ -768,7 +766,7 @@ export default function TradePage() {
                 </div>
               </div>
 
-              <div className="min-h-[300px] flex-1 overflow-auto">
+              <div className="min-h-[300px] flex-1 overflow-y-auto overflow-x-auto">
                 <table className="min-w-[920px] w-full text-xs">
                   <thead>
                     <tr className="border-b border-slate-800 bg-[#0f1625] text-slate-400">
@@ -816,9 +814,10 @@ export default function TradePage() {
                   </tbody>
                 </table>
               </div>
-              </section>
+            </section>
+          </div>
 
-              <aside className="rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)]">
+          <aside className="h-fit rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)] xl:sticky xl:top-20">
             <form onSubmit={onSubmit} className="flex flex-col">
               <div className="border-b border-slate-800 px-3 py-2">
                 <div className="mb-1 flex items-end justify-between">
@@ -1026,8 +1025,6 @@ export default function TradePage() {
               </div>
             </form>
           </aside>
-            </div>
-          </div>
         </div>
       </div>
 
