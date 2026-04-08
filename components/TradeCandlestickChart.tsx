@@ -25,7 +25,9 @@ export default function TradeCandlestickChart({ candles }: { candles: CandlePoin
       return;
     }
 
-    const chart = createChart(containerRef.current, {
+    const container = containerRef.current;
+
+    const chart = createChart(container, {
       layout: {
         background: { type: ColorType.Solid, color: "#0b1220" },
         textColor: "#9ca3af",
@@ -46,7 +48,8 @@ export default function TradeCandlestickChart({ candles }: { candles: CandlePoin
         vertLine: { color: "#3b82f6" },
         horzLine: { color: "#3b82f6" },
       },
-      height: 350,
+      width: container.clientWidth,
+      height: container.clientHeight,
     });
 
     const series = chart.addSeries(CandlestickSeries, {
@@ -71,20 +74,24 @@ export default function TradeCandlestickChart({ candles }: { candles: CandlePoin
     chart.timeScale().fitContent();
 
     const onResize = () => {
-      if (!containerRef.current) {
-        return;
-      }
-      chart.applyOptions({ width: containerRef.current.clientWidth });
+      chart.applyOptions({
+        width: container.clientWidth,
+        height: container.clientHeight,
+      });
     };
 
     onResize();
     window.addEventListener("resize", onResize);
 
+    const observer = new ResizeObserver(onResize);
+    observer.observe(container);
+
     return () => {
       window.removeEventListener("resize", onResize);
+      observer.disconnect();
       chart.remove();
     };
   }, [candles]);
 
-  return <div ref={containerRef} className="h-[350px] w-full" />;
+  return <div ref={containerRef} className="h-full w-full" />;
 }
