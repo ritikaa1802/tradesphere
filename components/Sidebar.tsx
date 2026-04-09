@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { signOut, useSession } from "next-auth/react";
 import {
+  AlertTriangle,
   Bell,
   Brain,
   Clock,
@@ -31,6 +32,7 @@ const primaryNavItems = [
 
 const secondaryNavItems = [
   { label: "Insights",       href: "/insights",      icon: Brain },
+  { label: "Mistakes",       href: "/mistakes",      icon: AlertTriangle },
   { label: "AI Coach",       href: "/ai-coach",      icon: Sparkles },
   { label: "Alerts",         href: "/alerts",        icon: Bell },
   { label: "Leaderboard",    href: "/leaderboard",   icon: Trophy },
