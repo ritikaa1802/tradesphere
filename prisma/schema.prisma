@@ -22,8 +22,10 @@ model User {
   showOnLeaderboard Boolean @default(false)
   displayName   String?
   createdAt    DateTime   @default(now())
+  shownLessons String[]   @default([])
   portfolio    Portfolio?
   trades       Trade[]
+  missions     Mission[]
   watchlist    Watchlist[]
   alerts       Alert[]
   competitionEntries CompetitionEntry[]
@@ -52,7 +54,22 @@ model Trade {
   pnl       Float?
   note      String?
   mood      String?
+  emotionalState String?
+  followedPlan String?
+  tradeReason String?
   createdAt DateTime @default(now())
+}
+
+model Mission {
+  id            String    @id @default(cuid())
+  userId        String
+  missionNumber Int
+  title         String
+  completed     Boolean   @default(false)
+  completedAt   DateTime?
+  user          User      @relation(fields: [userId], references: [id])
+
+  @@unique([userId, missionNumber])
 }
 
 model Watchlist {

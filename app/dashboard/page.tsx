@@ -55,6 +55,17 @@ interface AnalyticsSummary {
   winRate: number;
 }
 
+interface MissionSummary {
+  missions: Array<{
+    missionNumber: number;
+    title: string;
+    completed: boolean;
+  }>;
+  completedCount: number;
+  totalMissions: number;
+  currentMissionNumber: number;
+}
+
 type IndexRow = {
   name: string;
   value: number;
@@ -103,6 +114,7 @@ export default function DashboardPage() {
   const [history, setHistory] = useState<PortfolioHistoryPoint[]>([]);
   const [trades, setTrades] = useState<TradeItem[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
+  const [missions, setMissions] = useState<MissionSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -122,23 +134,25 @@ export default function DashboardPage() {
       try {
         setError("");
 
-        const [summaryRes, historyRes, tradesRes, analyticsRes] = await Promise.all([
+        const [summaryRes, historyRes, tradesRes, analyticsRes, missionsRes] = await Promise.all([
           fetch("/api/portfolio", { cache: "no-store" }),
           fetch("/api/portfolio/history", { cache: "no-store" }),
           fetch("/api/trades", { cache: "no-store" }),
           fetch("/api/analytics/summary", { cache: "no-store" }),
+          fetch("/api/missions", { cache: "no-store" }),
         ]);
 
-        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok) {
+        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !missionsRes.ok) {
           throw new Error("Failed to load dashboard data");
         }
 
-        const [summaryData, historyData, tradesData, analyticsData] = (await Promise.all([
+        const [summaryData, historyData, tradesData, analyticsData, missionData] = (await Promise.all([
           summaryRes.json(),
           historyRes.json(),
           tradesRes.json(),
           analyticsRes.json(),
-        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary];
+          missionsRes.json(),
+        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, MissionSummary];
 
         if (!mounted) {
           return;
@@ -148,6 +162,7 @@ export default function DashboardPage() {
         setHistory(historyData);
         setTrades(tradesData);
         setAnalytics(analyticsData);
+        setMissions(missionData);
       } catch {
         if (mounted) {
           setError("Unable to load dashboard data right now.");
@@ -352,6 +367,11 @@ export default function DashboardPage() {
     })[0];
   }, [summary?.holdings]);
 
+  const currentMission = useMemo(() => {
+    if (!missions) return null;
+    return missions.missions.find((mission) => mission.missionNumber === missions.currentMissionNumber) || null;
+  }, [missions]);
+
   if (loading) {
     return (
       <section className="space-y-3 text-white">
@@ -420,6 +440,28 @@ export default function DashboardPage() {
           </span>
         </div>
       </div>
+
+      {missions && currentMission ? (
+        <div className="rounded-xl border border-[#1a2744] bg-[#0f1929] p-3">
+          <div className="flex items-center justify-between gap-3">
+            <div>
+              <p className="text-xs uppercase tracking-wide text-[#9ca3af]">Mission Progress</p>
+              <p className="mt-1 text-sm font-semibold text-white">
+                Mission {currentMission.missionNumber}/{missions.totalMissions}: {currentMission.title}
+              </p>
+            </div>
+            <Link href="/missions" className="text-xs font-semibold text-[#60a5fa] hover:text-[#93c5fd]">
+              Open Trail →
+            </Link>
+          </div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-[#1a2744]">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-blue-500"
+              style={{ width: `${(missions.completedCount / Math.max(1, missions.totalMissions)) * 100}%` }}
+            />
+          </div>
+        </div>
+      ) : null}
 
       <div className="border-b border-[#1a2744] pb-2">
         <div className="mb-1 flex items-center justify-between text-xs">

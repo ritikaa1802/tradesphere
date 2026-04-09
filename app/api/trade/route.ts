@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getHoldings } from "@/lib/portfolio";
+import { checkAndCompleteMissions } from "@/lib/missions";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -18,10 +19,16 @@ export async function POST(request: NextRequest) {
   const price = Number(body.price);
   const quantity = Number(body.quantity);
   const note = String(body.note || "");
-  const mood = String(body.mood || "");
+  const emotionalState = String(body.emotionalState || "").trim();
+  const followedPlan = String(body.followedPlan || "").trim();
+  const tradeReason = String(body.tradeReason || "").trim().slice(0, 100);
 
   if (!stock || !["buy", "sell"].includes(type) || !["market", "limit", "stoploss"].includes(orderType) || !price || !quantity) {
     return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
+  }
+
+  if (!emotionalState || !followedPlan || !tradeReason) {
+    return NextResponse.json({ error: "Emotional check-in is required" }, { status: 400 });
   }
 
   if (orderType !== "market" && (typeof targetPrice !== "number" || !Number.isFinite(targetPrice) || targetPrice <= 0)) {
@@ -55,9 +62,14 @@ export async function POST(request: NextRequest) {
         charges: 0,
         pnl: null,
         note: note || null,
-        mood: mood || null,
+        mood: emotionalState || null,
+        emotionalState,
+        followedPlan,
+        tradeReason,
       },
     });
+
+    await checkAndCompleteMissions(session.user.id);
 
     return NextResponse.json({
       success: true,
@@ -106,7 +118,10 @@ export async function POST(request: NextRequest) {
       charges: brokerage,
       pnl,
       note: note || null,
-      mood: mood || null,
+      mood: emotionalState || null,
+      emotionalState,
+      followedPlan,
+      tradeReason,
     },
   });
 
@@ -114,6 +129,8 @@ export async function POST(request: NextRequest) {
     where: { userId: session.user.id },
     data: { balance: newBalance },
   });
+
+  await checkAndCompleteMissions(session.user.id);
 
   return NextResponse.json({ success: true, trade, balance: newBalance });
 }

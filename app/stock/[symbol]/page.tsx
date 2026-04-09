@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { getHoldings } from "@/lib/portfolio";
 import { fetchStockPrice } from "@/lib/stockApi";
 import StockChartClient from "./StockChartClient";
+import PressureSimulation from "./PressureSimulation";
 
 interface YahooChartResponse {
   chart?: {
@@ -123,6 +124,7 @@ export default async function StockDetailPage({
   const holding = holdings.find((item) => item.stock.toUpperCase() === symbol);
   const livePrice = await fetchStockPrice(symbol);
   const currentPrice = livePrice ?? candles[candles.length - 1]?.close ?? 0;
+  const openPrice = candles[0]?.open ?? currentPrice;
   const previousClose = candles.length > 1 ? candles[candles.length - 2].close : currentPrice;
   const changePercent = previousClose > 0 ? ((currentPrice - previousClose) / previousClose) * 100 : 0;
 
@@ -133,6 +135,7 @@ export default async function StockDetailPage({
   return (
     <section className="space-y-4">
       <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
+        <PressureSimulation symbol={symbol} currentPrice={currentPrice} openPrice={openPrice} />
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <h2 className="text-xl font-bold text-white">{symbol}</h2>

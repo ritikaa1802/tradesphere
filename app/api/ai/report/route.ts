@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import Groq from "groq-sdk";
+import { checkAndCompleteMissions } from "@/lib/missions";
 
 type TradeRecord = {
   createdAt: Date;
@@ -83,6 +84,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Failed to parse AI coach response", text: normalized }, { status: 500 });
     }
 
+    await checkAndCompleteMissions(session.user.id, { aiReportGenerated: true });
     return NextResponse.json(parsed);
   } catch (error) {
     console.error("Groq report error:", error);

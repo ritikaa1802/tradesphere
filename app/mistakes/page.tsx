@@ -9,11 +9,52 @@ export default function MistakesPage() {
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [showLesson, setShowLesson] = useState(false);
+  const [activeReplay, setActiveReplay] = useState<string | null>(null);
+  const [replayProgress, setReplayProgress] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
     fetchMistakes();
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadLessonState() {
+      try {
+        const response = await fetch("/api/lessons", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { shownLessons?: string[] };
+        if (mounted && !(data.shownLessons || []).includes("mistakes-intro")) {
+          setShowLesson(true);
+        }
+      } catch {
+        // Ignore lesson loading failures.
+      }
+    }
+
+    loadLessonState();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!activeReplay) return;
+    setReplayProgress(0);
+    const interval = setInterval(() => {
+      setReplayProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          return 100;
+        }
+        return prev + 5;
+      });
+    }, 120);
+
+    return () => clearInterval(interval);
+  }, [activeReplay]);
 
   async function fetchMistakes() {
     try {
@@ -66,6 +107,34 @@ export default function MistakesPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="space-y-6">
+        {showLesson ? (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+            <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-[#0b1220] p-5">
+              <h3 className="text-xl font-semibold text-white">How to learn from mistakes</h3>
+              <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-300">
+                <li>Panic Sell: Exiting too early due to fear.</li>
+                <li>Revenge Trade: Re-entering impulsively after a loss.</li>
+                <li>Overtrading: Too many low-quality trades in one session.</li>
+                <li>FOMO Entry: Chasing momentum without setup validation.</li>
+              </ul>
+              <button
+                type="button"
+                onClick={async () => {
+                  await fetch("/api/lessons", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ lessonKey: "mistakes-intro" }),
+                  });
+                  setShowLesson(false);
+                }}
+                className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        ) : null}
+
         <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
           <h1 className="text-3xl font-semibold text-white">Trading Mistakes</h1>
           <p className="mt-2 text-slate-400">Monitor your biggest trading mistakes and avoid repeating them.</p>
@@ -103,6 +172,47 @@ export default function MistakesPage() {
                   </div>
                   <div className="mt-4 text-xs text-slate-500">
                     Trade on {mistake.trade.createdAt.toLocaleString()}
+                  </div>
+
+                  <div className="mt-4 rounded-lg border border-slate-700 bg-[#0b1220] p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Mistake Replay</p>
+                    <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
+                      <div className="rounded bg-slate-800 p-2">
+                        <p className="text-slate-400">Entry</p>
+                        <p className="font-semibold text-white">₹{mistake.trade.price.toFixed(2)}</p>
+                      </div>
+                      <div className="rounded bg-slate-800 p-2">
+                        <p className="text-slate-400">Price Move</p>
+                        <p className="font-semibold text-amber-300">
+                          {mistake.trade.pnl !== null ? `${mistake.trade.pnl >= 0 ? "+" : ""}${mistake.trade.pnl.toFixed(2)}` : "N/A"}
+                        </p>
+                      </div>
+                      <div className="rounded bg-slate-800 p-2">
+                        <p className="text-slate-400">Exit</p>
+                        <p className="font-semibold text-white">
+                          ₹{(mistake.trade.price + ((mistake.trade.pnl || 0) / Math.max(1, mistake.trade.quantity))).toFixed(2)}
+                        </p>
+                      </div>
+                    </div>
+                    <p className="mt-2 text-xs text-rose-300">You made this mistake here.</p>
+                    <p className="mt-1 text-xs text-emerald-300">What you should have done instead: {mistake.suggestion}</p>
+
+                    <button
+                      type="button"
+                      onClick={() => setActiveReplay(activeReplay === mistake.trade.id ? null : mistake.trade.id)}
+                      className="mt-3 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500"
+                    >
+                      {activeReplay === mistake.trade.id ? "Hide Replay" : "Replay"}
+                    </button>
+
+                    {activeReplay === mistake.trade.id ? (
+                      <div className="mt-3">
+                        <div className="h-2 overflow-hidden rounded-full bg-slate-800">
+                          <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-amber-500 to-rose-500" style={{ width: `${replayProgress}%` }} />
+                        </div>
+                        <p className="mt-1 text-[11px] text-slate-400">Replaying trade timeline... {replayProgress}%</p>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ))}

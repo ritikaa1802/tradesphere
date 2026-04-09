@@ -74,6 +74,16 @@ interface CandlePoint {
   close: number;
 }
 
+interface PendingTradePayload {
+  stock: string;
+  type: Side;
+  orderType: OrderType;
+  targetPrice: number | null;
+  price: number;
+  quantity: number;
+  note: string;
+}
+
 const DEFAULT_WATCHLIST: Array<{ symbol: string; exchange: "NSE" | "BSE" }> = [
   { symbol: "RELIANCE", exchange: "NSE" },
   { symbol: "TCS", exchange: "NSE" },
@@ -186,6 +196,13 @@ export default function TradePage() {
   const [chartLoading, setChartLoading] = useState(true);
   const [message, setMessage] = useState("");
   const [toast, setToast] = useState("");
+  const [showCheckInModal, setShowCheckInModal] = useState(false);
+  const [pendingTrade, setPendingTrade] = useState<PendingTradePayload | null>(null);
+  const [emotionalState, setEmotionalState] = useState("");
+  const [followedPlan, setFollowedPlan] = useState("");
+  const [tradeReason, setTradeReason] = useState("");
+  const [showOrderLesson, setShowOrderLesson] = useState(false);
+  const [showLossLesson, setShowLossLesson] = useState(false);
   const [candles, setCandles] = useState<CandlePoint[]>([]);
   const [panelTab, setPanelTab] = useState<OrderPanelTab>("active");
   const [holdings, setHoldings] = useState<HoldingItem[]>([]);
@@ -436,6 +453,29 @@ export default function TradePage() {
     return () => clearTimeout(id);
   }, [toast]);
 
+  useEffect(() => {
+    let mounted = true;
+    async function loadLessons() {
+      try {
+        const response = await fetch("/api/lessons", { cache: "no-store" });
+        if (!response.ok) return;
+        const data = (await response.json()) as { shownLessons?: string[] };
+        const shownLessons = new Set(data.shownLessons || []);
+
+        if (mounted && !shownLessons.has("trade-order-types")) {
+          setShowOrderLesson(true);
+        }
+      } catch {
+        // Lesson popups are best-effort.
+      }
+    }
+
+    loadLessons();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   const selectedItem = useMemo(
     () => watchlist.find((item) => item.symbol === selectedSymbol) ?? null,
     [watchlist, selectedSymbol],
@@ -577,39 +617,69 @@ export default function TradePage() {
 
   async function onSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    setLoading(true);
     setMessage("");
 
     if (!selectedSymbol) {
-      setLoading(false);
       setMessage("Select a stock first.");
       return;
     }
 
     if (quantityNumber <= 0 || effectivePrice <= 0) {
-      setLoading(false);
       setMessage("Enter valid quantity and price.");
       return;
     }
 
     if (insufficientFunds) {
-      setLoading(false);
       setMessage("Insufficient funds for required margin.");
       return;
     }
+
+    setPendingTrade({
+      stock: selectedSymbol,
+      type: side,
+      orderType,
+      targetPrice: orderType === "market" ? null : effectivePrice,
+      price: effectivePrice,
+      quantity: quantityNumber,
+      note: orderContextNote,
+    });
+    setEmotionalState("");
+    setFollowedPlan("");
+    setTradeReason("");
+    setShowCheckInModal(true);
+  }
+
+  async function markLessonShown(lessonKey: string) {
+    try {
+      await fetch("/api/lessons", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ lessonKey }),
+      });
+    } catch {
+      // Ignore lesson write failures.
+    }
+  }
+
+  async function submitTradeWithCheckin() {
+    if (!pendingTrade) return;
+    if (!emotionalState || !followedPlan || !tradeReason.trim()) {
+      setMessage("Complete all emotional check-in questions before submitting.");
+      return;
+    }
+
+    setLoading(true);
+    setMessage("");
 
     try {
       const response = await fetch("/api/trade", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          stock: selectedSymbol,
-          type: side,
-          orderType,
-          targetPrice: orderType === "market" ? null : effectivePrice,
-          price: effectivePrice,
-          quantity: quantityNumber,
-          note: orderContextNote,
+          ...pendingTrade,
+          emotionalState,
+          followedPlan,
+          tradeReason: tradeReason.trim().slice(0, 100),
         }),
       });
 
@@ -619,8 +689,20 @@ export default function TradePage() {
         return;
       }
 
-      setToast(`${side === "buy" ? "Buy" : "Sell"} order placed for ${selectedSymbol}`);
+      setToast(`${pendingTrade.type === "buy" ? "Buy" : "Sell"} order placed for ${pendingTrade.stock}`);
       setMessage(data?.message || "Order placed");
+      setShowCheckInModal(false);
+      setPendingTrade(null);
+
+      if ((data?.trade?.pnl ?? 0) < 0) {
+        const lessonsResponse = await fetch("/api/lessons", { cache: "no-store" });
+        if (lessonsResponse.ok) {
+          const lessonData = (await lessonsResponse.json()) as { shownLessons?: string[] };
+          if (!(lessonData.shownLessons || []).includes("first-loss")) {
+            setShowLossLesson(true);
+          }
+        }
+      }
     } catch {
       setMessage("Order failed");
     } finally {
@@ -1032,6 +1114,127 @@ export default function TradePage() {
       </div>
 
       {toast && <div className="fixed bottom-4 right-4 border border-emerald-700 bg-emerald-900/85 px-3 py-2 text-xs text-emerald-100">{toast}</div>}
+
+      {showOrderLesson ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-[#0b1220] p-5">
+            <h3 className="text-xl font-semibold text-white">Understanding Order Types</h3>
+            <ul className="mt-3 space-y-2 text-sm text-slate-300">
+              <li><span className="font-semibold text-white">Market Order:</span> Executes immediately at current market price.</li>
+              <li><span className="font-semibold text-white">Limit Order:</span> Executes only at your chosen price or better.</li>
+              <li><span className="font-semibold text-white">Stop Loss:</span> Triggers an exit when price hits your risk threshold.</li>
+            </ul>
+            <div className="mt-4 rounded-lg border border-slate-700 bg-[#09101a] p-3 text-xs text-slate-300">
+              Entry Decision → Order Type Selection → Execution / Protection
+            </div>
+            <button
+              type="button"
+              onClick={async () => {
+                await markLessonShown("trade-order-types");
+                setShowOrderLesson(false);
+              }}
+              className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+            >
+              Got it - don't show again
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {showCheckInModal ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
+          <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-[#0b1220] p-5">
+            <h3 className="text-xl font-semibold text-white">Emotional Check-In (Required)</h3>
+            <p className="mt-1 text-sm text-slate-400">Submit this before order confirmation.</p>
+
+            <div className="mt-4 space-y-4">
+              <div>
+                <p className="text-sm font-medium text-slate-200">How did you feel placing this trade?</p>
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  {["Confident", "Anxious", "Impulsive", "Calm"].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setEmotionalState(option)}
+                      className={`rounded border px-3 py-2 text-sm ${
+                        emotionalState === option
+                          ? "border-blue-400 bg-blue-500/20 text-blue-100"
+                          : "border-slate-700 bg-slate-900 text-slate-300"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-slate-200">Are you following your trading plan?</p>
+                <div className="mt-2 grid grid-cols-3 gap-2">
+                  {["Yes", "Partially", "No"].map((option) => (
+                    <button
+                      key={option}
+                      type="button"
+                      onClick={() => setFollowedPlan(option)}
+                      className={`rounded border px-3 py-2 text-sm ${
+                        followedPlan === option
+                          ? "border-blue-400 bg-blue-500/20 text-blue-100"
+                          : "border-slate-700 bg-slate-900 text-slate-300"
+                      }`}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <p className="text-sm font-medium text-slate-200">Why are you making this trade?</p>
+                <textarea
+                  value={tradeReason}
+                  onChange={(event) => setTradeReason(event.target.value.slice(0, 100))}
+                  maxLength={100}
+                  className="mt-2 h-24 w-full rounded border border-slate-700 bg-slate-900 px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+                  placeholder="Write your reason (max 100 chars)"
+                />
+                <p className="mt-1 text-right text-xs text-slate-500">{tradeReason.length}/100</p>
+              </div>
+            </div>
+
+            <button
+              type="button"
+              disabled={loading}
+              onClick={submitTradeWithCheckin}
+              className="mt-4 w-full rounded-lg bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-500 disabled:opacity-60"
+            >
+              {loading ? "Submitting..." : "Submit Check-In & Confirm Trade"}
+            </button>
+          </div>
+        </div>
+      ) : null}
+
+      {showLossLesson ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+          <div className="w-full max-w-md rounded-xl border border-slate-700 bg-[#0b1220] p-5">
+            <h3 className="text-xl font-semibold text-white">Every trader loses sometimes</h3>
+            <ul className="mt-3 list-disc space-y-1 pl-5 text-sm text-slate-300">
+              <li>Losses are part of the game, not proof that you failed.</li>
+              <li>Review setup quality before placing your next trade.</li>
+              <li>Do not revenge trade after a loss.</li>
+            </ul>
+            <button
+              type="button"
+              onClick={async () => {
+                await markLessonShown("first-loss");
+                setShowLossLesson(false);
+              }}
+              className="mt-4 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+            >
+              I understand
+            </button>
+          </div>
+        </div>
+      ) : null}
     </main>
   );
 }

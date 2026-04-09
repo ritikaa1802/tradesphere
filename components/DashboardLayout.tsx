@@ -15,6 +15,13 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }, [pathname]);
 
   useEffect(() => {
+    const encodedPath = encodeURIComponent(pathname || "/");
+    fetch(`/api/missions?path=${encodedPath}`, { cache: "no-store" }).catch(() => {
+      // Mission checks are best-effort and should not block navigation.
+    });
+  }, [pathname]);
+
+  useEffect(() => {
     if (!mobileSidebarOpen) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = "hidden";

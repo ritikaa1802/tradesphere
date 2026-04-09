@@ -21,6 +21,11 @@ interface StreakInsight {
   };
 }
 
+interface ReadinessSummary {
+  score: number;
+  tier: string;
+}
+
 function getTitle(pathname: string): string {
   const titleMap: Record<string, string> = {
     "/": "Dashboard",
@@ -31,6 +36,7 @@ function getTitle(pathname: string): string {
     "/alerts": "Alerts",
     "/history": "History",
     "/mood": "TradeMind",
+    "/missions": "Missions",
     "/mistakes": "Mistakes",
     "/analytics": "Analytics",
     "/ai-coach": "AI Coach",
@@ -59,16 +65,18 @@ export default function TopBar({
   const [summary, setSummary] = useState<PortfolioSummary | null>(null);
   const [yourRank, setYourRank] = useState<number | null>(null);
   const [streak, setStreak] = useState<{ type: "win" | "loss" | "none"; count: number }>({ type: "none", count: 0 });
+  const [readiness, setReadiness] = useState<ReadinessSummary | null>(null);
 
   useEffect(() => {
     let isMounted = true;
 
     async function loadSummary() {
       try {
-        const [portfolioResponse, leaderboardResponse, insightsResponse] = await Promise.all([
+        const [portfolioResponse, leaderboardResponse, insightsResponse, readinessResponse] = await Promise.all([
           fetch("/api/portfolio", { cache: "no-store" }),
           fetch("/api/leaderboard", { cache: "no-store" }),
           fetch("/api/insights", { cache: "no-store" }),
+          fetch("/api/readiness-score", { cache: "no-store" }),
         ]);
 
         if (!portfolioResponse.ok) return;
@@ -87,6 +95,11 @@ export default function TopBar({
             type: streakInsight?.meta?.streakType || "none",
             count: Number(streakInsight?.meta?.streakCount || 0),
           });
+        }
+
+        if (readinessResponse.ok && isMounted) {
+          const readinessData = (await readinessResponse.json()) as ReadinessSummary;
+          setReadiness(readinessData);
         }
       } catch {
         // Ignore polling errors
@@ -188,6 +201,23 @@ export default function TopBar({
             ₹{pnl.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
           </p>
         </div>
+
+        {readiness ? (
+          <div className="hidden w-44 lg:block">
+            <p className="text-[10px] uppercase tracking-wide font-medium" style={{ color: "var(--text-tertiary)" }}>
+              Readiness Score
+            </p>
+            <div className="mt-1 h-2 w-full overflow-hidden rounded-full" style={{ backgroundColor: "var(--bg-card-inner)" }}>
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-blue-500 via-emerald-500 to-amber-500"
+                style={{ width: `${Math.max(0, Math.min(100, readiness.score))}%` }}
+              />
+            </div>
+            <p className="mt-1 text-[10px]" style={{ color: "var(--text-secondary)" }}>
+              {readiness.score}/100 • {readiness.tier}
+            </p>
+          </div>
+        ) : null}
       </div>
     </header>
   );

@@ -13,6 +13,7 @@ import {
   LayoutDashboard,
   ListOrdered,
   LogOut,
+  Map,
   Settings as SettingsIcon,
   Sparkles,
   Trophy,
@@ -25,6 +26,7 @@ const primaryNavItems = [
   { label: "Orders",         href: "/orders",        icon: ListOrdered },
   { label: "Watchlist",      href: "/watchlist",     icon: Eye },
   { label: "History",        href: "/history",       icon: Clock },
+  { label: "Missions",       href: "/missions",      icon: Map },
 ];
 
 const secondaryNavItems = [
