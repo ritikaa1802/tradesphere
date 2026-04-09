@@ -728,19 +728,20 @@ export default function TradePage() {
   return (
     <main className="min-h-screen bg-[#050912] px-3 py-4 text-slate-100 sm:px-4 lg:px-5">
       <div className="mx-auto w-full max-w-[1650px]">
+        <div className="mb-3 flex items-center justify-end">
+          <button
+            type="button"
+            onClick={() => setShowGuide(true)}
+            className="rounded-xl border border-blue-500/50 bg-blue-600/20 px-5 py-2.5 text-sm font-bold text-blue-100 shadow-[0_8px_24px_rgba(37,99,235,0.2)] transition hover:bg-blue-600/30"
+          >
+            Guide
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[228px_minmax(0,1fr)]">
           <section className="flex h-full flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)] xl:-mt-2">
             <div className="border-b border-slate-800 px-2 py-1.5">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-[11px] text-slate-400">Click any stock to start trading</p>
-                <button
-                  type="button"
-                  onClick={() => setShowGuide(true)}
-                  className="rounded border border-slate-700 px-2 py-0.5 text-[11px] font-semibold text-slate-200 transition hover:bg-slate-800"
-                >
-                  Guide
-                </button>
-              </div>
+              <p className="mb-2 text-[11px] text-slate-400">Click any stock to start trading</p>
               <div className="relative" ref={searchContainerRef}>
                 <input
                   value={stockQuery}
