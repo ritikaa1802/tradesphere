@@ -31,6 +31,7 @@ const primaryNavItems = [
 ];
 
 const secondaryNavItems = [
+  { label: "Accountability", href: "/accountability", icon: AlertTriangle },
   { label: "Insights",       href: "/insights",      icon: Brain },
   { label: "Mistakes",       href: "/mistakes",      icon: AlertTriangle },
   { label: "AI Coach",       href: "/ai-coach",      icon: Sparkles },

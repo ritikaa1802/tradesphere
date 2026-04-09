@@ -26,9 +26,73 @@ model User {
   portfolio    Portfolio?
   trades       Trade[]
   missions     Mission[]
+  accountabilitySettings AccountabilitySettings?
+  weeklySummaries WeeklySummary[]
+  accountabilityPairsA AccountabilityPair[] @relation("PairUserA")
+  accountabilityPairsB AccountabilityPair[] @relation("PairUserB")
+  partnerReviewsGiven PartnerReview[] @relation("Reviewer")
+  partnerReviewsReceived PartnerReview[] @relation("ReviewedUser")
   watchlist    Watchlist[]
   alerts       Alert[]
   competitionEntries CompetitionEntry[]
+}
+
+model AccountabilitySettings {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  enabled   Boolean  @default(false)
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model WeeklySummary {
+  id                     String   @id @default(cuid())
+  userId                 String
+  weekStart              DateTime
+  weekEnd                DateTime
+  tradeCount             Int      @default(0)
+  winRate                Float    @default(0)
+  ruleBreaks             Int      @default(0)
+  emotionDistribution    Json
+  avgRiskPerTrade        Float    @default(0)
+  checklistCompletionRate Float   @default(0)
+  disciplineScore        Int      @default(0)
+  createdAt              DateTime @default(now())
+  user                   User     @relation(fields: [userId], references: [id])
+
+  @@unique([userId, weekStart])
+  @@index([weekStart])
+}
+
+model AccountabilityPair {
+  id        String   @id @default(cuid())
+  weekStart DateTime
+  userAId   String
+  userBId   String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  userA     User     @relation("PairUserA", fields: [userAId], references: [id])
+  userB     User     @relation("PairUserB", fields: [userBId], references: [id])
+  reviews   PartnerReview[]
+
+  @@index([weekStart])
+  @@unique([weekStart, userAId, userBId])
+}
+
+model PartnerReview {
+  id             String            @id @default(cuid())
+  pairId         String
+  reviewerId     String
+  reviewedUserId String
+  goodPoints     String
+  mistakes       String
+  suggestions    String
+  submittedAt    DateTime          @default(now())
+  pair           AccountabilityPair @relation(fields: [pairId], references: [id])
+  reviewer       User              @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewedUser   User              @relation("ReviewedUser", fields: [reviewedUserId], references: [id])
+
+  @@unique([pairId, reviewerId])
 }
 
 model Portfolio {

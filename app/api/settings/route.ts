@@ -14,6 +14,9 @@ export async function GET() {
     select: {
       showOnLeaderboard: true,
       displayName: true,
+      accountabilitySettings: {
+        select: { enabled: true },
+      },
     },
   });
 
@@ -21,7 +24,11 @@ export async function GET() {
     return NextResponse.json({ error: "User not found" }, { status: 404 });
   }
 
-  return NextResponse.json(user);
+  return NextResponse.json({
+    showOnLeaderboard: user.showOnLeaderboard,
+    displayName: user.displayName,
+    accountabilityEnabled: user.accountabilitySettings?.enabled ?? false,
+  });
 }
 
 export async function PATCH(request: NextRequest) {
@@ -30,22 +37,30 @@ export async function PATCH(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const body = (await request.json()) as { showOnLeaderboard?: boolean; displayName?: string };
+  const body = (await request.json()) as { showOnLeaderboard?: boolean; displayName?: string; accountabilityEnabled?: boolean };
   const showOnLeaderboard = Boolean(body.showOnLeaderboard);
+  const accountabilityEnabled = Boolean(body.accountabilityEnabled);
   const displayNameRaw = (body.displayName || "").trim();
   const displayName = displayNameRaw.length > 0 ? displayNameRaw.slice(0, 32) : null;
 
-  const user = await prisma.user.update({
-    where: { id: session.user.id },
-    data: {
-      showOnLeaderboard,
-      displayName,
-    },
-    select: {
-      showOnLeaderboard: true,
-      displayName: true,
-    },
-  });
+  const [user] = await prisma.$transaction([
+    prisma.user.update({
+      where: { id: session.user.id },
+      data: {
+        showOnLeaderboard,
+        displayName,
+      },
+      select: {
+        showOnLeaderboard: true,
+        displayName: true,
+      },
+    }),
+    prisma.accountabilitySettings.upsert({
+      where: { userId: session.user.id },
+      update: { enabled: accountabilityEnabled },
+      create: { userId: session.user.id, enabled: accountabilityEnabled },
+    }),
+  ]);
 
-  return NextResponse.json({ success: true, user });
+  return NextResponse.json({ success: true, user: { ...user, accountabilityEnabled } });
 }

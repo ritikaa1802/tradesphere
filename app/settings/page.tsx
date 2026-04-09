@@ -7,11 +7,13 @@ import ProGate from "@/components/ProGate";
 interface SettingsResponse {
   showOnLeaderboard: boolean;
   displayName: string | null;
+  accountabilityEnabled: boolean;
 }
 
 export default function SettingsPage() {
   const router = useRouter();
   const [showOnLeaderboard, setShowOnLeaderboard] = useState(false);
+  const [accountabilityEnabled, setAccountabilityEnabled] = useState(false);
   const [displayName, setDisplayName] = useState("");
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -33,6 +35,7 @@ export default function SettingsPage() {
         const data = (await response.json()) as SettingsResponse;
         if (mounted) {
           setShowOnLeaderboard(data.showOnLeaderboard);
+          setAccountabilityEnabled(Boolean(data.accountabilityEnabled));
           setDisplayName(data.displayName || "");
         }
       } catch {
@@ -63,6 +66,7 @@ export default function SettingsPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           showOnLeaderboard,
+          accountabilityEnabled,
           displayName,
         }),
       });
@@ -138,6 +142,16 @@ export default function SettingsPage() {
             type="checkbox"
             checked={showOnLeaderboard}
             onChange={(event) => setShowOnLeaderboard(event.target.checked)}
+            className="h-4 w-4 accent-[#3b82f6]"
+          />
+        </label>
+
+        <label className="flex items-center justify-between rounded-lg border border-[#1a2744] bg-[#0f1929] px-3 py-2">
+          <span className="text-sm text-white">Accountability mode (weekly partner review)</span>
+          <input
+            type="checkbox"
+            checked={accountabilityEnabled}
+            onChange={(event) => setAccountabilityEnabled(event.target.checked)}
             className="h-4 w-4 accent-[#3b82f6]"
           />
         </label>

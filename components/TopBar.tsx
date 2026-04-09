@@ -37,6 +37,7 @@ function getTitle(pathname: string): string {
     "/history": "History",
     "/mood": "TradeMind",
     "/missions": "Missions",
+    "/accountability": "Accountability",
     "/mistakes": "Mistakes",
     "/analytics": "Analytics",
     "/ai-coach": "AI Coach",
