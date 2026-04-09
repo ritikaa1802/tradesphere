@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { X } from "lucide-react";
 import TradeCandlestickChart from "@/components/TradeCandlestickChart";
 import GuidanceBooklet from "@/components/GuidanceBooklet";
 
@@ -1163,7 +1164,20 @@ export default function TradePage() {
       {showCheckInModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4">
           <div className="w-full max-w-lg rounded-xl border border-slate-700 bg-[#0b1220] p-5">
-            <h3 className="text-xl font-semibold text-white">Emotional Check-In (Required)</h3>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-xl font-semibold text-white">Emotional Check-In (Required)</h3>
+              <button
+                type="button"
+                onClick={() => {
+                  setShowCheckInModal(false);
+                  setPendingTrade(null);
+                }}
+                className="rounded-md border border-slate-700 p-1.5 text-slate-300 transition hover:bg-slate-800"
+                aria-label="Close emotional check-in"
+              >
+                <X size={16} />
+              </button>
+            </div>
             <p className="mt-1 text-sm text-slate-400">Submit this before order confirmation.</p>
 
             <div className="mt-4 space-y-4">
