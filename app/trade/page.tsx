@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState, type FormEvent } from "react";
+import { useRouter } from "next/navigation";
 import TradeCandlestickChart from "@/components/TradeCandlestickChart";
+import GuidanceBooklet from "@/components/GuidanceBooklet";
 
 type Side = "buy" | "sell";
 type OrderType = "market" | "limit" | "stoploss";
@@ -162,6 +164,7 @@ async function fetchQuote(symbol: string): Promise<{ price: number; changePercen
 }
 
 export default function TradePage() {
+  const router = useRouter();
   const [watchlist, setWatchlist] = useState<WatchlistItem[]>(
     DEFAULT_WATCHLIST.map((item) => ({
       ...item,
@@ -203,6 +206,7 @@ export default function TradePage() {
   const [tradeReason, setTradeReason] = useState("");
   const [showOrderLesson, setShowOrderLesson] = useState(false);
   const [showLossLesson, setShowLossLesson] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [candles, setCandles] = useState<CandlePoint[]>([]);
   const [panelTab, setPanelTab] = useState<OrderPanelTab>("active");
   const [holdings, setHoldings] = useState<HoldingItem[]>([]);
@@ -476,6 +480,14 @@ export default function TradePage() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const hasSeenGuide = window.localStorage.getItem("hasSeenTradeGuide") === "true";
+    if (!hasSeenGuide) {
+      setShowGuide(true);
+    }
+  }, []);
+
   const selectedItem = useMemo(
     () => watchlist.find((item) => item.symbol === selectedSymbol) ?? null,
     [watchlist, selectedSymbol],
@@ -503,6 +515,8 @@ export default function TradePage() {
       if (exists) return prev;
       return [{ symbol, exchange: "NSE" as const, price: null, changePercent: null, basePrice: null, loading: true }, ...prev].slice(0, 20);
     });
+
+    router.push(`/stock/${encodeURIComponent(symbol)}`);
   }
 
   const manualQuantityNumber = Math.max(0, Number(quantity) || 0);
@@ -716,6 +730,16 @@ export default function TradePage() {
         <div className="grid grid-cols-1 gap-3 xl:grid-cols-[228px_minmax(0,1fr)]">
           <section className="flex h-full flex-col overflow-hidden rounded-xl border border-white/5 bg-[#0b1220] shadow-[0_8px_30px_rgba(0,0,0,0.25)] xl:-mt-2">
             <div className="border-b border-slate-800 px-2 py-1.5">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-[11px] text-slate-400">Click any stock to start trading</p>
+                <button
+                  type="button"
+                  onClick={() => setShowGuide(true)}
+                  className="rounded border border-slate-700 px-2 py-0.5 text-[11px] font-semibold text-slate-200 transition hover:bg-slate-800"
+                >
+                  Guide
+                </button>
+              </div>
               <div className="relative" ref={searchContainerRef}>
                 <input
                   value={stockQuery}
@@ -763,14 +787,9 @@ export default function TradePage() {
                     key={item.symbol}
                     type="button"
                     onClick={() => {
-                      setSelectedSymbol(item.symbol);
-                      setSelectedIndex(index);
+                      router.push(`/stock/${encodeURIComponent(item.symbol)}`);
                     }}
-                    onMouseEnter={() => {
-                      setSelectedSymbol(item.symbol);
-                      setSelectedIndex(index);
-                    }}
-                    className={`grid w-full grid-cols-[1fr_auto] items-center border-b border-slate-800 px-2 py-1.5 text-left transition ${
+                    className={`grid w-full cursor-pointer grid-cols-[1fr_auto] items-center border-b border-slate-800 px-2 py-1.5 text-left transition-all duration-200 hover:bg-gray-800 ${
                       isSelected ? "bg-blue-500/15" : "hover:bg-slate-800/40"
                     }`}
                   >
@@ -1235,6 +1254,22 @@ export default function TradePage() {
           </div>
         </div>
       ) : null}
+
+      <GuidanceBooklet
+        open={showGuide}
+        onClose={() => {
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem("hasSeenTradeGuide", "true");
+          }
+          setShowGuide(false);
+        }}
+        onFinish={() => {
+          if (typeof window !== "undefined") {
+            window.localStorage.setItem("hasSeenTradeGuide", "true");
+          }
+          setShowGuide(false);
+        }}
+      />
     </main>
   );
 }

@@ -5,6 +5,7 @@ import { getHoldings } from "@/lib/portfolio";
 import { fetchStockPrice } from "@/lib/stockApi";
 import StockChartClient from "./StockChartClient";
 import PressureSimulation from "./PressureSimulation";
+import StockTradeActions from "./StockTradeActions";
 
 interface YahooChartResponse {
   chart?: {
@@ -182,14 +183,7 @@ export default async function StockDetailPage({
           ))}
         </div>
 
-        <div className="mt-4 flex gap-2">
-          <Link href="/trade" className="rounded-lg bg-[#14532d] px-4 py-2 text-sm font-semibold text-[#22c55e] hover:brightness-110">
-            Buy
-          </Link>
-          <Link href="/trade" className="rounded-lg bg-[#7f1d1d] px-4 py-2 text-sm font-semibold text-[#ef4444] hover:brightness-110">
-            Sell
-          </Link>
-        </div>
+        <StockTradeActions symbol={symbol} currentPrice={currentPrice} />
       </div>
 
       <div className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">

@@ -105,7 +105,7 @@ export default function PressureSimulation({
         {isBeforeOpen
           ? `Market opens in ${msToClock(openCountdown)} hours`
           : isAfterClose
-            ? "Market closed for the day"
+            ? "Market Closed — Practice Mode Active"
             : `Market closes in ${msToClock(closeCountdown)} hours`}
       </div>
     </div>
