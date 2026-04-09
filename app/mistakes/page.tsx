@@ -5,13 +5,26 @@ import { useRouter } from "next/navigation";
 import { Mistake } from "@/lib/mistakes";
 import { SkeletonCard } from "@/components/Skeleton";
 
+type MistakeCategory = "panic" | "overtrading" | "other";
+
+function getCategory(type: string): MistakeCategory {
+  const normalized = type.trim().toLowerCase();
+  if (normalized.includes("panic")) return "panic";
+  if (normalized.includes("overtrading")) return "overtrading";
+  return "other";
+}
+
+function categoryBadgeClasses(category: MistakeCategory): string {
+  if (category === "panic") return "bg-rose-500/20 text-rose-300 border border-rose-500/30";
+  if (category === "overtrading") return "bg-amber-500/20 text-amber-300 border border-amber-500/30";
+  return "bg-blue-500/20 text-blue-300 border border-blue-500/30";
+}
+
 export default function MistakesPage() {
   const [mistakes, setMistakes] = useState<Mistake[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [showLesson, setShowLesson] = useState(false);
-  const [activeReplay, setActiveReplay] = useState<string | null>(null);
-  const [replayProgress, setReplayProgress] = useState(0);
   const router = useRouter();
 
   useEffect(() => {
@@ -39,22 +52,6 @@ export default function MistakesPage() {
       mounted = false;
     };
   }, []);
-
-  useEffect(() => {
-    if (!activeReplay) return;
-    setReplayProgress(0);
-    const interval = setInterval(() => {
-      setReplayProgress((prev) => {
-        if (prev >= 100) {
-          clearInterval(interval);
-          return 100;
-        }
-        return prev + 5;
-      });
-    }, 120);
-
-    return () => clearInterval(interval);
-  }, [activeReplay]);
 
   async function fetchMistakes() {
     try {
@@ -104,6 +101,10 @@ export default function MistakesPage() {
     );
   }
 
+  const panicCount = mistakes.filter((mistake) => getCategory(mistake.type) === "panic").length;
+  const overtradingCount = mistakes.filter((mistake) => getCategory(mistake.type) === "overtrading").length;
+  const otherCount = mistakes.filter((mistake) => getCategory(mistake.type) === "other").length;
+
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="space-y-6">
@@ -135,87 +136,82 @@ export default function MistakesPage() {
           </div>
         ) : null}
 
-        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
-          <h1 className="text-3xl font-semibold text-white">Trading Mistakes</h1>
-          <p className="mt-2 text-slate-400">Monitor your biggest trading mistakes and avoid repeating them.</p>
-        </div>
-
-        <div className="rounded-3xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_24px_80px_-40px_rgba(15,23,42,0.9)]">
-          <div className="mb-6">
-            <p className="text-lg text-slate-200">
-              Total Mistakes Detected: <span className="font-bold text-rose-400">{mistakes.length}</span>
-            </p>
+        <div className="rounded-lg border border-slate-800 bg-[#0f1629] p-6 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.9)]">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h1 className="text-3xl font-semibold text-white">Trading Mistakes</h1>
+              <p className="mt-2 text-slate-400">Clean behavior report to help you improve decision quality.</p>
+            </div>
+            <div className="text-right">
+              <p className="text-sm text-slate-400">Total mistakes detected</p>
+              <p className="text-3xl font-bold text-white">{mistakes.length}</p>
+            </div>
           </div>
 
+          <div className="mt-5 flex flex-wrap gap-2">
+            <span className="rounded-full border border-rose-500/30 bg-rose-500/15 px-3 py-1 text-sm font-semibold text-rose-300">
+              {panicCount} Panic Sell{panicCount === 1 ? "" : "s"}
+            </span>
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/15 px-3 py-1 text-sm font-semibold text-amber-300">
+              {overtradingCount} Overtrading
+            </span>
+            <span className="rounded-full border border-blue-500/30 bg-blue-500/15 px-3 py-1 text-sm font-semibold text-blue-300">
+              {otherCount} Other
+            </span>
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-slate-800 bg-[#0f1629] p-6 shadow-[0_18px_60px_-40px_rgba(15,23,42,0.9)]">
+
           {mistakes.length === 0 ? (
-            <div className="rounded-3xl border border-slate-800 bg-slate-900 p-8 text-center">
+            <div className="rounded-lg border border-slate-800 bg-slate-900 p-8 text-center">
               <p className="mb-2 text-xl font-semibold text-green-400">Great job! 🎉 No mistakes detected</p>
               <p className="text-slate-400">Keep trading with discipline.</p>
             </div>
           ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {mistakes.map((mistake, index) => (
-                <div key={index} className="rounded-3xl border border-slate-700 bg-slate-900 p-5 shadow-sm transition hover:border-blue-500">
-                  <div className="mb-3">
-                    <span className="inline-flex rounded-full bg-rose-600 px-3 py-1 text-xs font-semibold text-white">
-                      {mistake.type}
-                    </span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-white mb-2">{mistake.description}</h3>
-                  <div className="space-y-2 text-sm text-slate-300">
-                    <p>
-                      <span className="font-semibold text-slate-100">Why harmful:</span> {mistake.why}
-                    </p>
-                    <p className="text-emerald-300">
-                      <span className="font-semibold text-slate-100">Suggestion:</span> {mistake.suggestion}
-                    </p>
-                  </div>
-                  <div className="mt-4 text-xs text-slate-500">
-                    Trade on {mistake.trade.createdAt.toLocaleString()}
-                  </div>
+            <div className="space-y-4">
+              {mistakes.map((mistake, index) => {
+                const category = getCategory(mistake.type);
+                const soldPrice = mistake.trade.price;
+                const movedAmount = mistake.trade.pnl ?? 0;
+                const boughtPrice = soldPrice - movedAmount / Math.max(1, mistake.trade.quantity);
 
-                  <div className="mt-4 rounded-lg border border-slate-700 bg-[#0b1220] p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-slate-400">Mistake Replay</p>
-                    <div className="mt-2 grid grid-cols-3 gap-2 text-[11px] text-slate-300">
-                      <div className="rounded bg-slate-800 p-2">
-                        <p className="text-slate-400">Entry</p>
-                        <p className="font-semibold text-white">₹{mistake.trade.price.toFixed(2)}</p>
-                      </div>
-                      <div className="rounded bg-slate-800 p-2">
-                        <p className="text-slate-400">Price Move</p>
-                        <p className="font-semibold text-amber-300">
-                          {mistake.trade.pnl !== null ? `${mistake.trade.pnl >= 0 ? "+" : ""}${mistake.trade.pnl.toFixed(2)}` : "N/A"}
+                return (
+                  <article
+                    key={`${mistake.trade.id}-${mistake.type}-${index}`}
+                    className="rounded-lg border border-slate-700 bg-slate-900 p-5 shadow-sm"
+                  >
+                    <div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+                      <div className="min-w-0">
+                        <span className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${categoryBadgeClasses(category)}`}>
+                          {mistake.type}
+                        </span>
+                        <h3 className="mt-3 text-2xl font-semibold text-white">{mistake.description}</h3>
+                        <p className="mt-2 text-base text-slate-300">{mistake.why}</p>
+                        <p className="mt-3 text-lg text-slate-200">
+                          <span className="font-semibold text-white">Fix:</span> {mistake.suggestion}
                         </p>
+                        <p className="mt-3 text-sm text-slate-500">{new Date(mistake.trade.createdAt).toLocaleString()}</p>
                       </div>
-                      <div className="rounded bg-slate-800 p-2">
-                        <p className="text-slate-400">Exit</p>
-                        <p className="font-semibold text-white">
-                          ₹{(mistake.trade.price + ((mistake.trade.pnl || 0) / Math.max(1, mistake.trade.quantity))).toFixed(2)}
+
+                      <div className="w-full rounded-lg border border-slate-700 bg-[#0b1220] p-3 md:w-[230px]">
+                        <p className="text-xs uppercase tracking-wide text-slate-400">Bought at → Sold at</p>
+                        <p className="mt-1 text-3xl font-bold text-slate-100">
+                          ₹{boughtPrice.toFixed(0)} → ₹{soldPrice.toFixed(0)}
                         </p>
+                        <p className={`mt-2 text-xl font-semibold ${movedAmount >= 0 ? "text-emerald-400" : "text-rose-400"}`}>
+                          {movedAmount >= 0 ? "+" : ""}₹{Math.abs(movedAmount).toFixed(0)}
+                        </p>
+                        {movedAmount >= 0 ? (
+                          <p className="mt-1 text-sm text-emerald-300">Missed profit opportunity</p>
+                        ) : (
+                          <p className="mt-1 text-sm text-rose-300">Loss impact after exit</p>
+                        )}
                       </div>
                     </div>
-                    <p className="mt-2 text-xs text-rose-300">You made this mistake here.</p>
-                    <p className="mt-1 text-xs text-emerald-300">What you should have done instead: {mistake.suggestion}</p>
-
-                    <button
-                      type="button"
-                      onClick={() => setActiveReplay(activeReplay === mistake.trade.id ? null : mistake.trade.id)}
-                      className="mt-3 rounded bg-blue-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-blue-500"
-                    >
-                      {activeReplay === mistake.trade.id ? "Hide Replay" : "Replay"}
-                    </button>
-
-                    {activeReplay === mistake.trade.id ? (
-                      <div className="mt-3">
-                        <div className="h-2 overflow-hidden rounded-full bg-slate-800">
-                          <div className="h-full rounded-full bg-gradient-to-r from-blue-500 via-amber-500 to-rose-500" style={{ width: `${replayProgress}%` }} />
-                        </div>
-                        <p className="mt-1 text-[11px] text-slate-400">Replaying trade timeline... {replayProgress}%</p>
-                      </div>
-                    ) : null}
-                  </div>
-                </div>
-              ))}
+                  </article>
+                );
+              })}
             </div>
           )}
         </div>
