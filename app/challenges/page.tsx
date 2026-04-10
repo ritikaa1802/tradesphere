@@ -83,6 +83,31 @@ type LeaderboardPayload = {
   yourRank: number | null;
 };
 
+type ContestChallengeItem = {
+  id: string;
+  title: string;
+  description: string;
+  prizeDescription: string;
+  startDate: string;
+  endDate: string;
+  isActive: boolean;
+  _count?: { entries: number };
+};
+
+function contestCategory(title: string): string {
+  const normalized = title.toLowerCase();
+  if (normalized.includes("intraday")) return "Intraday";
+  if (normalized.includes("sector")) return "Sector";
+  if (normalized.includes("beginner") || normalized.includes("first")) return "Beginner";
+  return "Strategy";
+}
+
+function contestLevel(index: number): "Beginner" | "Intermediate" | "Advanced" {
+  if (index % 3 === 0) return "Beginner";
+  if (index % 3 === 1) return "Intermediate";
+  return "Advanced";
+}
+
 function daysRemaining(endDate: string) {
   const diff = Math.max(0, new Date(endDate).getTime() - Date.now());
   return Math.ceil(diff / (24 * 60 * 60 * 1000));
@@ -105,17 +130,29 @@ export default function ChallengesPage() {
   const [message, setMessage] = useState("");
   const [joiningId, setJoiningId] = useState<string | null>(null);
   const [guideOpen, setGuideOpen] = useState(false);
+  const [contestChallenges, setContestChallenges] = useState<ContestChallengeItem[]>([]);
 
   useEffect(() => {
     let mounted = true;
 
     async function load() {
       try {
-        const res = await fetch("/api/challenges", { cache: "no-store" });
+        const [res, contestsRes] = await Promise.all([
+          fetch("/api/challenges", { cache: "no-store" }),
+          fetch("/api/competitions", { cache: "no-store" }),
+        ]);
+
         if (!res.ok) throw new Error("Failed");
         const payload = (await res.json()) as ChallengesPayload;
         if (!mounted) return;
         setData(payload);
+
+        if (contestsRes.ok) {
+          const contestsPayload = (await contestsRes.json()) as ContestChallengeItem[];
+          setContestChallenges(contestsPayload.filter((item) => item.isActive).slice(0, 6));
+        } else {
+          setContestChallenges([]);
+        }
 
         const free = payload.challenges.find((challenge) => !challenge.isPro);
         const pro = payload.challenges.find((challenge) => challenge.isPro);
@@ -283,6 +320,50 @@ export default function ChallengesPage() {
             ))}
           </div>
         </article>
+      </section>
+
+      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+        <h2 className="text-xl font-semibold text-white">Old Contests (Restored)</h2>
+        <p className="mt-1 text-sm text-slate-400">These are the old contest cards shown below Discipline Challenges.</p>
+
+        {contestChallenges.length === 0 ? (
+          <p className="mt-4 text-sm text-slate-400">No contest challenges available right now.</p>
+        ) : (
+          <div className="mt-4 grid gap-4 xl:grid-cols-3">
+            {contestChallenges.map((item, index) => (
+              <article key={item.id} className="overflow-hidden rounded-2xl border border-[#254171] bg-[#12264a]">
+                <div className="p-4">
+                  <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 font-semibold text-emerald-300">{contestLevel(index)}</span>
+                    <span className="rounded-full bg-blue-500/20 px-2.5 py-1 font-semibold text-blue-300">Live</span>
+                    <span className="rounded-full bg-violet-500/20 px-2.5 py-1 font-semibold text-violet-300">{contestCategory(item.title)}</span>
+                  </div>
+
+                  <h3 className="text-2xl font-bold text-white">{item.title}</h3>
+                  <p className="mt-2 min-h-[64px] text-sm text-slate-300">{item.description}</p>
+                </div>
+
+                <div className="border-t border-[#254171] p-4">
+                  <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Prize pool</p>
+                  <p className="text-3xl font-black text-cyan-300">{item.prizeDescription}</p>
+
+                  <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
+                    <div className="rounded-lg bg-[#0d1f42] p-2"><p className="font-bold text-white">{(item._count?.entries ?? 0).toLocaleString("en-IN")}</p><p className="text-[10px] text-slate-400">Traders</p></div>
+                    <div className="rounded-lg bg-[#0d1f42] p-2"><p className="font-bold text-white">{daysRemaining(item.endDate)} days</p><p className="text-[10px] text-slate-400">Left</p></div>
+                    <div className="rounded-lg bg-[#0d1f42] p-2"><p className="font-bold text-white">₹100,000</p><p className="text-[10px] text-slate-400">Capital</p></div>
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-between border-t border-[#254171] p-4">
+                  <p className="text-sm text-slate-300">Started {new Date(item.startDate).toLocaleDateString()}</p>
+                  <Link href={`/competitions/${item.id}`} className="rounded-lg border border-[#3f5f9f] px-4 py-2 text-sm font-bold text-white transition hover:bg-[#173568]">
+                    Open
+                  </Link>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
