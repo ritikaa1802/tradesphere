@@ -11,19 +11,19 @@ export async function POST(request: NextRequest) {
 
   const body = (await request.json()) as {
     pairId?: string;
-    reviewedUserId?: string;
-    goodPoints?: string;
+    revieweeId?: string;
+    doneWell?: string;
     mistakes?: string;
     suggestions?: string;
   };
 
   const pairId = String(body.pairId || "").trim();
-  const reviewedUserId = String(body.reviewedUserId || "").trim();
-  const goodPoints = String(body.goodPoints || "").trim();
+  const revieweeId = String(body.revieweeId || "").trim();
+  const doneWell = String(body.doneWell || "").trim();
   const mistakes = String(body.mistakes || "").trim();
   const suggestions = String(body.suggestions || "").trim();
 
-  if (!pairId || !reviewedUserId || !goodPoints || !mistakes || !suggestions) {
+  if (!pairId || !revieweeId || !doneWell || !mistakes || !suggestions) {
     return NextResponse.json({ error: "All review fields are required" }, { status: 400 });
   }
 
@@ -32,15 +32,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Pair not found" }, { status: 404 });
   }
 
-  if (pair.userAId !== session.user.id && pair.userBId !== session.user.id) {
+  if (pair.user1Id !== session.user.id && pair.user2Id !== session.user.id) {
     return NextResponse.json({ error: "Not allowed for this pair" }, { status: 403 });
   }
 
-  if (reviewedUserId === session.user.id) {
+  if (revieweeId === session.user.id) {
     return NextResponse.json({ error: "You cannot review yourself" }, { status: 400 });
   }
 
-  const review = await prisma.partnerReview.upsert({
+  if (![pair.user1Id, pair.user2Id].includes(revieweeId)) {
+    return NextResponse.json({ error: "Reviewee must belong to this pair" }, { status: 400 });
+  }
+
+  const review = await prisma.accountabilityReview.upsert({
     where: {
       pairId_reviewerId: {
         pairId,
@@ -48,20 +52,25 @@ export async function POST(request: NextRequest) {
       },
     },
     update: {
-      reviewedUserId,
-      goodPoints,
+      revieweeId,
+      doneWell,
       mistakes,
       suggestions,
-      submittedAt: new Date(),
+      createdAt: new Date(),
     },
     create: {
       pairId,
       reviewerId: session.user.id,
-      reviewedUserId,
-      goodPoints,
+      revieweeId,
+      doneWell,
       mistakes,
       suggestions,
     },
+  });
+
+  await prisma.accountabilityPair.update({
+    where: { id: pairId },
+    data: session.user.id === pair.user1Id ? { user1ReviewDone: true } : { user2ReviewDone: true },
   });
 
   return NextResponse.json({ success: true, review });

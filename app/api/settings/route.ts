@@ -14,9 +14,7 @@ export async function GET() {
     select: {
       showOnLeaderboard: true,
       displayName: true,
-      accountabilitySettings: {
-        select: { enabled: true },
-      },
+      accountabilityMode: true,
     },
   });
 
@@ -27,7 +25,7 @@ export async function GET() {
   return NextResponse.json({
     showOnLeaderboard: user.showOnLeaderboard,
     displayName: user.displayName,
-    accountabilityEnabled: user.accountabilitySettings?.enabled ?? false,
+    accountabilityEnabled: user.accountabilityMode,
   });
 }
 
@@ -43,24 +41,19 @@ export async function PATCH(request: NextRequest) {
   const displayNameRaw = (body.displayName || "").trim();
   const displayName = displayNameRaw.length > 0 ? displayNameRaw.slice(0, 32) : null;
 
-  const [user] = await prisma.$transaction([
-    prisma.user.update({
-      where: { id: session.user.id },
-      data: {
-        showOnLeaderboard,
-        displayName,
-      },
-      select: {
-        showOnLeaderboard: true,
-        displayName: true,
-      },
-    }),
-    prisma.accountabilitySettings.upsert({
-      where: { userId: session.user.id },
-      update: { enabled: accountabilityEnabled },
-      create: { userId: session.user.id, enabled: accountabilityEnabled },
-    }),
-  ]);
+  const user = await prisma.user.update({
+    where: { id: session.user.id },
+    data: {
+      showOnLeaderboard,
+      displayName,
+      accountabilityMode: accountabilityEnabled,
+    },
+    select: {
+      showOnLeaderboard: true,
+      displayName: true,
+      accountabilityMode: true,
+    },
+  });
 
-  return NextResponse.json({ success: true, user: { ...user, accountabilityEnabled } });
+  return NextResponse.json({ success: true, user: { ...user, accountabilityEnabled: user.accountabilityMode } });
 }

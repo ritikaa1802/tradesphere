@@ -12,11 +12,11 @@ export async function PATCH(request: NextRequest) {
   const body = (await request.json()) as { enabled?: boolean };
   const enabled = Boolean(body.enabled);
 
-  const settings = await prisma.accountabilitySettings.upsert({
-    where: { userId: session.user.id },
-    update: { enabled },
-    create: { userId: session.user.id, enabled },
+  const user = await prisma.user.update({
+    where: { id: session.user.id },
+    data: { accountabilityMode: enabled },
+    select: { id: true, accountabilityMode: true },
   });
 
-  return NextResponse.json({ success: true, settings });
+  return NextResponse.json({ success: true, user });
 }

@@ -147,7 +147,7 @@ export default function SettingsPage() {
         </label>
 
         <label className="flex items-center justify-between rounded-lg border border-[#1a2744] bg-[#0f1929] px-3 py-2">
-          <span className="text-sm text-white">Accountability mode (weekly partner review)</span>
+          <span className="text-sm text-white">Enable Accountability Mode</span>
           <input
             type="checkbox"
             checked={accountabilityEnabled}

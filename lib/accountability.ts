@@ -43,53 +43,64 @@ export async function ensureWeeklySummary(userId: string, reference = new Date()
 }
 
 export async function ensureWeeklyPairForUser(userId: string, reference = new Date()) {
-  const { weekStart } = getWeekWindow(reference);
+  const { weekStart, weekEnd } = getWeekWindow(reference);
+
+  const me = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { id: true, accountabilityMode: true, displayName: true },
+  });
+
+  if (!me?.accountabilityMode) return null;
 
   const existingPair = await prisma.accountabilityPair.findFirst({
     where: {
       weekStart,
-      OR: [{ userAId: userId }, { userBId: userId }],
+      OR: [{ user1Id: userId }, { user2Id: userId }],
     },
     include: {
-      userA: { select: { id: true, displayName: true, email: true } },
-      userB: { select: { id: true, displayName: true, email: true } },
+      user1: { select: { id: true, displayName: true } },
+      user2: { select: { id: true, displayName: true } },
     },
   });
 
   if (existingPair) return existingPair;
 
-  const settings = await prisma.accountabilitySettings.findMany({
-    where: { enabled: true, userId: { not: userId } },
-    select: { userId: true },
+  const candidates = await prisma.user.findMany({
+    where: {
+      accountabilityMode: true,
+      id: { not: userId },
+    },
+    select: { id: true, displayName: true },
   });
 
-  if (settings.length === 0) return null;
+  if (candidates.length === 0) return null;
 
   const alreadyPairedIds = await prisma.accountabilityPair.findMany({
     where: { weekStart },
-    select: { userAId: true, userBId: true },
+    select: { user1Id: true, user2Id: true },
   });
+
   const unavailable = new Set<string>();
   for (const pair of alreadyPairedIds) {
-    unavailable.add(pair.userAId);
-    unavailable.add(pair.userBId);
+    unavailable.add(pair.user1Id);
+    unavailable.add(pair.user2Id);
   }
 
-  const availableCandidate = settings.find((item) => !unavailable.has(item.userId));
+  const availableCandidate = candidates.find((item) => !unavailable.has(item.id));
   if (!availableCandidate) return null;
 
-  const [userAId, userBId] = orderedPair(userId, availableCandidate.userId);
+  const [user1Id, user2Id] = orderedPair(userId, availableCandidate.id);
 
   const created = await prisma.accountabilityPair.create({
     data: {
       weekStart,
-      userAId,
-      userBId,
-      status: "active",
+      weekEnd,
+      user1Id,
+      user2Id,
     },
     include: {
-      userA: { select: { id: true, displayName: true, email: true } },
-      userB: { select: { id: true, displayName: true, email: true } },
+      user1: { select: { id: true, displayName: true } },
+      user2: { select: { id: true, displayName: true } },
     },
   });
 
@@ -98,23 +109,72 @@ export async function ensureWeeklyPairForUser(userId: string, reference = new Da
 
 export async function getWeeklySummaryWithPartner(userId: string, reference = new Date()) {
   const { weekStart } = getWeekWindow(reference);
+  const lastWeekReference = new Date(weekStart);
+  lastWeekReference.setDate(lastWeekReference.getDate() - 7);
+  const { weekStart: lastWeekStart } = getWeekWindow(lastWeekReference);
+
+  const me = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { accountabilityMode: true, displayName: true },
+  });
 
   const mySummary = await ensureWeeklySummary(userId, reference);
+
+  const reviewHistory = await prisma.accountabilityReview.findMany({
+    where: { revieweeId: userId },
+    include: {
+      reviewer: { select: { displayName: true } },
+      pair: { select: { weekStart: true } },
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
+
+  const lastWeekFeedback = await prisma.accountabilityReview.findFirst({
+    where: {
+      revieweeId: userId,
+      pair: { weekStart: lastWeekStart },
+    },
+    include: {
+      reviewer: { select: { displayName: true } },
+      pair: { select: { weekStart: true } },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!me?.accountabilityMode) {
+    return {
+      weekStart,
+      accountabilityMode: false,
+      mySummary,
+      partner: null,
+      partnerSummary: null,
+      pendingReview: false,
+      receivedReview: null,
+      lastWeekFeedback,
+      reviewHistory,
+    };
+  }
+
   const pair = await ensureWeeklyPairForUser(userId, reference);
 
   if (!pair) {
     return {
       weekStart,
+      accountabilityMode: true,
       mySummary,
       partner: null,
       partnerSummary: null,
       pendingReview: false,
+      receivedReview: null,
+      lastWeekFeedback,
+      reviewHistory,
     };
   }
 
-  const partnerId = pair.userAId === userId ? pair.userBId : pair.userAId;
+  const partnerId = pair.user1Id === userId ? pair.user2Id : pair.user1Id;
   const partnerSummary = await ensureWeeklySummary(partnerId, reference);
-  const existingReview = await prisma.partnerReview.findUnique({
+  const existingReview = await prisma.accountabilityReview.findUnique({
     where: {
       pairId_reviewerId: {
         pairId: pair.id,
@@ -123,12 +183,25 @@ export async function getWeeklySummaryWithPartner(userId: string, reference = ne
     },
   });
 
+  const receivedReview = await prisma.accountabilityReview.findUnique({
+    where: {
+      pairId_reviewerId: {
+        pairId: pair.id,
+        reviewerId: partnerId,
+      },
+    },
+  });
+
   return {
     weekStart,
+    accountabilityMode: true,
     mySummary,
-    partner: pair.userAId === userId ? pair.userB : pair.userA,
+    partner: pair.user1Id === userId ? pair.user2 : pair.user1,
     partnerSummary,
     pair,
     pendingReview: !existingReview,
+    receivedReview,
+    lastWeekFeedback,
+    reviewHistory,
   };
 }

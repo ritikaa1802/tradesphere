@@ -19,6 +19,7 @@ model User {
   traderType   String?
   tradingStyle String?
   isPro        Boolean    @default(false)
+  accountabilityMode Boolean @default(false)
   showOnLeaderboard Boolean @default(false)
   displayName   String?
   createdAt    DateTime   @default(now())
@@ -26,23 +27,14 @@ model User {
   portfolio    Portfolio?
   trades       Trade[]
   missions     Mission[]
-  accountabilitySettings AccountabilitySettings?
   weeklySummaries WeeklySummary[]
-  accountabilityPairsA AccountabilityPair[] @relation("PairUserA")
-  accountabilityPairsB AccountabilityPair[] @relation("PairUserB")
-  partnerReviewsGiven PartnerReview[] @relation("Reviewer")
-  partnerReviewsReceived PartnerReview[] @relation("ReviewedUser")
+  accountabilityPairsAsUser1 AccountabilityPair[] @relation("PairUser1")
+  accountabilityPairsAsUser2 AccountabilityPair[] @relation("PairUser2")
+  accountabilityReviewsGiven AccountabilityReview[] @relation("Reviewer")
+  accountabilityReviewsReceived AccountabilityReview[] @relation("Reviewee")
   watchlist    Watchlist[]
   alerts       Alert[]
   competitionEntries CompetitionEntry[]
-}
-
-model AccountabilitySettings {
-  id        String   @id @default(cuid())
-  userId    String   @unique
-  enabled   Boolean  @default(false)
-  updatedAt DateTime @updatedAt
-  user      User     @relation(fields: [userId], references: [id])
 }
 
 model WeeklySummary {
@@ -65,32 +57,34 @@ model WeeklySummary {
 }
 
 model AccountabilityPair {
-  id        String   @id @default(cuid())
-  weekStart DateTime
-  userAId   String
-  userBId   String
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  userA     User     @relation("PairUserA", fields: [userAId], references: [id])
-  userB     User     @relation("PairUserB", fields: [userBId], references: [id])
-  reviews   PartnerReview[]
+  id              String   @id @default(cuid())
+  user1Id         String
+  user2Id         String
+  weekStart       DateTime
+  weekEnd         DateTime
+  user1ReviewDone Boolean  @default(false)
+  user2ReviewDone Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  user1           User     @relation("PairUser1", fields: [user1Id], references: [id])
+  user2           User     @relation("PairUser2", fields: [user2Id], references: [id])
+  reviews         AccountabilityReview[]
 
   @@index([weekStart])
-  @@unique([weekStart, userAId, userBId])
+  @@unique([weekStart, user1Id, user2Id])
 }
 
-model PartnerReview {
-  id             String            @id @default(cuid())
-  pairId         String
-  reviewerId     String
-  reviewedUserId String
-  goodPoints     String
-  mistakes       String
-  suggestions    String
-  submittedAt    DateTime          @default(now())
-  pair           AccountabilityPair @relation(fields: [pairId], references: [id])
-  reviewer       User              @relation("Reviewer", fields: [reviewerId], references: [id])
-  reviewedUser   User              @relation("ReviewedUser", fields: [reviewedUserId], references: [id])
+model AccountabilityReview {
+  id         String            @id @default(cuid())
+  pairId     String
+  reviewerId String
+  revieweeId String
+  doneWell   String
+  mistakes   String
+  suggestions String
+  createdAt  DateTime          @default(now())
+  pair       AccountabilityPair @relation(fields: [pairId], references: [id])
+  reviewer   User              @relation("Reviewer", fields: [reviewerId], references: [id])
+  reviewee   User              @relation("Reviewee", fields: [revieweeId], references: [id])
 
   @@unique([pairId, reviewerId])
 }
