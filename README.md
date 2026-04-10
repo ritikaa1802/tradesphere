@@ -86,7 +86,156 @@ It combines execution simulation, portfolio analytics, behavioral insights, AI c
 
 
 ## Contest Gameplay Flow
+Implement navigation and a Trade Page Guidance Booklet for a trading app.
 
+GOAL:
+User should:
+- Open Trade page
+- Understand what to do via a short guide
+- Click a stock
+- Navigate to /stock/[symbol]
+- Access full trading screen with Emotional Realism features
+
+---
+
+1. TRADE PAGE (app/trade/page.tsx)
+
+- Display a list of stocks (TCS, RELIANCE, INFY etc.)
+- Each stock must be clickable
+
+- On click:
+  router.push(`/stock/${symbol}`)
+
+- Add UI styles:
+  - cursor-pointer
+  - hover:bg-gray-800
+  - smooth transition
+
+- Add a small helper text above list:
+  "Click any stock to start trading"
+
+---
+
+2. ADD TOP GUIDE BUTTON
+
+- At top of Trade page:
+  Add button: "Guide" or "?"
+
+- On click:
+  open GuidanceBooklet modal
+
+---
+
+3. GUIDANCE BOOKLET COMPONENT
+
+- Create: components/GuidanceBooklet.tsx
+- Modal / overlay design
+- Multi-step slides
+
+---
+
+4. BOOKLET CONTENT (SHORT FLOW)
+
+Slide 1:
+"Welcome to Trading Simulator"
+"This app helps you practice disciplined trading"
+
+Slide 2:
+"What to do here"
+"Click on any stock to begin"
+
+Slide 3:
+"What happens next"
+"You will enter a live trading screen with price, news, and pressure signals"
+
+Slide 4:
+"Before trading"
+"You must log your emotion before placing a trade"
+
+Slide 5:
+"Goal"
+"Focus on discipline, not just profit"
+
+Slide 6:
+Button: "Start Trading"
+
+---
+
+5. BOOKLET UI
+
+- Next / Back buttons
+- Progress dots
+- Close (X) button
+- Smooth transitions
+
+---
+
+6. SHOW LOGIC
+
+- Use localStorage:
+  hasSeenTradeGuide = true
+
+- Auto-show guide ONLY if:
+  hasSeenTradeGuide is false
+
+- User can reopen anytime using Guide button
+
+---
+
+7. DYNAMIC STOCK PAGE
+
+- Ensure route exists:
+  app/stock/[symbol]/page.tsx
+
+- Must:
+  - Read symbol from params
+  - Display stock info (symbol, price, chart optional)
+  - Render PressureSimulation component
+
+---
+
+8. PRESSURE SIMULATION (IMPORTANT)
+
+- Must ALWAYS render (no early return)
+
+- Include:
+  - Timer (or simulated timer)
+  - Breaking news banner
+  - Dismiss button
+  - Volatility spike alert
+
+- If market closed:
+  Show message:
+  "Market Closed — Practice Mode Active"
+  BUT still render all features
+
+---
+
+9. TRADE FLOW
+
+- Add Buy / Sell buttons on stock page
+
+- On click:
+  Show mandatory emotional check-in modal
+
+- Fields:
+  - Emotional state
+  - Followed plan
+  - Trade reason
+
+- Disable submit until filled
+
+---
+
+FINAL RESULT:
+
+User opens Trade page
+→ sees short guide (first time)
+→ understands to click stock
+→ clicks stock
+→ navigates to /stock/[symbol]
+→ sees trading environment (timer, news, volatility)
+→ places trade with emotional awareness
 1. Open `/competitions`
 2. Click Join on a live contest
 3. Auto-redirect to `/competitions/[id]` Contest Room

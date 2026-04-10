@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useState } from "react";
 
 type Summary = {
@@ -20,8 +21,13 @@ type WeeklySummaryResponse = {
   pendingReview: boolean;
 };
 
+type AnalyticsSummaryResponse = {
+  winRate: number;
+};
+
 export default function AccountabilityPage() {
   const [data, setData] = useState<WeeklySummaryResponse | null>(null);
+  const [analyticsWinRate, setAnalyticsWinRate] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState("");
@@ -34,10 +40,20 @@ export default function AccountabilityPage() {
     let mounted = true;
     async function loadSummary() {
       try {
-        const response = await fetch("/api/accountability/weekly-summary", { cache: "no-store" });
-        if (!response.ok) throw new Error("Failed to load weekly summary");
-        const payload = (await response.json()) as WeeklySummaryResponse;
-        if (mounted) setData(payload);
+        const [weeklyResponse, analyticsResponse] = await Promise.all([
+          fetch("/api/accountability/weekly-summary", { cache: "no-store" }),
+          fetch("/api/analytics/summary", { cache: "no-store" }),
+        ]);
+
+        if (!weeklyResponse.ok) throw new Error("Failed to load weekly summary");
+
+        const weeklyPayload = (await weeklyResponse.json()) as WeeklySummaryResponse;
+        if (mounted) setData(weeklyPayload);
+
+        if (analyticsResponse.ok) {
+          const analyticsPayload = (await analyticsResponse.json()) as AnalyticsSummaryResponse;
+          if (mounted) setAnalyticsWinRate(analyticsPayload.winRate);
+        }
       } catch {
         if (mounted) setData(null);
       } finally {
@@ -123,7 +139,7 @@ export default function AccountabilityPage() {
             <p className="mt-1 text-lg font-semibold text-white">Discipline Score: {data.mySummary.disciplineScore}</p>
             <div className="mt-3 space-y-1 text-sm text-slate-300">
               <p>Trades: {data.mySummary.tradeCount}</p>
-              <p>Win Rate: {data.mySummary.winRate.toFixed(1)}%</p>
+              <p>Win Rate: {(analyticsWinRate ?? data.mySummary.winRate).toFixed(1)}%</p>
               <p>Rule Breaks: {data.mySummary.ruleBreaks}</p>
               <p>Checklist Completion: {(data.mySummary.checklistCompletionRate * 100).toFixed(1)}%</p>
             </div>
@@ -131,7 +147,18 @@ export default function AccountabilityPage() {
 
           <article className="rounded-lg border border-slate-700 bg-slate-900 p-5">
             <p className="text-xs uppercase tracking-wide text-slate-400">{partnerName}'s week</p>
-            {data.partnerSummary ? (
+            {!data.partner ? (
+              <div className="mt-3 rounded-lg border border-slate-700/70 bg-slate-950/60 p-4">
+                <p className="text-sm font-medium text-slate-200">No accountability partner yet</p>
+                <p className="mt-1 text-sm text-slate-400">Enable Accountability Mode in Settings to get matched with a partner.</p>
+                <Link
+                  href="/settings"
+                  className="mt-3 inline-flex items-center rounded-md bg-blue-600 px-3 py-2 text-sm font-semibold text-white transition hover:bg-blue-500"
+                >
+                  Enable Accountability Mode
+                </Link>
+              </div>
+            ) : data.partnerSummary ? (
               <>
                 <p className="mt-1 text-lg font-semibold text-white">Discipline Score: {data.partnerSummary.disciplineScore}</p>
                 <div className="mt-3 space-y-1 text-sm text-slate-300">
@@ -142,7 +169,7 @@ export default function AccountabilityPage() {
                 </div>
               </>
             ) : (
-              <p className="mt-2 text-sm text-slate-400">No partner summary available yet.</p>
+              <p className="mt-2 text-sm text-slate-400">Partner summary is not available yet for this week.</p>
             )}
           </article>
         </section>
