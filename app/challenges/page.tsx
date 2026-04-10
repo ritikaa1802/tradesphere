@@ -205,6 +205,62 @@ export default function ChallengesPage() {
         </button>
       </div>
 
+      <section className="rounded-xl border border-emerald-500/35 bg-slate-900 p-5">
+        <div className="mb-4 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => setActiveTab("7")}
+            className={`rounded-md px-3 py-2 text-sm font-semibold ${activeTab === "7" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300"}`}
+          >
+            7-Day
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab("30")}
+            className={`rounded-md px-3 py-2 text-sm font-semibold ${activeTab === "30" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300"}`}
+          >
+            30-Day (Pro)
+          </button>
+        </div>
+
+        <h3 className="text-lg font-semibold text-white">Full Leaderboard</h3>
+        <div className="mt-3 overflow-x-auto">
+          <table className="min-w-full text-left text-sm text-slate-200">
+            <thead>
+              <tr className="border-b border-slate-700 text-slate-400">
+                <th className="px-3 py-2">Rank</th>
+                <th className="px-3 py-2">Name</th>
+                <th className="px-3 py-2">Score</th>
+                <th className="px-3 py-2">Trades</th>
+                <th className="px-3 py-2">Rule Breaks</th>
+              </tr>
+            </thead>
+            <tbody>
+              {(leaderboard?.entries || []).map((entry) => {
+                const topClass = entry.rank === 1 ? "bg-amber-500/15" : entry.rank === 2 ? "bg-slate-300/10" : entry.rank === 3 ? "bg-orange-500/10" : "";
+                const yourClass = entry.isCurrentUser ? "ring-1 ring-blue-500/60" : "";
+                return (
+                  <tr key={entry.id} className={`border-b border-slate-800 ${topClass} ${yourClass}`}>
+                    <td className="px-3 py-2 font-semibold">#{entry.rank}</td>
+                    <td className="px-3 py-2">
+                      <span className="font-medium">{entry.displayName}</span>
+                      {entry.rank === 1 ? (
+                        <span className="ml-2">{leaderboard?.challenge.isPro ? "🏆" : "🥇"}</span>
+                      ) : null}
+                      {entry.isPro ? <span className="ml-2 rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
+                      {entry.isMonthlyChampion ? <span className="ml-2">👑</span> : null}
+                    </td>
+                    <td className="px-3 py-2">{entry.disciplineScore.toFixed(2)}</td>
+                    <td className="px-3 py-2">{entry.totalTrades}</td>
+                    <td className="px-3 py-2">{entry.ruleBreaks}</td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
       <section className="rounded-xl border border-emerald-500/35 bg-slate-900 p-6">
         <h2 className="text-2xl font-bold text-amber-100">👑 This Month's Champion</h2>
         {data.monthlyChampion ? (
@@ -288,62 +344,6 @@ export default function ChallengesPage() {
       </section>
 
       <CompetitionsView showDisciplineSection={false} matchChallengeCardStyle={true} />
-
-      <section className="rounded-xl border border-emerald-500/35 bg-slate-900 p-5">
-        <div className="mb-4 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => setActiveTab("7")}
-            className={`rounded-md px-3 py-2 text-sm font-semibold ${activeTab === "7" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300"}`}
-          >
-            7-Day
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("30")}
-            className={`rounded-md px-3 py-2 text-sm font-semibold ${activeTab === "30" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300"}`}
-          >
-            30-Day (Pro)
-          </button>
-        </div>
-
-        <h3 className="text-lg font-semibold text-white">Full Leaderboard</h3>
-        <div className="mt-3 overflow-x-auto">
-          <table className="min-w-full text-left text-sm text-slate-200">
-            <thead>
-              <tr className="border-b border-slate-700 text-slate-400">
-                <th className="px-3 py-2">Rank</th>
-                <th className="px-3 py-2">Name</th>
-                <th className="px-3 py-2">Score</th>
-                <th className="px-3 py-2">Trades</th>
-                <th className="px-3 py-2">Rule Breaks</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(leaderboard?.entries || []).map((entry) => {
-                const topClass = entry.rank === 1 ? "bg-amber-500/15" : entry.rank === 2 ? "bg-slate-300/10" : entry.rank === 3 ? "bg-orange-500/10" : "";
-                const yourClass = entry.isCurrentUser ? "ring-1 ring-blue-500/60" : "";
-                return (
-                  <tr key={entry.id} className={`border-b border-slate-800 ${topClass} ${yourClass}`}>
-                    <td className="px-3 py-2 font-semibold">#{entry.rank}</td>
-                    <td className="px-3 py-2">
-                      <span className="font-medium">{entry.displayName}</span>
-                      {entry.rank === 1 ? (
-                        <span className="ml-2">{leaderboard?.challenge.isPro ? "🏆" : "🥇"}</span>
-                      ) : null}
-                      {entry.isPro ? <span className="ml-2 rounded bg-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-black">PRO</span> : null}
-                      {entry.isMonthlyChampion ? <span className="ml-2">👑</span> : null}
-                    </td>
-                    <td className="px-3 py-2">{entry.disciplineScore.toFixed(2)}</td>
-                    <td className="px-3 py-2">{entry.totalTrades}</td>
-                    <td className="px-3 py-2">{entry.ruleBreaks}</td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </section>
 
       {message ? <p className="text-sm text-slate-300">{message}</p> : null}
 
