@@ -440,36 +440,6 @@ export default function DashboardPage() {
   return (
     <section className="space-y-3 text-white">
       <div className="border-b border-[#1a2744] pb-3">
-        <div className="grid grid-cols-2 gap-3 text-right md:grid-cols-5">
-          <div className="text-left md:text-right">
-            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Balance</p>
-            <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatMoney(summary.balance)}</p>
-          </div>
-          <div className="text-left md:text-right">
-            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Invested</p>
-            <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatMoney(summary.invested)}</p>
-          </div>
-          <div className="text-left md:text-right">
-            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Day P&amp;L</p>
-            <p className={`mt-0.5 text-xl font-semibold tabular-nums ${changeColor(dayPnl)}`}>
-              {dayPnl >= 0 ? "+" : "-"}{formatMoney(dayPnl)}
-            </p>
-          </div>
-          <div className="text-left md:text-right">
-            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Total P&amp;L</p>
-            <p className={`mt-0.5 text-xl font-semibold tabular-nums ${changeColor(summary.pnl)}`}>
-              {summary.pnl >= 0 ? formatMoney(summary.pnl) : `-${formatMoney(summary.pnl)}`}
-              <span className="ml-2 text-sm">({summary.pnlPercentage.toFixed(2)}%)</span>
-            </p>
-          </div>
-          <div className="text-left md:text-right">
-            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Win Rate</p>
-            <p className="mt-0.5 text-xl font-semibold tabular-nums">{(analytics?.winRate ?? 0).toFixed(1)}%</p>
-          </div>
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-blue-500/30 bg-[#0f1b35] p-4">
         {activeChallenge?.myEntry ? (
           <div className="grid gap-2 text-sm text-slate-200 sm:grid-cols-2 lg:grid-cols-5">
             <div>
@@ -509,6 +479,36 @@ export default function DashboardPage() {
             </Link>
           </div>
         )}
+      </div>
+
+      <div className="border-b border-[#1a2744] pb-3">
+        <div className="grid grid-cols-2 gap-3 text-right md:grid-cols-5">
+          <div className="text-left md:text-right">
+            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Balance</p>
+            <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatMoney(summary.balance)}</p>
+          </div>
+          <div className="text-left md:text-right">
+            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Invested</p>
+            <p className="mt-0.5 text-xl font-semibold tabular-nums">{formatMoney(summary.invested)}</p>
+          </div>
+          <div className="text-left md:text-right">
+            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Day P&amp;L</p>
+            <p className={`mt-0.5 text-xl font-semibold tabular-nums ${changeColor(dayPnl)}`}>
+              {dayPnl >= 0 ? "+" : "-"}{formatMoney(dayPnl)}
+            </p>
+          </div>
+          <div className="text-left md:text-right">
+            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Total P&amp;L</p>
+            <p className={`mt-0.5 text-xl font-semibold tabular-nums ${changeColor(summary.pnl)}`}>
+              {summary.pnl >= 0 ? formatMoney(summary.pnl) : `-${formatMoney(summary.pnl)}`}
+              <span className="ml-2 text-sm">({summary.pnlPercentage.toFixed(2)}%)</span>
+            </p>
+          </div>
+          <div className="text-left md:text-right">
+            <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Win Rate</p>
+            <p className="mt-0.5 text-xl font-semibold tabular-nums">{(analytics?.winRate ?? 0).toFixed(1)}%</p>
+          </div>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-2 border-b border-[#1a2744] pb-2 text-xs md:grid-cols-2">
