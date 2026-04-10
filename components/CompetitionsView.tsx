@@ -157,7 +157,13 @@ function buildContestCards(competitions: Competition[], leaderboard: Leaderboard
   return [...mapped, ...fallback].slice(0, 6);
 }
 
-export default function CompetitionsView({ showDisciplineSection = true }: { showDisciplineSection?: boolean }) {
+export default function CompetitionsView({
+  showDisciplineSection = true,
+  matchChallengeCardStyle = false,
+}: {
+  showDisciplineSection?: boolean;
+  matchChallengeCardStyle?: boolean;
+}) {
   const router = useRouter();
   const liveContestsRef = useRef<HTMLDivElement | null>(null);
   const [competitions, setCompetitions] = useState<Competition[]>([]);
@@ -177,6 +183,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
   const [disciplineChallenges, setDisciplineChallenges] = useState<DisciplineChallengeDigest[]>([]);
   const [monthlyChampion, setMonthlyChampion] = useState<MonthlyChampionDigest["champion"]>(null);
   const [monthEndCountdown, setMonthEndCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
+  const challengeCardTone = "border-emerald-500/35 bg-slate-900";
 
   useEffect(() => {
     let mounted = true;
@@ -421,7 +428,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
       </section>
       ) : null}
 
-      <div className="overflow-hidden rounded-3xl border border-[#18305e] bg-[linear-gradient(180deg,#07142f,#060f24)]">
+      <div className={`overflow-hidden rounded-3xl border ${matchChallengeCardStyle ? challengeCardTone : "border-[#18305e] bg-[linear-gradient(180deg,#07142f,#060f24)]"}`}>
         <div className="bg-[linear-gradient(90deg,rgba(34,211,238,.08),transparent_35%,rgba(59,130,246,.08))] px-4 py-6 sm:px-6">
           <p className="inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
             {filteredCards.length} live contests now
@@ -452,7 +459,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
         </div>
       </div>
 
-      <div className="rounded-3xl border border-[#254171] bg-[#12264a] p-5 sm:p-6">
+      <div className={`rounded-3xl border p-5 sm:p-6 ${matchChallengeCardStyle ? challengeCardTone : "border-[#254171] bg-[#12264a]"}`}>
         <p className="text-xs font-semibold uppercase tracking-[0.16em] text-amber-300">Grand Championship - Live now</p>
         <div className="mt-3 grid gap-5 lg:grid-cols-[1.5fr_1fr]">
           <div>
@@ -471,12 +478,12 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#23406f] bg-[#0c1c3b] p-4">
+          <div className={`rounded-2xl border p-4 ${matchChallengeCardStyle ? challengeCardTone : "border-[#23406f] bg-[#0c1c3b]"}`}>
             <div className="grid grid-cols-4 gap-2 text-center">
-              <div className="rounded-lg border border-[#23406f] bg-[#10244a] p-2"><p className="text-2xl font-black text-white">{countdown.days}</p><p className="text-[10px] text-slate-400">Days</p></div>
-              <div className="rounded-lg border border-[#23406f] bg-[#10244a] p-2"><p className="text-2xl font-black text-white">{countdown.hours}</p><p className="text-[10px] text-slate-400">Hrs</p></div>
-              <div className="rounded-lg border border-[#23406f] bg-[#10244a] p-2"><p className="text-2xl font-black text-white">{countdown.minutes}</p><p className="text-[10px] text-slate-400">Min</p></div>
-              <div className="rounded-lg border border-[#23406f] bg-[#10244a] p-2"><p className="text-2xl font-black text-white">{countdown.seconds}</p><p className="text-[10px] text-slate-400">Sec</p></div>
+              <div className={`rounded-lg border p-2 ${matchChallengeCardStyle ? challengeCardTone : "border-[#23406f] bg-[#10244a]"}`}><p className="text-2xl font-black text-white">{countdown.days}</p><p className="text-[10px] text-slate-400">Days</p></div>
+              <div className={`rounded-lg border p-2 ${matchChallengeCardStyle ? challengeCardTone : "border-[#23406f] bg-[#10244a]"}`}><p className="text-2xl font-black text-white">{countdown.hours}</p><p className="text-[10px] text-slate-400">Hrs</p></div>
+              <div className={`rounded-lg border p-2 ${matchChallengeCardStyle ? challengeCardTone : "border-[#23406f] bg-[#10244a]"}`}><p className="text-2xl font-black text-white">{countdown.minutes}</p><p className="text-[10px] text-slate-400">Min</p></div>
+              <div className={`rounded-lg border p-2 ${matchChallengeCardStyle ? challengeCardTone : "border-[#23406f] bg-[#10244a]"}`}><p className="text-2xl font-black text-white">{countdown.seconds}</p><p className="text-[10px] text-slate-400">Sec</p></div>
             </div>
 
             <button
@@ -494,7 +501,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
         </div>
       </div>
 
-      <div ref={liveContestsRef} className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <div ref={liveContestsRef} className={`rounded-2xl border p-4 ${matchChallengeCardStyle ? challengeCardTone : "border-[var(--border)] bg-[var(--bg-card)]"}`}>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h3 className="text-2xl font-bold text-[var(--text-primary)]">Live and open to join</h3>
           <div className="flex flex-wrap items-center gap-2">
@@ -517,7 +524,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
 
         <div className="mt-4 grid grid-cols-1 gap-4 xl:grid-cols-3">
           {filteredCards.slice(0, 6).map((card) => (
-            <article key={card.id} className="overflow-hidden rounded-2xl border border-[#254171] bg-[#12264a]">
+            <article key={card.id} className={`overflow-hidden rounded-2xl border ${matchChallengeCardStyle ? challengeCardTone : "border-[#254171] bg-[#12264a]"}`}>
               <div className="p-4">
                 <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
                   <span className="rounded-full bg-emerald-500/20 px-2.5 py-1 font-semibold text-emerald-300">{card.level}</span>
@@ -528,18 +535,18 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
                 <p className="mt-2 min-h-[72px] text-sm text-slate-300">{card.description}</p>
               </div>
 
-              <div className="border-t border-[#254171] p-4">
+              <div className={`border-t p-4 ${matchChallengeCardStyle ? "border-emerald-500/35" : "border-[#254171]"}`}>
                 <p className="text-xs uppercase tracking-[0.14em] text-slate-400">Prize pool</p>
                 <p className="text-4xl font-black text-cyan-300">{card.prize}</p>
 
                 <div className="mt-3 grid grid-cols-3 gap-2 text-center text-sm">
-                  <div className="rounded-lg bg-[#0d1f42] p-2"><p className="font-bold text-white">{card.traders}</p><p className="text-[10px] text-slate-400">Traders</p></div>
-                  <div className="rounded-lg bg-[#0d1f42] p-2"><p className="font-bold text-white">{card.duration}</p><p className="text-[10px] text-slate-400">Duration</p></div>
-                  <div className="rounded-lg bg-[#0d1f42] p-2"><p className="font-bold text-white">{card.capital}</p><p className="text-[10px] text-slate-400">Capital</p></div>
+                  <div className={`rounded-lg p-2 ${matchChallengeCardStyle ? "border border-emerald-500/35 bg-slate-900" : "bg-[#0d1f42]"}`}><p className="font-bold text-white">{card.traders}</p><p className="text-[10px] text-slate-400">Traders</p></div>
+                  <div className={`rounded-lg p-2 ${matchChallengeCardStyle ? "border border-emerald-500/35 bg-slate-900" : "bg-[#0d1f42]"}`}><p className="font-bold text-white">{card.duration}</p><p className="text-[10px] text-slate-400">Duration</p></div>
+                  <div className={`rounded-lg p-2 ${matchChallengeCardStyle ? "border border-emerald-500/35 bg-slate-900" : "bg-[#0d1f42]"}`}><p className="font-bold text-white">{card.capital}</p><p className="text-[10px] text-slate-400">Capital</p></div>
                 </div>
               </div>
 
-              <div className="flex items-center justify-between border-t border-[#254171] p-4">
+              <div className={`flex items-center justify-between border-t p-4 ${matchChallengeCardStyle ? "border-emerald-500/35" : "border-[#254171]"}`}>
                 <p className="text-sm text-slate-300">{card.daysLeft} days left</p>
                 <button
                   type="button"
@@ -556,7 +563,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
       </div>
 
       <div className="grid grid-cols-1 gap-4 xl:grid-cols-2">
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <section className={`rounded-2xl border p-4 ${matchChallengeCardStyle ? challengeCardTone : "border-[var(--border)] bg-[var(--bg-card)]"}`}>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-2xl font-bold text-[var(--text-primary)]">Contest learning paths</h3>
             <button
@@ -595,11 +602,11 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
                 color: "text-violet-400",
               },
             ].map((track) => (
-              <article key={track.title} className="rounded-xl border border-[#254171] bg-[#12264a] p-3">
+              <article key={track.title} className={`rounded-xl border p-3 ${matchChallengeCardStyle ? challengeCardTone : "border-[#254171] bg-[#12264a]"}`}>
                 <track.icon size={18} className={track.color} />
                 <h4 className="mt-2 text-lg font-bold text-white">{track.title}</h4>
                 <p className="mt-1 text-sm text-slate-300">{track.description}</p>
-                <div className="mt-3 h-1.5 rounded-full bg-[#0b1a36]">
+                <div className={`mt-3 h-1.5 rounded-full ${matchChallengeCardStyle ? "bg-slate-800" : "bg-[#0b1a36]"}`}>
                   <div className="h-1.5 rounded-full bg-blue-500" style={{ width: `${(Number(track.progress.split("/")[0]) / Number(track.progress.split("/")[1])) * 100}%` }} />
                 </div>
                 <p className="mt-1 text-xs text-slate-400">{track.progress} completed - {track.enrolled} enrolled</p>
@@ -608,7 +615,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
           </div>
         </section>
 
-        <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+        <section className={`rounded-2xl border p-4 ${matchChallengeCardStyle ? challengeCardTone : "border-[var(--border)] bg-[var(--bg-card)]"}`}>
           <div className="mb-3 flex items-center justify-between">
             <h3 className="text-2xl font-bold text-[var(--text-primary)]">Your active battles</h3>
             <span className="text-sm text-cyan-300">Paper portfolio only</span>
@@ -620,7 +627,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
               { name: "Intraday Blitz", detail: "Today - Rs.200,000 capital", rank: "#43", pnl: "+2.1%" },
               { name: "Stop-Loss Cup", detail: "3 days left - Rs.100,000 capital", rank: "#89", pnl: "-0.4%" },
             ].map((item) => (
-              <div key={item.name} className="flex items-center justify-between rounded-xl border border-[#254171] bg-[#12264a] p-3">
+              <div key={item.name} className={`flex items-center justify-between rounded-xl border p-3 ${matchChallengeCardStyle ? challengeCardTone : "border-[#254171] bg-[#12264a]"}`}>
                 <div>
                   <p className="text-lg font-bold text-white">{item.name}</p>
                   <p className="text-sm text-slate-300">{item.detail}</p>
@@ -635,7 +642,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
         </section>
       </div>
 
-      <section className="rounded-2xl border border-[var(--border)] bg-[var(--bg-card)] p-4">
+      <section className={`rounded-2xl border p-4 ${matchChallengeCardStyle ? challengeCardTone : "border-[var(--border)] bg-[var(--bg-card)]"}`}>
         <h3 className="text-2xl font-bold text-[var(--text-primary)]">Upcoming contests</h3>
         <div className="mt-3 space-y-3">
           {upcomingCompetitions.map((item) => {
@@ -643,8 +650,8 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
             const date = `${String(start.getDate()).padStart(2, "0")} ${start.toLocaleString("en-US", { month: "short" }).toUpperCase()}`;
 
             return (
-            <article key={item.id} className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[#254171] bg-[#12264a] p-3">
-              <div className="min-w-[64px] rounded-lg border border-[#315896] bg-[#0d1f42] px-3 py-2 text-center">
+            <article key={item.id} className={`flex flex-wrap items-center justify-between gap-3 rounded-xl border p-3 ${matchChallengeCardStyle ? challengeCardTone : "border-[#254171] bg-[#12264a]"}`}>
+              <div className={`min-w-[64px] rounded-lg border px-3 py-2 text-center ${matchChallengeCardStyle ? "border-emerald-500/35 bg-slate-900" : "border-[#315896] bg-[#0d1f42]"}`}>
                 <p className="text-xl font-black text-white">{date.split(" ")[0]}</p>
                 <p className="text-[10px] text-slate-400">{date.split(" ")[1]}</p>
               </div>
@@ -668,7 +675,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
         </div>
       </section>
 
-      <section className="rounded-2xl border border-[#254171] bg-[#12264a] p-5 sm:p-6">
+      <section className={`rounded-2xl border p-5 sm:p-6 ${matchChallengeCardStyle ? challengeCardTone : "border-[#254171] bg-[#12264a]"}`}>
         <div className="grid items-center gap-4 md:grid-cols-[1.2fr_1fr]">
           <div>
             <h3 className="text-4xl font-black text-white">Cannot find the right contest?</h3>
@@ -696,25 +703,25 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
         </div>
 
         {showSuggestForm ? (
-          <div className="mt-4 grid gap-3 rounded-xl border border-[#254171] bg-[#0f1f3e] p-4">
+          <div className={`mt-4 grid gap-3 rounded-xl border p-4 ${matchChallengeCardStyle ? challengeCardTone : "border-[#254171] bg-[#0f1f3e]"}`}>
             <input
               value={suggestTitle}
               onChange={(event) => setSuggestTitle(event.target.value)}
               placeholder="Contest title"
-              className="h-10 rounded-lg border border-[#315896] bg-[#0d1f42] px-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400"
+              className={`h-10 rounded-lg border px-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400 ${matchChallengeCardStyle ? "border-emerald-500/35 bg-slate-900" : "border-[#315896] bg-[#0d1f42]"}`}
             />
             <textarea
               value={suggestDescription}
               onChange={(event) => setSuggestDescription(event.target.value)}
               placeholder="Contest description"
               rows={3}
-              className="rounded-lg border border-[#315896] bg-[#0d1f42] px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400"
+              className={`rounded-lg border px-3 py-2 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400 ${matchChallengeCardStyle ? "border-emerald-500/35 bg-slate-900" : "border-[#315896] bg-[#0d1f42]"}`}
             />
             <div className="grid gap-3 sm:grid-cols-2">
               <select
                 value={suggestCategory}
                 onChange={(event) => setSuggestCategory(event.target.value)}
-                className="h-10 rounded-lg border border-[#315896] bg-[#0d1f42] px-3 text-sm text-white outline-none focus:border-blue-400"
+                className={`h-10 rounded-lg border px-3 text-sm text-white outline-none focus:border-blue-400 ${matchChallengeCardStyle ? "border-emerald-500/35 bg-slate-900" : "border-[#315896] bg-[#0d1f42]"}`}
               >
                 <option>Beginner</option>
                 <option>Intraday</option>
@@ -725,7 +732,7 @@ export default function CompetitionsView({ showDisciplineSection = true }: { sho
                 value={suggestPrize}
                 onChange={(event) => setSuggestPrize(event.target.value)}
                 placeholder="Expected prize pool"
-                className="h-10 rounded-lg border border-[#315896] bg-[#0d1f42] px-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400"
+                className={`h-10 rounded-lg border px-3 text-sm text-white outline-none placeholder:text-slate-400 focus:border-blue-400 ${matchChallengeCardStyle ? "border-emerald-500/35 bg-slate-900" : "border-[#315896] bg-[#0d1f42]"}`}
               />
             </div>
             <button

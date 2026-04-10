@@ -205,7 +205,7 @@ export default function ChallengesPage() {
         </button>
       </div>
 
-      <section className="rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-yellow-500/25 p-6">
+      <section className="rounded-xl border border-emerald-500/35 bg-slate-900 p-6">
         <h2 className="text-2xl font-bold text-amber-100">👑 This Month's Champion</h2>
         {data.monthlyChampion ? (
           <div className="mt-3 text-amber-50">
@@ -248,7 +248,7 @@ export default function ChallengesPage() {
           </div>
         </article>
 
-        <article className="relative rounded-xl border border-amber-500/35 bg-slate-900 p-5">
+        <article className="relative rounded-xl border border-emerald-500/35 bg-slate-900 p-5">
           <div className="flex items-center justify-between gap-2">
             <h2 className="text-xl font-semibold text-white">30-Day Discipline Championship</h2>
             <span className="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-bold text-amber-200">PRO</span>
@@ -287,9 +287,9 @@ export default function ChallengesPage() {
         </article>
       </section>
 
-      <CompetitionsView showDisciplineSection={false} />
+      <CompetitionsView showDisciplineSection={false} matchChallengeCardStyle={true} />
 
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5">
+      <section className="rounded-xl border border-emerald-500/35 bg-slate-900 p-5">
         <div className="mb-4 flex items-center gap-2">
           <button
             type="button"
