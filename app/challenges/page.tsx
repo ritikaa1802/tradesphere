@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
+import ChallengeGuideBooklet from "@/components/ChallengeGuideBooklet";
 
 type Challenge = {
   id: string;
@@ -103,6 +104,7 @@ export default function ChallengesPage() {
   const [activeTab, setActiveTab] = useState<"7" | "30">("7");
   const [message, setMessage] = useState("");
   const [joiningId, setJoiningId] = useState<string | null>(null);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -145,6 +147,12 @@ export default function ChallengesPage() {
   const proChallenge = useMemo(() => data?.challenges.find((challenge) => challenge.isPro) || null, [data]);
   const countdown = monthCountdown(data?.monthlyCountdown || new Date().toISOString());
 
+  useEffect(() => {
+    if (!loading && data) {
+      setGuideOpen(true);
+    }
+  }, [loading, data]);
+
   async function joinChallenge(challengeId: string) {
     setJoiningId(challengeId);
     setMessage("");
@@ -184,8 +192,19 @@ export default function ChallengesPage() {
 
   return (
     <main className="mx-auto min-h-screen w-full max-w-7xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-2xl font-bold text-white">Discipline Challenges</h1>
+        <button
+          type="button"
+          onClick={() => setGuideOpen(true)}
+          className="rounded-md border border-blue-500/40 bg-blue-600/15 px-3 py-2 text-sm font-semibold text-blue-200 hover:bg-blue-600/25"
+        >
+          Challenge Performance Guide
+        </button>
+      </div>
+
       <section className="rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/25 via-amber-400/20 to-yellow-500/25 p-6">
-        <h1 className="text-2xl font-bold text-amber-100">👑 This Month's Champion</h1>
+        <h2 className="text-2xl font-bold text-amber-100">👑 This Month's Champion</h2>
         {data.monthlyChampion ? (
           <div className="mt-3 text-amber-50">
             <p className="text-lg font-semibold">{data.monthlyChampion.displayName}</p>
@@ -322,58 +341,15 @@ export default function ChallengesPage() {
         </div>
       </section>
 
-      <section className="grid gap-4 lg:grid-cols-2">
-        <article className="rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm text-slate-200">
-          <h3 className="text-lg font-semibold text-white">How to Win Monthly Champion</h3>
-          <ul className="mt-3 space-y-1">
-            <li>Only 1 trader wins each month</li>
-            <li>Highest discipline score across all challenges wins 1 month Pro free</li>
-            <li>Score resets every month</li>
-            <li>Next winner declared: {new Date(data.monthlyCountdown).toLocaleDateString()}</li>
-          </ul>
-          <p className="mt-3 text-slate-300">Countdown: {countdown.days}d {countdown.hours}h {countdown.minutes}m</p>
-        </article>
-
-        <article className="rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm text-slate-200">
-          <h3 className="text-lg font-semibold text-white">How Scoring Works</h3>
-          <ul className="mt-3 space-y-1">
-            <li>+10 You followed your trading plan</li>
-            <li>+5 You traded calm/confident</li>
-            <li>+3 Completed pre-trade checklist</li>
-            <li>-10 Rule break detected</li>
-            <li>-5 Impulsive trade</li>
-            <li>-3 Revenge trading detected</li>
-            <li>Profit and loss have ZERO impact</li>
-          </ul>
-        </article>
-      </section>
-
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm text-slate-200">
-        <h3 className="text-lg font-semibold text-white">Winner Rewards</h3>
-        <ul className="mt-3 space-y-1">
-          <li>7-Day Winner: 🥇 Champion badge</li>
-          <li>30-Day Winner: 🏆 Champion badge + gold leaderboard border</li>
-          <li>Monthly Champion (1 person only): 👑 Crown badge + 1 month Pro FREE + Featured on landing page all next month</li>
-        </ul>
-      </section>
-
-      <section className="rounded-xl border border-slate-700 bg-slate-900 p-5 text-sm text-slate-200">
-        <h3 className="text-lg font-semibold text-white">Past Champions</h3>
-        {data.pastChampions.length === 0 ? (
-          <p className="mt-2 text-slate-400">No champions declared yet.</p>
-        ) : (
-          <div className="mt-3 space-y-2">
-            {data.pastChampions.map((champion) => (
-              <div key={champion.id} className="rounded-lg border border-slate-700 bg-slate-950 p-3">
-                <p className="font-medium text-white">{champion.badge} {champion.displayName}</p>
-                <p className="text-xs text-slate-300">{champion.month}/{champion.year} • Score: {champion.disciplineScore.toFixed(2)}</p>
-              </div>
-            ))}
-          </div>
-        )}
-      </section>
-
       {message ? <p className="text-sm text-slate-300">{message}</p> : null}
+
+      <ChallengeGuideBooklet
+        open={guideOpen}
+        onClose={() => setGuideOpen(false)}
+        countdownText={`${countdown.days}d ${countdown.hours}h ${countdown.minutes}m`}
+        nextWinnerDate={new Date(data.monthlyCountdown).toLocaleDateString()}
+        pastChampions={data.pastChampions}
+      />
     </main>
   );
 }
