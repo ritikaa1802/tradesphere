@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useMemo, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 type Summary = {
   id: string;
@@ -85,6 +85,7 @@ export default function AccountabilityPage() {
   const [discoverUsers, setDiscoverUsers] = useState<DiscoverUser[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<IncomingRequest[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [sendingRequestId, setSendingRequestId] = useState<string | null>(null);
@@ -95,6 +96,7 @@ export default function AccountabilityPage() {
   const [doneWell, setDoneWell] = useState("");
   const [mistakes, setMistakes] = useState("");
   const [suggestions, setSuggestions] = useState("");
+  const searchContainerRef = useRef<HTMLDivElement | null>(null);
 
   const loadAccountability = useCallback(async () => {
     setLoading(true);
@@ -173,6 +175,21 @@ export default function AccountabilityPage() {
     if (!query) return discoverUsers;
     return discoverUsers.filter((user) => (user.displayName || "").toLowerCase().includes(query));
   }, [discoverUsers, searchTerm]);
+
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!searchContainerRef.current) return;
+      const target = event.target as Node;
+      if (!searchContainerRef.current.contains(target)) {
+        setIsSearchOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleOutsideClick);
+    return () => {
+      document.removeEventListener("mousedown", handleOutsideClick);
+    };
+  }, []);
 
   async function sendRequest(targetUserId: string) {
     setSendingRequestId(targetUserId);
@@ -362,54 +379,77 @@ export default function AccountabilityPage() {
               <h2 className="text-lg font-semibold text-white">Find a Partner</h2>
               <p className="mt-1 text-sm text-slate-400">Choose who you want to request this week.</p>
 
-              <input
-                type="text"
-                value={searchTerm}
-                onChange={(event) => setSearchTerm(event.target.value)}
-                placeholder="Search by display name"
-                className="mt-4 w-full rounded-lg border border-slate-700 bg-[#0b1220] px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
-              />
+              <div ref={searchContainerRef} className="relative mt-4">
+                <input
+                  type="text"
+                  value={searchTerm}
+                  onFocus={() => setIsSearchOpen(true)}
+                  onClick={() => setIsSearchOpen(true)}
+                  onChange={(event) => {
+                    setSearchTerm(event.target.value);
+                    setIsSearchOpen(true);
+                  }}
+                  placeholder="Search by display name"
+                  className="w-full rounded-lg border border-slate-700 bg-[#0b1220] px-3 py-2 text-sm text-slate-100 outline-none focus:border-blue-500"
+                />
 
-              {filteredDiscoverUsers.length === 0 ? (
-                <p className="mt-4 text-sm text-slate-400">No users available right now.</p>
-              ) : (
-                <div className="mt-4 space-y-3">
-                  {filteredDiscoverUsers.map((user) => (
-                    <article key={user.id} className="rounded-lg border border-slate-700 bg-[#0b1220] p-4">
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-center gap-2">
-                            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
-                              {(user.displayName || "U").charAt(0).toUpperCase()}
-                            </div>
-                            <p className="truncate text-sm font-semibold text-white">{user.displayName || "Unnamed Trader"}</p>
-                          </div>
-                          <div className="mt-2 flex flex-wrap gap-2">
-                            <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-200">
-                              {badgeText(user.tradingStyle, "Intraday")}
-                            </span>
-                            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-200">
-                              {badgeText(user.traderType, "Beginner")}
-                            </span>
-                          </div>
-                          <div className="mt-2 text-xs text-slate-300">
-                            <p>Discipline Score: {user.disciplineScore}</p>
-                            <p>Trades this week: {user.totalTradesThisWeek}</p>
-                          </div>
-                        </div>
-                        <button
-                          type="button"
-                          onClick={() => sendRequest(user.id)}
-                          disabled={sendingRequestId === user.id}
-                          className="shrink-0 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
-                        >
-                          {sendingRequestId === user.id ? "Sending..." : "Send Request"}
-                        </button>
+                {isSearchOpen ? (
+                  <div className="absolute z-20 mt-2 w-full overflow-y-auto rounded-lg border border-slate-700 bg-[#0b1220] shadow-xl" style={{ maxHeight: "300px" }}>
+                    {discoverUsers.length === 0 ? (
+                      <div className="p-4 text-sm text-slate-300">
+                        <p>No traders available right now</p>
+                        <p className="mt-1 text-slate-400">Check back later or invite friends</p>
                       </div>
-                    </article>
-                  ))}
+                    ) : filteredDiscoverUsers.length === 0 ? (
+                      <div className="p-4 text-sm text-slate-400">No matching traders found.</div>
+                    ) : (
+                      <div className="space-y-2 p-2">
+                        {filteredDiscoverUsers.map((user) => (
+                          <article key={user.id} className="rounded-lg border border-slate-700 bg-slate-900 p-3">
+                            <div className="flex items-start justify-between gap-3">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-blue-600 text-xs font-bold text-white">
+                                    {(user.displayName || "U").charAt(0).toUpperCase()}
+                                  </div>
+                                  <p className="truncate text-sm font-semibold text-white">{user.displayName || "Unnamed Trader"}</p>
+                                </div>
+                                <div className="mt-2 flex flex-wrap gap-2">
+                                  <span className="rounded-full bg-blue-500/15 px-2 py-0.5 text-xs font-medium text-blue-200">
+                                    {badgeText(user.tradingStyle, "Intraday")}
+                                  </span>
+                                  <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-xs font-medium text-emerald-200">
+                                    {badgeText(user.traderType, "Beginner")}
+                                  </span>
+                                </div>
+                                <div className="mt-2 text-xs text-slate-300">
+                                  <p>Discipline Score: {user.disciplineScore}</p>
+                                  <p>Trades this week: {user.totalTradesThisWeek}</p>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => sendRequest(user.id)}
+                                disabled={sendingRequestId === user.id}
+                                className="shrink-0 rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500 disabled:opacity-60"
+                              >
+                                {sendingRequestId === user.id ? "Sending..." : "Send Request"}
+                              </button>
+                            </div>
+                          </article>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                ) : null}
+              </div>
+
+              {discoverUsers.length === 0 ? (
+                <div className="mt-4 rounded-lg border border-slate-700 bg-[#0b1220] p-4 text-sm text-slate-300">
+                  <p>No traders available right now</p>
+                  <p className="mt-1 text-slate-400">Check back later or invite friends</p>
                 </div>
-              )}
+              ) : null}
             </article>
 
             <article className="rounded-lg border border-slate-700 bg-slate-900 p-5">
