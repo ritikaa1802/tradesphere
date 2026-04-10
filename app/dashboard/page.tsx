@@ -66,6 +66,23 @@ interface MissionSummary {
   currentMissionNumber: number;
 }
 
+interface ChallengeSummaryCard {
+  id: string;
+  title: string;
+  startDate: string;
+  endDate: string;
+  isPro: boolean;
+  myEntry: {
+    rank: number;
+    disciplineScore: number;
+  } | null;
+}
+
+interface ChallengesSummaryResponse {
+  challenges: ChallengeSummaryCard[];
+  monthlyCountdown: string;
+}
+
 type IndexRow = {
   name: string;
   value: number;
@@ -115,6 +132,7 @@ export default function DashboardPage() {
   const [trades, setTrades] = useState<TradeItem[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsSummary | null>(null);
   const [missions, setMissions] = useState<MissionSummary | null>(null);
+  const [challenges, setChallenges] = useState<ChallengesSummaryResponse | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -134,25 +152,27 @@ export default function DashboardPage() {
       try {
         setError("");
 
-        const [summaryRes, historyRes, tradesRes, analyticsRes, missionsRes] = await Promise.all([
+        const [summaryRes, historyRes, tradesRes, analyticsRes, missionsRes, challengesRes] = await Promise.all([
           fetch("/api/portfolio", { cache: "no-store" }),
           fetch("/api/portfolio/history", { cache: "no-store" }),
           fetch("/api/trades", { cache: "no-store" }),
           fetch("/api/analytics/summary", { cache: "no-store" }),
           fetch("/api/missions", { cache: "no-store" }),
+          fetch("/api/challenges", { cache: "no-store" }),
         ]);
 
-        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !missionsRes.ok) {
+        if (!summaryRes.ok || !historyRes.ok || !tradesRes.ok || !analyticsRes.ok || !missionsRes.ok || !challengesRes.ok) {
           throw new Error("Failed to load dashboard data");
         }
 
-        const [summaryData, historyData, tradesData, analyticsData, missionData] = (await Promise.all([
+        const [summaryData, historyData, tradesData, analyticsData, missionData, challengesData] = (await Promise.all([
           summaryRes.json(),
           historyRes.json(),
           tradesRes.json(),
           analyticsRes.json(),
           missionsRes.json(),
-        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, MissionSummary];
+          challengesRes.json(),
+        ])) as [PortfolioSummary, PortfolioHistoryPoint[], TradeItem[], AnalyticsSummary, MissionSummary, ChallengesSummaryResponse];
 
         if (!mounted) {
           return;
@@ -163,6 +183,7 @@ export default function DashboardPage() {
         setTrades(tradesData);
         setAnalytics(analyticsData);
         setMissions(missionData);
+        setChallenges(challengesData);
       } catch {
         if (mounted) {
           setError("Unable to load dashboard data right now.");
@@ -372,6 +393,32 @@ export default function DashboardPage() {
     return missions.missions.find((mission) => mission.missionNumber === missions.currentMissionNumber) || null;
   }, [missions]);
 
+  const activeChallenge = useMemo(() => {
+    const now = Date.now();
+    const list = challenges?.challenges || [];
+    return list.find((challenge) => {
+      const start = new Date(challenge.startDate).getTime();
+      const end = new Date(challenge.endDate).getTime();
+      return start <= now && end >= now;
+    }) || null;
+  }, [challenges]);
+
+  const challengeProgress = useMemo(() => {
+    if (!activeChallenge) return null;
+    const start = new Date(activeChallenge.startDate).getTime();
+    const end = new Date(activeChallenge.endDate).getTime();
+    const dayLength = 24 * 60 * 60 * 1000;
+    const day = Math.max(1, Math.floor((Date.now() - start) / dayLength) + 1);
+    const totalDays = Math.max(1, Math.ceil((end - start) / dayLength));
+    return { day, totalDays };
+  }, [activeChallenge]);
+
+  const championCountdown = useMemo(() => {
+    if (!challenges?.monthlyCountdown) return null;
+    const diff = Math.max(0, new Date(challenges.monthlyCountdown).getTime() - Date.now());
+    return Math.ceil(diff / (24 * 60 * 60 * 1000));
+  }, [challenges?.monthlyCountdown]);
+
   if (loading) {
     return (
       <section className="space-y-3 text-white">
@@ -392,6 +439,48 @@ export default function DashboardPage() {
 
   return (
     <section className="space-y-3 text-white">
+      <div className="rounded-xl border border-blue-500/30 bg-[#0f1b35] p-4">
+        {activeChallenge?.myEntry ? (
+          <div className="grid gap-2 text-sm text-slate-200 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <p className="text-xs uppercase text-slate-400">Active challenge</p>
+              <p className="font-semibold text-white">{activeChallenge.title}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-400">Progress</p>
+              <p className="font-semibold text-white">Day {challengeProgress?.day || 1} of {challengeProgress?.totalDays || 1}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-400">Your score</p>
+              <p className="font-semibold text-white">{activeChallenge.myEntry.disciplineScore.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-400">Current rank</p>
+              <p className="font-semibold text-white">#{activeChallenge.myEntry.rank}</p>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase text-slate-400">Champion in</p>
+                <p className="font-semibold text-white">{championCountdown ?? 0} days</p>
+              </div>
+              <Link href="/challenges" className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
+                View Challenge
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-white">🏆 Join the 7-Day Challenge — Free!</p>
+              <p className="text-xs text-slate-300">Build consistency and climb the discipline leaderboard.</p>
+            </div>
+            <Link href="/challenges" className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500">
+              Join Now
+            </Link>
+          </div>
+        )}
+      </div>
+
       <div className="border-b border-[#1a2744] pb-3">
         <div className="grid grid-cols-2 gap-3 text-right md:grid-cols-5">
           <div className="text-left md:text-right">

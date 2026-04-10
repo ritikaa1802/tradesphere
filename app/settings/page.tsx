@@ -21,13 +21,22 @@ export default function SettingsPage() {
   const [showResetModal, setShowResetModal] = useState(false);
   const [message, setMessage] = useState("");
   const [sendingWeeklyReport, setSendingWeeklyReport] = useState(false);
+  const [badges, setBadges] = useState({
+    sevenDayChampion: false,
+    thirtyDayChampion: false,
+    monthlyChampion: false,
+  });
 
   useEffect(() => {
     let mounted = true;
 
     async function loadSettings() {
       try {
-        const response = await fetch("/api/settings", { cache: "no-store" });
+        const [response, challengesResponse] = await Promise.all([
+          fetch("/api/settings", { cache: "no-store" }),
+          fetch("/api/challenges", { cache: "no-store" }),
+        ]);
+
         if (!response.ok) {
           throw new Error("Failed to load settings");
         }
@@ -37,6 +46,17 @@ export default function SettingsPage() {
           setShowOnLeaderboard(data.showOnLeaderboard);
           setAccountabilityEnabled(Boolean(data.accountabilityEnabled));
           setDisplayName(data.displayName || "");
+
+          if (challengesResponse.ok) {
+            const challengesPayload = (await challengesResponse.json()) as {
+              myBadges?: { sevenDayChampion: boolean; thirtyDayChampion: boolean; monthlyChampion: boolean };
+            };
+            setBadges({
+              sevenDayChampion: Boolean(challengesPayload.myBadges?.sevenDayChampion),
+              thirtyDayChampion: Boolean(challengesPayload.myBadges?.thirtyDayChampion),
+              monthlyChampion: Boolean(challengesPayload.myBadges?.monthlyChampion),
+            });
+          }
         }
       } catch {
         if (mounted) {
@@ -134,6 +154,12 @@ export default function SettingsPage() {
     <section className="rounded-xl border border-[#1a2744] bg-[#0d1421] p-4">
       <h2 className="text-lg font-semibold text-white">Settings</h2>
       <p className="mt-1 text-sm text-[#9ca3af]">Manage your leaderboard profile.</p>
+
+      <div className="mt-3 flex flex-wrap gap-2">
+        {badges.sevenDayChampion ? <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-200">🥇 7-Day Champion</span> : null}
+        {badges.thirtyDayChampion ? <span className="rounded-full bg-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-200">🏆 30-Day Champion</span> : null}
+        {badges.monthlyChampion ? <span className="rounded-full bg-yellow-500/25 px-2 py-1 text-xs font-semibold text-yellow-100">👑 Monthly Champion</span> : null}
+      </div>
 
       <form onSubmit={onSave} className="mt-4 space-y-4">
         <label className="flex items-center justify-between rounded-lg border border-[#1a2744] bg-[#0f1929] px-3 py-2">

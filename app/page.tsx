@@ -120,11 +120,34 @@ function PricingCard({
 export default function Home() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [monthlyChampion, setMonthlyChampion] = useState<{ displayName: string; disciplineScore: number } | null>(null);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", onScroll);
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    let mounted = true;
+
+    async function loadChampion() {
+      try {
+        const response = await fetch("/api/challenges/monthly-champion", { cache: "no-store" });
+        if (!response.ok) return;
+        const payload = (await response.json()) as { champion: { displayName: string; disciplineScore: number } | null };
+        if (mounted) {
+          setMonthlyChampion(payload.champion);
+        }
+      } catch {
+        if (mounted) setMonthlyChampion(null);
+      }
+    }
+
+    loadChampion();
+    return () => {
+      mounted = false;
+    };
   }, []);
 
 
@@ -251,6 +274,30 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      <section className="mx-auto w-full max-w-7xl px-4 pt-12 sm:px-6 lg:px-8">
+        <div className="rounded-2xl border border-amber-400/35 bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-400/20 p-6">
+          <p className="text-sm font-semibold uppercase tracking-wide text-amber-200">👑 This Month's Champion</p>
+          {monthlyChampion ? (
+            <>
+              <p className="mt-2 text-2xl font-black text-white">{monthlyChampion.displayName}</p>
+              <p className="text-sm text-amber-50">Discipline Score: {monthlyChampion.disciplineScore.toFixed(2)}</p>
+            </>
+          ) : (
+            <>
+              <p className="mt-2 text-2xl font-black text-white">Champion not declared yet</p>
+              <p className="text-sm text-amber-50">Trade consistently to earn the crown.</p>
+            </>
+          )}
+          <p className="mt-3 text-sm text-amber-100">Could you be next month's champion?</p>
+          <Link
+            href="/signup"
+            className="mt-4 inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
+          >
+            Start Trading Free
+          </Link>
+        </div>
+      </section>
 
       {/* ── KEY METRICS ─────────────────────────────────────────────────────── */}
       <section className="mx-auto w-full max-w-7xl px-4 py-16 sm:px-6 lg:px-8">

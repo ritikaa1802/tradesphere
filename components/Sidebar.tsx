@@ -9,7 +9,6 @@ import {
   Bell,
   Brain,
   Clock,
-  Flag,
   Eye,
   Globe,
   LayoutDashboard,
@@ -38,7 +37,7 @@ const secondaryNavItems = [
   { label: "AI Coach",       href: "/ai-coach",      icon: Sparkles },
   { label: "Alerts",         href: "/alerts",        icon: Bell },
   { label: "Leaderboard",    href: "/leaderboard",   icon: Trophy },
-  { label: "Contests",       href: "/competitions",  icon: Flag },
+  { label: "Challenges",     href: "/challenges",    icon: Trophy },
 ];
 
 export default function Sidebar({
@@ -53,6 +52,7 @@ export default function Sidebar({
   const pathname = usePathname();
   const { data: session } = useSession();
   const [hasPendingRequests, setHasPendingRequests] = useState(false);
+  const [hasChallengeNotification, setHasChallengeNotification] = useState(false);
 
   useEffect(() => {
     async function loadPendingRequests() {
@@ -62,16 +62,27 @@ export default function Sidebar({
       }
 
       try {
-        const response = await fetch("/api/accountability/requests", { cache: "no-store" });
-        if (!response.ok) {
+        const [requestsResponse, challengesResponse] = await Promise.all([
+          fetch("/api/accountability/requests", { cache: "no-store" }),
+          fetch("/api/challenges", { cache: "no-store" }),
+        ]);
+
+        if (requestsResponse.ok) {
+          const requestsPayload = (await requestsResponse.json()) as { requests?: Array<{ pairId: string }> };
+          setHasPendingRequests((requestsPayload.requests || []).length > 0);
+        } else {
           setHasPendingRequests(false);
-          return;
         }
 
-        const payload = (await response.json()) as { requests?: Array<{ pairId: string }> };
-        setHasPendingRequests((payload.requests || []).length > 0);
+        if (challengesResponse.ok) {
+          const challengesPayload = (await challengesResponse.json()) as { hasNewChallengeNotification?: boolean };
+          setHasChallengeNotification(Boolean(challengesPayload.hasNewChallengeNotification));
+        } else {
+          setHasChallengeNotification(false);
+        }
       } catch {
         setHasPendingRequests(false);
+        setHasChallengeNotification(false);
       }
     }
 
@@ -161,6 +172,7 @@ export default function Sidebar({
           const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const Icon = item.icon;
           const showAccountabilityBadge = item.href === "/accountability" && hasPendingRequests;
+          const showChallengeBadge = item.href === "/challenges" && hasChallengeNotification;
 
           return (
             <Link
@@ -202,8 +214,9 @@ export default function Sidebar({
                 <span className="flex items-center gap-2">
                   {item.label}
                   {showAccountabilityBadge ? <span className="h-2 w-2 rounded-full bg-rose-500" /> : null}
+                  {showChallengeBadge ? <span className="h-2 w-2 rounded-full bg-rose-500" /> : null}
                 </span>
-              ) : showAccountabilityBadge ? (
+              ) : showAccountabilityBadge || showChallengeBadge ? (
                 <span className="ml-1 h-2 w-2 rounded-full bg-rose-500" />
               ) : null}
             </Link>

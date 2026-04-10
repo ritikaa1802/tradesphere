@@ -19,6 +19,8 @@ model User {
   traderType   String?
   tradingStyle String?
   isPro        Boolean    @default(false)
+  proUnlockedUntil DateTime?
+  proGrantedByChallenge Boolean @default(false)
   accountabilityMode Boolean @default(false)
   showOnLeaderboard Boolean @default(false)
   displayName   String?
@@ -35,6 +37,8 @@ model User {
   watchlist    Watchlist[]
   alerts       Alert[]
   competitionEntries CompetitionEntry[]
+  cohortEntries CohortEntry[]
+  monthlyChampionships MonthlyChampion[]
 }
 
 model WeeklySummary {
@@ -174,6 +178,48 @@ model CompetitionEntry {
   user          User        @relation(fields: [userId], references: [id])
 
   @@unique([competitionId, userId])
+}
+
+model CohortChallenge {
+  id              String       @id @default(cuid())
+  title           String
+  description     String
+  startDate       DateTime
+  endDate         DateTime
+  isActive        Boolean      @default(true)
+  maxParticipants Int          @default(100)
+  isPro           Boolean      @default(false)
+  entries         CohortEntry[]
+  createdAt       DateTime     @default(now())
+}
+
+model CohortEntry {
+  id                  String          @id @default(cuid())
+  challengeId         String
+  userId              String
+  joinedAt            DateTime        @default(now())
+  disciplineScore     Float           @default(0)
+  totalTrades         Int             @default(0)
+  ruleBreaks          Int             @default(0)
+  checklistCompletion Float           @default(0)
+  rank                Int?
+  challenge           CohortChallenge @relation(fields:[challengeId], references:[id])
+  user                User            @relation(fields:[userId], references:[id])
+
+  @@unique([challengeId, userId])
+}
+
+model MonthlyChampion {
+  id                String   @id @default(cuid())
+  userId            String
+  month             String
+  year              String
+  disciplineScore   Float
+  proUnlockedUntil  DateTime
+  createdAt         DateTime @default(now())
+  user              User     @relation(fields:[userId], references:[id])
+
+  @@unique([month, year])
 }
 
 model OTP {

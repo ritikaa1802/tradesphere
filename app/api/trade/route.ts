@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import prisma from "@/lib/prisma";
 import { getHoldings } from "@/lib/portfolio";
 import { checkAndCompleteMissions } from "@/lib/missions";
+import { updateChallengeScoresForTrade } from "@/lib/challenges";
 
 export async function POST(request: NextRequest) {
   const session = await getServerSession(authOptions);
@@ -70,6 +71,13 @@ export async function POST(request: NextRequest) {
     });
 
     await checkAndCompleteMissions(session.user.id);
+    await updateChallengeScoresForTrade({
+      userId: session.user.id,
+      followedPlan,
+      emotionalState,
+      tradeReason,
+      checklistCompleted: followedPlan.trim().toLowerCase() === "yes",
+    });
 
     return NextResponse.json({
       success: true,
@@ -131,6 +139,13 @@ export async function POST(request: NextRequest) {
   });
 
   await checkAndCompleteMissions(session.user.id);
+  await updateChallengeScoresForTrade({
+    userId: session.user.id,
+    followedPlan,
+    emotionalState,
+    tradeReason,
+    checklistCompleted: followedPlan.trim().toLowerCase() === "yes",
+  });
 
   return NextResponse.json({ success: true, trade, balance: newBalance });
 }

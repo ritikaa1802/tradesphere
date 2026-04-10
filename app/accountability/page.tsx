@@ -60,6 +60,14 @@ type AnalyticsSummaryResponse = {
   winRate: number;
 };
 
+type ChallengeBadgesResponse = {
+  myBadges?: {
+    sevenDayChampion: boolean;
+    thirtyDayChampion: boolean;
+    monthlyChampion: boolean;
+  };
+};
+
 type DiscoverUser = {
   id: string;
   displayName: string | null;
@@ -84,6 +92,11 @@ export default function AccountabilityPage() {
   const [analyticsWinRate, setAnalyticsWinRate] = useState<number | null>(null);
   const [discoverUsers, setDiscoverUsers] = useState<DiscoverUser[]>([]);
   const [incomingRequests, setIncomingRequests] = useState<IncomingRequest[]>([]);
+  const [badges, setBadges] = useState({
+    sevenDayChampion: false,
+    thirtyDayChampion: false,
+    monthlyChampion: false,
+  });
   const [searchTerm, setSearchTerm] = useState("");
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -140,6 +153,16 @@ export default function AccountabilityPage() {
       } else {
         setDiscoverUsers([]);
         setIncomingRequests([]);
+      }
+
+      const badgesResponse = await fetch("/api/challenges", { cache: "no-store" });
+      if (badgesResponse.ok) {
+        const badgesPayload = (await badgesResponse.json()) as ChallengeBadgesResponse;
+        setBadges({
+          sevenDayChampion: Boolean(badgesPayload.myBadges?.sevenDayChampion),
+          thirtyDayChampion: Boolean(badgesPayload.myBadges?.thirtyDayChampion),
+          monthlyChampion: Boolean(badgesPayload.myBadges?.monthlyChampion),
+        });
       }
     } catch {
       setData(null);
@@ -333,6 +356,12 @@ export default function AccountabilityPage() {
         <section className="rounded-xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_20px_70px_-40px_rgba(15,23,42,0.9)]">
           <h1 className="text-3xl font-semibold text-white">Accountability Partners</h1>
           <p className="mt-2 text-slate-400">Weekly reflection with structured partner feedback.</p>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            {badges.sevenDayChampion ? <span className="rounded-full bg-emerald-500/20 px-2 py-1 text-xs font-semibold text-emerald-200">🥇 7-Day Champion</span> : null}
+            {badges.thirtyDayChampion ? <span className="rounded-full bg-amber-500/20 px-2 py-1 text-xs font-semibold text-amber-200">🏆 30-Day Champion</span> : null}
+            {badges.monthlyChampion ? <span className="rounded-full bg-yellow-500/25 px-2 py-1 text-xs font-semibold text-yellow-100">👑 Monthly Champion</span> : null}
+          </div>
 
           {!data.accountabilityMode ? (
             <div className="mt-4 rounded-lg border border-slate-700 bg-slate-900/80 p-4">

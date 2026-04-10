@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowRight, Brain, Bolt, Trophy, CandlestickChart } from "lucide-react";
 
@@ -46,6 +47,22 @@ interface ContestCard {
   daysLeft: number;
   status: "Live" | "Upcoming";
 }
+
+type DisciplineChallengeDigest = {
+  id: string;
+  title: string;
+  description: string;
+  endDate: string;
+  isPro: boolean;
+  participantCount: number;
+};
+
+type MonthlyChampionDigest = {
+  champion: {
+    displayName: string;
+    disciplineScore: number;
+  } | null;
+};
 
 function getCountdown(endDate: string) {
   const total = Math.max(0, new Date(endDate).getTime() - Date.now());
@@ -157,14 +174,19 @@ export default function CompetitionsPage() {
   const [suggestCategory, setSuggestCategory] = useState("Strategy");
   const [suggestPrize, setSuggestPrize] = useState("Rs.50,000");
   const [activeFilter, setActiveFilter] = useState<ContestFilter>("All");
+  const [disciplineChallenges, setDisciplineChallenges] = useState<DisciplineChallengeDigest[]>([]);
+  const [monthlyChampion, setMonthlyChampion] = useState<MonthlyChampionDigest["champion"]>(null);
+  const [monthEndCountdown, setMonthEndCountdown] = useState({ days: 0, hours: 0, minutes: 0 });
 
   useEffect(() => {
     let mounted = true;
 
     async function load() {
-      const [competitionsRes, leaderboardRes] = await Promise.all([
+      const [competitionsRes, leaderboardRes, challengesRes, championRes] = await Promise.all([
         fetch("/api/competitions", { cache: "no-store" }),
         fetch("/api/competitions/leaderboard", { cache: "no-store" }),
+        fetch("/api/challenges", { cache: "no-store" }),
+        fetch("/api/challenges/monthly-champion", { cache: "no-store" }),
       ]);
 
       if (!mounted) return;
@@ -177,6 +199,29 @@ export default function CompetitionsPage() {
       if (leaderboardRes.ok) {
         const data = (await leaderboardRes.json()) as LeaderboardResponse;
         setLeaderboard(data);
+      }
+
+      if (challengesRes.ok) {
+        const challengesPayload = (await challengesRes.json()) as { challenges: DisciplineChallengeDigest[]; monthlyCountdown?: string };
+        setDisciplineChallenges(challengesPayload.challenges || []);
+
+        if (challengesPayload.monthlyCountdown) {
+          const updateCountdown = () => {
+            const diff = Math.max(0, new Date(challengesPayload.monthlyCountdown as string).getTime() - Date.now());
+            setMonthEndCountdown({
+              days: Math.floor(diff / (1000 * 60 * 60 * 24)),
+              hours: Math.floor((diff / (1000 * 60 * 60)) % 24),
+              minutes: Math.floor((diff / (1000 * 60)) % 60),
+            });
+          };
+
+          updateCountdown();
+        }
+      }
+
+      if (championRes.ok) {
+        const championPayload = (await championRes.json()) as MonthlyChampionDigest;
+        setMonthlyChampion(championPayload.champion);
       }
 
       setLoading(false);
@@ -312,6 +357,68 @@ export default function CompetitionsPage() {
 
   return (
     <section className="space-y-5">
+      <section className="rounded-3xl border border-amber-400/30 bg-[#0b1428] p-5 sm:p-6">
+        <h2 className="text-2xl font-black text-white">Discipline Challenges</h2>
+
+        <div className="mt-4 rounded-xl border border-amber-400/40 bg-gradient-to-r from-amber-500/20 to-yellow-500/20 p-4">
+          <p className="text-sm font-semibold text-amber-200">👑 This Month's Champion</p>
+          {monthlyChampion ? (
+            <>
+              <p className="mt-1 text-lg font-bold text-white">{monthlyChampion.displayName}</p>
+              <p className="text-sm text-amber-100">Discipline Score: {monthlyChampion.disciplineScore.toFixed(2)}</p>
+              <p className="text-xs text-amber-100/90">They won 1 month Pro plan free</p>
+            </>
+          ) : (
+            <>
+              <p className="mt-1 text-sm font-semibold text-white">👑 Monthly Champion not declared yet</p>
+              <p className="text-xs text-amber-100/90">Trade consistently to be this month's champion</p>
+            </>
+          )}
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          {disciplineChallenges.map((challenge) => (
+            <article key={challenge.id} className="rounded-xl border border-[#254171] bg-[#12264a] p-4">
+              <div className="flex items-center justify-between gap-2">
+                <p className="text-lg font-bold text-white">{challenge.title}</p>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${challenge.isPro ? "bg-amber-400/20 text-amber-200" : "bg-emerald-500/20 text-emerald-300"}`}>
+                  {challenge.isPro ? "PRO" : "FREE"}
+                </span>
+              </div>
+              <p className="mt-2 text-sm text-slate-300">{challenge.description}</p>
+              <div className="mt-3 text-xs text-slate-300">
+                <p>Days remaining: {Math.max(0, Math.ceil((new Date(challenge.endDate).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))}</p>
+                <p>Participants: {challenge.participantCount}</p>
+              </div>
+              <Link href="/challenges" className="mt-3 inline-flex rounded-lg bg-blue-600 px-3 py-2 text-xs font-bold text-white hover:bg-blue-500">
+                View Challenge
+              </Link>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <article className="rounded-xl border border-[#254171] bg-[#12264a] p-4">
+            <p className="text-sm font-semibold text-white">How scoring works</p>
+            <ul className="mt-2 space-y-1 text-xs text-slate-300">
+              <li>+10 You followed your trading plan</li>
+              <li>+5 You traded calm/confident</li>
+              <li>+3 Completed pre-trade checklist</li>
+              <li>-10 Rule break detected</li>
+              <li>-5 Impulsive trade</li>
+              <li>-3 Revenge trading detected</li>
+              <li>Profit and loss have ZERO impact</li>
+            </ul>
+          </article>
+
+          <article className="rounded-xl border border-[#254171] bg-[#12264a] p-4">
+            <p className="text-sm font-semibold text-white">Monthly champion countdown</p>
+            <p className="mt-2 text-2xl font-black text-amber-300">{monthEndCountdown.days}d {monthEndCountdown.hours}h {monthEndCountdown.minutes}m</p>
+            <p className="mt-1 text-xs text-slate-300">Next winner declared at month end.</p>
+          </article>
+        </div>
+      </section>
+
       <div className="overflow-hidden rounded-3xl border border-[#18305e] bg-[linear-gradient(180deg,#07142f,#060f24)]">
         <div className="bg-[linear-gradient(90deg,rgba(34,211,238,.08),transparent_35%,rgba(59,130,246,.08))] px-4 py-6 sm:px-6">
           <p className="inline-flex items-center rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1 text-xs font-semibold text-cyan-300">
