@@ -32,6 +32,18 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Pair not found" }, { status: 404 });
   }
 
+  const acceptedPair = await prisma.accountabilityPair.findFirst({
+    where: {
+      id: pairId,
+      status: "accepted",
+    },
+    select: { id: true },
+  });
+
+  if (!acceptedPair) {
+    return NextResponse.json({ error: "Reviews are only allowed for accepted pairs" }, { status: 400 });
+  }
+
   if (pair.user1Id !== session.user.id && pair.user2Id !== session.user.id) {
     return NextResponse.json({ error: "Not allowed for this pair" }, { status: 403 });
   }

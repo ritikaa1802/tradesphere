@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { signOut, useSession } from "next-auth/react";
 import {
   AlertTriangle,
@@ -51,6 +52,31 @@ export default function Sidebar({
 }) {
   const pathname = usePathname();
   const { data: session } = useSession();
+  const [hasPendingRequests, setHasPendingRequests] = useState(false);
+
+  useEffect(() => {
+    async function loadPendingRequests() {
+      if (!session?.user?.id) {
+        setHasPendingRequests(false);
+        return;
+      }
+
+      try {
+        const response = await fetch("/api/accountability/requests", { cache: "no-store" });
+        if (!response.ok) {
+          setHasPendingRequests(false);
+          return;
+        }
+
+        const payload = (await response.json()) as { requests?: Array<{ pairId: string }> };
+        setHasPendingRequests((payload.requests || []).length > 0);
+      } catch {
+        setHasPendingRequests(false);
+      }
+    }
+
+    loadPendingRequests();
+  }, [pathname, session?.user?.id]);
 
   return (
     <aside
@@ -134,6 +160,7 @@ export default function Sidebar({
         {secondaryNavItems.map((item) => {
           const active = pathname === item.href || pathname?.startsWith(`${item.href}/`);
           const Icon = item.icon;
+          const showAccountabilityBadge = item.href === "/accountability" && hasPendingRequests;
 
           return (
             <Link
@@ -171,7 +198,14 @@ export default function Sidebar({
               }}
             >
               <Icon size={18} />
-              {!collapsed ? <span>{item.label}</span> : null}
+              {!collapsed ? (
+                <span className="flex items-center gap-2">
+                  {item.label}
+                  {showAccountabilityBadge ? <span className="h-2 w-2 rounded-full bg-rose-500" /> : null}
+                </span>
+              ) : showAccountabilityBadge ? (
+                <span className="ml-1 h-2 w-2 rounded-full bg-rose-500" />
+              ) : null}
             </Link>
           );
         })}

@@ -1,10 +1,6 @@
 import prisma from "@/lib/prisma";
 import { computeWeeklyBehaviorMetrics, getWeekWindow } from "@/lib/communityMetrics";
 
-function orderedPair(a: string, b: string) {
-  return a < b ? [a, b] : [b, a];
-}
-
 export async function ensureWeeklySummary(userId: string, reference = new Date()) {
   const metrics = await computeWeeklyBehaviorMetrics(userId, reference);
 
@@ -42,19 +38,14 @@ export async function ensureWeeklySummary(userId: string, reference = new Date()
   return summary;
 }
 
-export async function ensureWeeklyPairForUser(userId: string, reference = new Date()) {
+export async function getCurrentAcceptedPairForUser(userId: string, reference = new Date()) {
   const { weekStart, weekEnd } = getWeekWindow(reference);
-
-  const me = await prisma.user.findUnique({
-    where: { id: userId },
-    select: { id: true, accountabilityMode: true, displayName: true },
-  });
-
-  if (!me?.accountabilityMode) return null;
 
   const existingPair = await prisma.accountabilityPair.findFirst({
     where: {
       weekStart,
+      weekEnd,
+      status: "accepted",
       OR: [{ user1Id: userId }, { user2Id: userId }],
     },
     include: {
@@ -63,48 +54,37 @@ export async function ensureWeeklyPairForUser(userId: string, reference = new Da
     },
   });
 
-  if (existingPair) return existingPair;
+  return existingPair;
+}
 
-  const candidates = await prisma.user.findMany({
+export async function getPendingOutgoingRequestForUser(userId: string, reference = new Date()) {
+  const { weekStart, weekEnd } = getWeekWindow(reference);
+
+  const pending = await prisma.accountabilityPair.findFirst({
     where: {
-      accountabilityMode: true,
-      id: { not: userId },
-    },
-    select: { id: true, displayName: true },
-  });
-
-  if (candidates.length === 0) return null;
-
-  const alreadyPairedIds = await prisma.accountabilityPair.findMany({
-    where: { weekStart },
-    select: { user1Id: true, user2Id: true },
-  });
-
-  const unavailable = new Set<string>();
-  for (const pair of alreadyPairedIds) {
-    unavailable.add(pair.user1Id);
-    unavailable.add(pair.user2Id);
-  }
-
-  const availableCandidate = candidates.find((item) => !unavailable.has(item.id));
-  if (!availableCandidate) return null;
-
-  const [user1Id, user2Id] = orderedPair(userId, availableCandidate.id);
-
-  const created = await prisma.accountabilityPair.create({
-    data: {
+      requesterId: userId,
+      status: "pending",
       weekStart,
       weekEnd,
-      user1Id,
-      user2Id,
     },
     include: {
       user1: { select: { id: true, displayName: true } },
       user2: { select: { id: true, displayName: true } },
     },
+    orderBy: { createdAt: "desc" },
   });
 
-  return created;
+  if (!pending) return null;
+
+  const recipient = pending.user1Id === userId ? pending.user2 : pending.user1;
+
+  return {
+    id: pending.id,
+    recipient: {
+      id: recipient.id,
+      displayName: recipient.displayName,
+    },
+  };
 }
 
 export async function getWeeklySummaryWithPartner(userId: string, reference = new Date()) {
@@ -151,14 +131,17 @@ export async function getWeeklySummaryWithPartner(userId: string, reference = ne
       partnerSummary: null,
       pendingReview: false,
       receivedReview: null,
+      outgoingRequest: null,
       lastWeekFeedback,
       reviewHistory,
     };
   }
 
-  const pair = await ensureWeeklyPairForUser(userId, reference);
+  const pair = await getCurrentAcceptedPairForUser(userId, reference);
 
   if (!pair) {
+    const outgoingRequest = await getPendingOutgoingRequestForUser(userId, reference);
+
     return {
       weekStart,
       accountabilityMode: true,
@@ -167,6 +150,7 @@ export async function getWeeklySummaryWithPartner(userId: string, reference = ne
       partnerSummary: null,
       pendingReview: false,
       receivedReview: null,
+      outgoingRequest,
       lastWeekFeedback,
       reviewHistory,
     };
@@ -201,6 +185,7 @@ export async function getWeeklySummaryWithPartner(userId: string, reference = ne
     pair,
     pendingReview: !existingReview,
     receivedReview,
+    outgoingRequest: null,
     lastWeekFeedback,
     reviewHistory,
   };

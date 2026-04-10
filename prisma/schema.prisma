@@ -60,6 +60,8 @@ model AccountabilityPair {
   id              String   @id @default(cuid())
   user1Id         String
   user2Id         String
+  requesterId     String
+  status          String   @default("pending")
   weekStart       DateTime
   weekEnd         DateTime
   user1ReviewDone Boolean  @default(false)
