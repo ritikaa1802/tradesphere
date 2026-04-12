@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import MentorMatchingTab from "@/components/accountability/MentorMatchingTab";
 
 type Summary = {
   id: string;
@@ -88,6 +89,7 @@ function badgeText(value: string | null | undefined, fallback: string) {
 }
 
 export default function AccountabilityPage() {
+  const [activeTab, setActiveTab] = useState("partners");
   const [data, setData] = useState<WeeklySummaryResponse | null>(null);
   const [analyticsWinRate, setAnalyticsWinRate] = useState<number | null>(null);
   const [discoverUsers, setDiscoverUsers] = useState<DiscoverUser[]>([]);
@@ -347,12 +349,37 @@ export default function AccountabilityPage() {
   return (
     <main className="mx-auto min-h-screen w-full max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
       <div className="space-y-6">
-        {showSundayReminder ? (
+        <section className="rounded-xl border border-slate-800 bg-[#0f1629] p-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setActiveTab("partners")}
+              className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
+                activeTab === "partners" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+              }`}
+            >
+              Accountability Partners
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab("mentors")}
+              className={`rounded-md px-3 py-2 text-sm font-semibold transition ${
+                activeTab === "mentors" ? "bg-blue-600 text-white" : "bg-slate-800 text-slate-300 hover:bg-slate-700"
+              }`}
+            >
+              Find a Mentor
+            </button>
+          </div>
+        </section>
+
+        {activeTab === "partners" && showSundayReminder ? (
           <section className="rounded-xl border border-rose-400/50 bg-rose-500/20 px-4 py-3 text-sm font-semibold text-rose-100">
             ⚠️ Weekly review due today!
           </section>
         ) : null}
 
+        {activeTab === "partners" ? (
+          <>
         <section className="rounded-xl border border-slate-800 bg-[#0f1629] p-6 shadow-[0_20px_70px_-40px_rgba(15,23,42,0.9)]">
           <h1 className="text-3xl font-semibold text-white">Accountability Partners</h1>
           <p className="mt-2 text-slate-400">Weekly reflection with structured partner feedback.</p>
@@ -701,6 +728,10 @@ export default function AccountabilityPage() {
             <p className="mt-2 text-sm text-slate-400">No review history yet.</p>
           )}
         </section>
+          </>
+        ) : (
+          <MentorMatchingTab />
+        )}
       </div>
     </main>
   );

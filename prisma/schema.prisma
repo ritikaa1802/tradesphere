@@ -18,6 +18,7 @@ model User {
   password     String
   traderType   String?
   tradingStyle String?
+  isMentor     Boolean    @default(false)
   isPro        Boolean    @default(false)
   proUnlockedUntil DateTime?
   proGrantedByChallenge Boolean @default(false)
@@ -39,6 +40,9 @@ model User {
   competitionEntries CompetitionEntry[]
   cohortEntries CohortEntry[]
   monthlyChampionships MonthlyChampion[]
+  mentorProfile MentorProfile?
+  mentorshipsAsMentor Mentorship[] @relation("MentorRelation")
+  mentorshipsAsMentee Mentorship[] @relation("MenteeRelation")
 }
 
 model WeeklySummary {
@@ -229,4 +233,39 @@ model OTP {
   expiresAt DateTime
   verified  Boolean  @default(false)
   createdAt DateTime @default(now())
+}
+
+model MentorProfile {
+  id              String   @id @default(cuid())
+  userId          String   @unique
+  isMentor        Boolean  @default(false)
+  experienceLevel String
+  tradingStyle    String
+  bio             String
+  maxMentees      Int      @default(3)
+  isAvailable     Boolean  @default(true)
+  user            User     @relation(fields:[userId], references:[id])
+}
+
+model Mentorship {
+  id        String   @id @default(cuid())
+  mentorId  String
+  menteeId  String
+  status    String   @default("pending")
+  startedAt DateTime?
+  createdAt DateTime @default(now())
+  mentor    User     @relation("MentorRelation", fields:[mentorId], references:[id])
+  mentee    User     @relation("MenteeRelation", fields:[menteeId], references:[id])
+  feedback  MentorFeedback[]
+}
+
+model MentorFeedback {
+  id             String     @id @default(cuid())
+  mentorshipId   String
+  weekNumber     Int
+  whatWentWell   String
+  areasToImprove String
+  focusNextWeek  String
+  createdAt      DateTime   @default(now())
+  mentorship     Mentorship @relation(fields:[mentorshipId], references:[id])
 }
