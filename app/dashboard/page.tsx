@@ -440,48 +440,6 @@ export default function DashboardPage() {
   return (
     <section className="space-y-3 text-white">
       <div className="border-b border-[#1a2744] pb-3">
-        {activeChallenge?.myEntry ? (
-          <div className="grid gap-2 text-sm text-slate-200 sm:grid-cols-2 lg:grid-cols-5">
-            <div>
-              <p className="text-xs uppercase text-slate-400">Active challenge</p>
-              <p className="font-semibold text-white">{activeChallenge.title}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-slate-400">Progress</p>
-              <p className="font-semibold text-white">Day {challengeProgress?.day || 1} of {challengeProgress?.totalDays || 1}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-slate-400">Your score</p>
-              <p className="font-semibold text-white">{activeChallenge.myEntry.disciplineScore.toFixed(2)}</p>
-            </div>
-            <div>
-              <p className="text-xs uppercase text-slate-400">Current rank</p>
-              <p className="font-semibold text-white">#{activeChallenge.myEntry.rank}</p>
-            </div>
-            <div className="flex items-center justify-between gap-3">
-              <div>
-                <p className="text-xs uppercase text-slate-400">Champion in</p>
-                <p className="font-semibold text-white">{championCountdown ?? 0} days</p>
-              </div>
-              <Link href="/challenges" className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
-                View Challenge
-              </Link>
-            </div>
-          </div>
-        ) : (
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-sm font-semibold text-white">🏆 Join the 7-Day Challenge — Free!</p>
-              <p className="text-xs text-slate-300">Build consistency and climb the discipline leaderboard.</p>
-            </div>
-            <Link href="/challenges" className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500">
-              Join Now
-            </Link>
-          </div>
-        )}
-      </div>
-
-      <div className="border-b border-[#1a2744] pb-3">
         <div className="grid grid-cols-2 gap-3 text-right md:grid-cols-5">
           <div className="text-left md:text-right">
             <p className="text-[11px] uppercase tracking-wide text-[#9ca3af]">Balance</p>
@@ -716,6 +674,48 @@ export default function DashboardPage() {
             </AreaChart>
           </ResponsiveContainer>
         </div>
+      </div>
+
+      <div className="border-b border-[#1a2744] pb-3">
+        {activeChallenge?.myEntry ? (
+          <div className="grid gap-2 text-sm text-slate-200 sm:grid-cols-2 lg:grid-cols-5">
+            <div>
+              <p className="text-xs uppercase text-slate-400">Active challenge</p>
+              <p className="font-semibold text-white">{activeChallenge.title}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-400">Progress</p>
+              <p className="font-semibold text-white">Day {challengeProgress?.day || 1} of {challengeProgress?.totalDays || 1}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-400">Your score</p>
+              <p className="font-semibold text-white">{activeChallenge.myEntry.disciplineScore.toFixed(2)}</p>
+            </div>
+            <div>
+              <p className="text-xs uppercase text-slate-400">Current rank</p>
+              <p className="font-semibold text-white">#{activeChallenge.myEntry.rank}</p>
+            </div>
+            <div className="flex items-center justify-between gap-3">
+              <div>
+                <p className="text-xs uppercase text-slate-400">Champion in</p>
+                <p className="font-semibold text-white">{championCountdown ?? 0} days</p>
+              </div>
+              <Link href="/challenges" className="rounded-md bg-blue-600 px-3 py-2 text-xs font-semibold text-white hover:bg-blue-500">
+                View Challenge
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-white">🏆 Join the 7-Day Challenge — Free!</p>
+              <p className="text-xs text-slate-300">Build consistency and climb the discipline leaderboard.</p>
+            </div>
+            <Link href="/challenges" className="rounded-md bg-emerald-600 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-500">
+              Join Now
+            </Link>
+          </div>
+        )}
       </div>
 
       <ProGate>
